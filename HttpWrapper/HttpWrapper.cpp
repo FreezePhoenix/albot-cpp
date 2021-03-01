@@ -68,7 +68,7 @@ bool HttpWrapper::processCharacters(const Value &chars) {
 		if (chars.IsArray()) {
 			for (SizeType i = 0; i < chars.Size(); i++) {
 				Character c, *ptr = &c;
-				auto &_char = chars[i];
+				const Value &_char = chars[i];
 				(*ptr).name = string(_char["name"].GetString(), _char["name"].GetStringLength());
 				(*ptr).id = stol(string(_char["id"].GetString(), _char["id"].GetStringLength()));
 				(*ptr).script = "Default.js";
