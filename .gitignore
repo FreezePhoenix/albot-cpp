@@ -40,3 +40,5 @@ CMakeCache.txt
 .settings
 .vs
 /build/
+bot.json
+bot.out.json

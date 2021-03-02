@@ -8,7 +8,7 @@ add_definitions(-std=c++11)
 project ("albot-cpp")
 
 # Add source to this project's executable.
-add_executable (albot-cpp "albot-cpp.cpp" "HttpWrapper/HttpWrapper.cpp" "HttpWrapper/HttpWrapper.hpp")
+add_executable (albot-cpp "src/albot-cpp.cpp" "src/HttpWrapper/HttpWrapper.hpp" "src/HttpWrapper/HttpWrapper.cpp")
 
 # TODO: Add tests and install targets if needed.
 TARGET_LINK_LIBRARIES(albot-cpp PocoFoundation PocoNet)

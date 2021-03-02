@@ -67,16 +67,19 @@ bool HttpWrapper::processCharacters(const Value &chars) {
 	try {
 		if (chars.IsArray()) {
 			for (SizeType i = 0; i < chars.Size(); i++) {
-				Character c, *ptr = &c;
+				HttpWrapper::chars[i] = new Character;
 				const Value &_char = chars[i];
-				(*ptr).name = string(_char["name"].GetString(), _char["name"].GetStringLength());
-				(*ptr).id = stol(string(_char["id"].GetString(), _char["id"].GetStringLength()));
-				(*ptr).script = "Default.js";
-				(*ptr).server = "US II";
-				HttpWrapper::chars[i] = ptr;
-				cout << (*ptr).id << ": " << (*ptr).name << endl;
+				HttpWrapper::chars[i]->name = string(_char["name"].GetString(), _char["name"].GetStringLength());
+				if(_char["id"].IsString()) {
+				HttpWrapper::chars[i]->id = stol(string(_char["id"].GetString(), _char["id"].GetStringLength()));
+				} else {
+					HttpWrapper::chars[i]->id = _char["id"].GetInt64();
+				}
+				HttpWrapper::chars[i]->script = "Default.js";
+				HttpWrapper::chars[i]->server = "US II";
 			}
 		}
+		cout << "Characters processed!" << endl;
 		return true;
 	} catch (...) {
 		cout << "Failed to process characters." << endl;
@@ -94,7 +97,6 @@ bool HttpWrapper::getCharactersAndServers() {
 		// document.GetArray()
 		const Value &chars = document[0]["characters"].GetArray();
 		processCharacters(chars);
-		return false;
 	}
 	return true;
 }

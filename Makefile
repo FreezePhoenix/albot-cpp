@@ -123,59 +123,59 @@ albot-cpp/fast:
 	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/build
 .PHONY : albot-cpp/fast
 
-HttpWrapper/HttpWrapper.o: HttpWrapper/HttpWrapper.cpp.o
+src/HttpWrapper/HttpWrapper.o: src/HttpWrapper/HttpWrapper.cpp.o
 
-.PHONY : HttpWrapper/HttpWrapper.o
-
-# target to build an object file
-HttpWrapper/HttpWrapper.cpp.o:
-	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/HttpWrapper/HttpWrapper.cpp.o
-.PHONY : HttpWrapper/HttpWrapper.cpp.o
-
-HttpWrapper/HttpWrapper.i: HttpWrapper/HttpWrapper.cpp.i
-
-.PHONY : HttpWrapper/HttpWrapper.i
-
-# target to preprocess a source file
-HttpWrapper/HttpWrapper.cpp.i:
-	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/HttpWrapper/HttpWrapper.cpp.i
-.PHONY : HttpWrapper/HttpWrapper.cpp.i
-
-HttpWrapper/HttpWrapper.s: HttpWrapper/HttpWrapper.cpp.s
-
-.PHONY : HttpWrapper/HttpWrapper.s
-
-# target to generate assembly for a file
-HttpWrapper/HttpWrapper.cpp.s:
-	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/HttpWrapper/HttpWrapper.cpp.s
-.PHONY : HttpWrapper/HttpWrapper.cpp.s
-
-albot-cpp.o: albot-cpp.cpp.o
-
-.PHONY : albot-cpp.o
+.PHONY : src/HttpWrapper/HttpWrapper.o
 
 # target to build an object file
-albot-cpp.cpp.o:
-	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/albot-cpp.cpp.o
-.PHONY : albot-cpp.cpp.o
+src/HttpWrapper/HttpWrapper.cpp.o:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/HttpWrapper/HttpWrapper.cpp.o
+.PHONY : src/HttpWrapper/HttpWrapper.cpp.o
 
-albot-cpp.i: albot-cpp.cpp.i
+src/HttpWrapper/HttpWrapper.i: src/HttpWrapper/HttpWrapper.cpp.i
 
-.PHONY : albot-cpp.i
+.PHONY : src/HttpWrapper/HttpWrapper.i
 
 # target to preprocess a source file
-albot-cpp.cpp.i:
-	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/albot-cpp.cpp.i
-.PHONY : albot-cpp.cpp.i
+src/HttpWrapper/HttpWrapper.cpp.i:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/HttpWrapper/HttpWrapper.cpp.i
+.PHONY : src/HttpWrapper/HttpWrapper.cpp.i
 
-albot-cpp.s: albot-cpp.cpp.s
+src/HttpWrapper/HttpWrapper.s: src/HttpWrapper/HttpWrapper.cpp.s
 
-.PHONY : albot-cpp.s
+.PHONY : src/HttpWrapper/HttpWrapper.s
 
 # target to generate assembly for a file
-albot-cpp.cpp.s:
-	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/albot-cpp.cpp.s
-.PHONY : albot-cpp.cpp.s
+src/HttpWrapper/HttpWrapper.cpp.s:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/HttpWrapper/HttpWrapper.cpp.s
+.PHONY : src/HttpWrapper/HttpWrapper.cpp.s
+
+src/albot-cpp.o: src/albot-cpp.cpp.o
+
+.PHONY : src/albot-cpp.o
+
+# target to build an object file
+src/albot-cpp.cpp.o:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/albot-cpp.cpp.o
+.PHONY : src/albot-cpp.cpp.o
+
+src/albot-cpp.i: src/albot-cpp.cpp.i
+
+.PHONY : src/albot-cpp.i
+
+# target to preprocess a source file
+src/albot-cpp.cpp.i:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/albot-cpp.cpp.i
+.PHONY : src/albot-cpp.cpp.i
+
+src/albot-cpp.s: src/albot-cpp.cpp.s
+
+.PHONY : src/albot-cpp.s
+
+# target to generate assembly for a file
+src/albot-cpp.cpp.s:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/albot-cpp.cpp.s
+.PHONY : src/albot-cpp.cpp.s
 
 # Help Target
 help:
@@ -186,12 +186,12 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... albot-cpp"
-	@echo "... HttpWrapper/HttpWrapper.o"
-	@echo "... HttpWrapper/HttpWrapper.i"
-	@echo "... HttpWrapper/HttpWrapper.s"
-	@echo "... albot-cpp.o"
-	@echo "... albot-cpp.i"
-	@echo "... albot-cpp.s"
+	@echo "... src/HttpWrapper/HttpWrapper.o"
+	@echo "... src/HttpWrapper/HttpWrapper.i"
+	@echo "... src/HttpWrapper/HttpWrapper.s"
+	@echo "... src/albot-cpp.o"
+	@echo "... src/albot-cpp.i"
+	@echo "... src/albot-cpp.s"
 .PHONY : help
 
 

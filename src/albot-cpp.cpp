@@ -44,8 +44,9 @@ namespace ALBot {
 		if(config.HasMember("fetch") && config["fetch"].GetBool()) {
 			cout << "Instructed to fetch... fetching characters." << endl;
 			HttpWrapper::getCharactersAndServers();
-			config["characters"].SetArray();
+			Value chars_array(kArrayType);
 			// HttpWrapper::chars.length == 18
+
 			for(int i = 0; i < 18; i++) {
 				if(HttpWrapper::chars[i] != nullptr) {
 					HttpWrapper::Character* struct_char = HttpWrapper::chars[i];
@@ -53,16 +54,23 @@ namespace ALBot {
 					Value key("name", config.GetAllocator());
 					Value name(struct_char->name.c_str(), config.GetAllocator());
 					_char.AddMember(key, name, config.GetAllocator());
+					key.SetString(StringRef("id"));
+					_char.AddMember(key, struct_char->id, config.GetAllocator());
+					key.SetString(StringRef("script"));
+					_char.AddMember(key, "Example", config.GetAllocator());
+					key.SetString(StringRef("server"));
+					_char.AddMember(key, "US II", config.GetAllocator());
+					chars_array.PushBack(_char, config.GetAllocator());
 				}
 			}
-			FILE* fp = fopen("bot.json", "w"); // non-Windows use "w"
-
+			config["fetch"].SetBool(false);
+			config.AddMember("characters", chars_array, config.GetAllocator());
+			// cout << config["characters"][0]["name"].GetString();
+			FILE* fp = fopen("bot.out.json", "w"); // non-Windows use "w"
 			char writeBuffer[65536];
 			FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
-
 			Writer<FileWriteStream> writer(os);
-			d.Accept(writer);
-
+			config.Accept(writer);
 			fclose(fp);
 			exit(0);
 		}
