@@ -14,6 +14,7 @@
 #include <ctime>
 #include <unistd.h>
 #include "HttpWrapper/HttpWrapper.hpp"
+#include "GameInfo/GameInfo.hpp"
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
@@ -82,7 +83,7 @@ namespace ALBot {
 	void main() {
 		pthread_t login_thread;
 		void* ret;
-		pthread_create(&login_thread, NULL, login, (void*)1);
+		pthread_create(&login_thread, NULL, login, (void*)&HttpWrapper::sessionCookie);
 		pthread_join(login_thread, &ret);
 	}
 

@@ -13,8 +13,7 @@
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="org.eclipse.cdt.core.pathentry">
+		<pathentry excluding="GameInfo|src/InfoBuilder" kind="src" path=""/>
 		<pathentry excluding="**/CMakeFiles/**" kind="out" path="build"/>
-		<pathentry excluding="src/" kind="src" path=""/>
-		<pathentry kind="src" path="src"/>
 	</storageModule>
 </cproject>
