@@ -41,12 +41,12 @@ namespace ALBot {
 			cout << "Config loading failed!" << endl;
 			exit(1);
 		}
+
 		if(config.HasMember("fetch") && config["fetch"].GetBool()) {
 			cout << "Instructed to fetch... fetching characters." << endl;
 			HttpWrapper::getCharactersAndServers();
+			cout << "Characters fetched! Processing..." << endl;
 			Value chars_array(kArrayType);
-			// HttpWrapper::chars.length == 18
-
 			for(int i = 0; i < 18; i++) {
 				if(HttpWrapper::chars[i] != nullptr) {
 					HttpWrapper::Character* struct_char = HttpWrapper::chars[i];
@@ -64,8 +64,9 @@ namespace ALBot {
 				}
 			}
 			config["fetch"].SetBool(false);
+
 			config.AddMember("characters", chars_array, config.GetAllocator());
-			// cout << config["characters"][0]["name"].GetString();
+
 			FILE* fp = fopen("bot.out.json", "w"); // non-Windows use "w"
 			char writeBuffer[65536];
 			FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
@@ -77,6 +78,7 @@ namespace ALBot {
 		HttpWrapper::processCharacters(config["characters"].GetArray());
 		pthread_exit(0);
 	}
+
 	void main() {
 		pthread_t login_thread;
 		void* ret;
