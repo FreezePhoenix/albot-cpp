@@ -37,6 +37,7 @@ class HttpWrapper {
 		bool static doRequest(string url, string *str = nullptr);
 		bool static login();
 		bool static getCharactersAndServers();
+		bool static getServers();
 		bool static apiMethod(string method, string args, string *out);
 
 };

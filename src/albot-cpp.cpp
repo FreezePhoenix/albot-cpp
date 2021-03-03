@@ -29,61 +29,66 @@ using namespace rapidjson;
 
 namespace ALBot {
 
-	void* login(void* id) {
-		if (HttpWrapper::login()) {
-			cout << "Logged in!" << endl;
-		}
-		else {
-			cout << "Login failed!" << endl;
+	void* login(void *id) {
+		if (!HttpWrapper::login()) {
 			exit(1);
 		}
 		Document config;
-		if(!HttpWrapper::getConfig(&config)) {
-			cout << "Config loading failed!" << endl;
+		if (!HttpWrapper::getConfig(&config)) {
 			exit(1);
 		}
 
-		if(config.HasMember("fetch") && config["fetch"].GetBool()) {
+		if (config.HasMember("fetch") && config["fetch"].GetBool()) {
 			cout << "Instructed to fetch... fetching characters." << endl;
-			HttpWrapper::getCharactersAndServers();
-			cout << "Characters fetched! Processing..." << endl;
-			Value chars_array(kArrayType);
-			for(int i = 0; i < 18; i++) {
-				if(HttpWrapper::chars[i] != nullptr) {
-					HttpWrapper::Character* struct_char = HttpWrapper::chars[i];
-					Value _char(kObjectType);
-					Value key("name", config.GetAllocator());
-					Value name(struct_char->name.c_str(), config.GetAllocator());
-					_char.AddMember(key, name, config.GetAllocator());
-					key.SetString(StringRef("id"));
-					_char.AddMember(key, struct_char->id, config.GetAllocator());
-					key.SetString(StringRef("script"));
-					_char.AddMember(key, "Example", config.GetAllocator());
-					key.SetString(StringRef("server"));
-					_char.AddMember(key, "US II", config.GetAllocator());
-					chars_array.PushBack(_char, config.GetAllocator());
+			if (!HttpWrapper::getCharactersAndServers()) {
+				exit(1);
+			} else {
+				cout << "Writing characters to file..." << endl;
+				Value chars_array(kArrayType);
+				for (int i = 0; i < 18; i++) {
+					if (HttpWrapper::chars[i] != nullptr) {
+						HttpWrapper::Character *struct_char = HttpWrapper::chars[i];
+						Value _char(kObjectType);
+						Value key("name", config.GetAllocator());
+						Value name(struct_char->name.c_str(), config.GetAllocator());
+						_char.AddMember(key, name, config.GetAllocator());
+						key.SetString(StringRef("id"));
+						_char.AddMember(key, struct_char->id, config.GetAllocator());
+						key.SetString(StringRef("script"));
+						_char.AddMember(key, "Example", config.GetAllocator());
+						key.SetString(StringRef("server"));
+						_char.AddMember(key, "US II", config.GetAllocator());
+						chars_array.PushBack(_char, config.GetAllocator());
+					}
 				}
+				config["fetch"].SetBool(false);
+
+				config.AddMember("characters", chars_array, config.GetAllocator());
+
+				FILE *fp = fopen("bot.out.json", "w"); // non-Windows use "w"
+				char writeBuffer[65536];
+				FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
+				Writer<FileWriteStream> writer(os);
+				config.Accept(writer);
+				fclose(fp);
+				cout << "Characters written to file!" << endl;
+				exit(0);
 			}
-			config["fetch"].SetBool(false);
-
-			config.AddMember("characters", chars_array, config.GetAllocator());
-
-			FILE* fp = fopen("bot.out.json", "w"); // non-Windows use "w"
-			char writeBuffer[65536];
-			FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
-			Writer<FileWriteStream> writer(os);
-			config.Accept(writer);
-			fclose(fp);
-			exit(0);
 		}
-		HttpWrapper::processCharacters(config["characters"].GetArray());
+		cout << "Processing characters..." << endl;
+		if(!HttpWrapper::processCharacters(config["characters"].GetArray())) {
+			exit(1);
+		}
+		if(!HttpWrapper::getServers()) {
+
+		}
 		pthread_exit(0);
 	}
 
 	void main() {
 		pthread_t login_thread;
-		void* ret;
-		pthread_create(&login_thread, NULL, login, (void*)&HttpWrapper::sessionCookie);
+		void *ret;
+		pthread_create(&login_thread, NULL, login, (void*) &HttpWrapper::sessionCookie);
 		pthread_join(login_thread, &ret);
 	}
 
