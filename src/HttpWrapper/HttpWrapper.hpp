@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
@@ -27,17 +26,27 @@ class HttpWrapper {
 				string script;
 				string server;
 		};
+		struct Server {
+				string region;
+				int port;
+				bool pvp;
+				string ip;
+				string identifier;
+		};
 		static string sessionCookie;
 		static NameValueCollection cookie;
-		static Character *chars[18];
+		static vector<Character*> chars;
+		static vector<Server*> servers;
 		static long userID;
 		bool static getConfig(Document *json);
-		bool static processCharacters(const Value &chars);
 		bool static doPost(string url, string args, string *out, vector<HTTPCookie> *cookies = nullptr);
 		bool static doRequest(string url, string *str = nullptr);
 		bool static login();
+		bool static getCharacters();
 		bool static getCharactersAndServers();
+		bool static processCharacters(const Value &chars);
 		bool static getServers();
+		bool static processServers(const Value &servers);
 		bool static apiMethod(string method, string args, string *out);
 
 };

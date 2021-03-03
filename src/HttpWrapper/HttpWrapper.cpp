@@ -15,10 +15,13 @@ using namespace Poco;
 using namespace Poco::Net;
 using namespace rapidjson;
 
+#define GET_STRING(a) string( a .GetString(), a .GetStringLength())
+
 string HttpWrapper::password = "";
 string HttpWrapper::email = "";
 string HttpWrapper::sessionCookie = "";
-HttpWrapper::Character *HttpWrapper::chars[18];
+vector<HttpWrapper::Character*> HttpWrapper::chars;
+vector<HttpWrapper::Server*> HttpWrapper::servers;
 NameValueCollection HttpWrapper::cookie = NameValueCollection();
 long HttpWrapper::userID = 0;
 
@@ -66,17 +69,19 @@ bool HttpWrapper::apiMethod(string method, string args, string *str) {
 bool HttpWrapper::processCharacters(const Value &chars) {
 	try {
 		if (chars.IsArray()) {
+			HttpWrapper::chars.resize(chars.Size());
 			for (SizeType i = 0; i < chars.Size(); i++) {
 				HttpWrapper::chars[i] = new Character;
-				const Value &_char = chars[i];
-				HttpWrapper::chars[i]->name = string(_char["name"].GetString(), _char["name"].GetStringLength());
-				if (_char["id"].IsString()) {
-					HttpWrapper::chars[i]->id = stol(string(_char["id"].GetString(), _char["id"].GetStringLength()));
+				Character *character = HttpWrapper::chars[i];
+				const Value &character_json = chars[i];
+				character->name = GET_STRING(character_json["name"]);
+				if (character_json["id"].IsString()) {
+					character->id = stol(GET_STRING(character_json["id"]));
 				} else {
-					HttpWrapper::chars[i]->id = _char["id"].GetInt64();
+					character->id = character_json["id"].GetInt64();
 				}
-				HttpWrapper::chars[i]->script = "Default.js";
-				HttpWrapper::chars[i]->server = "US II";
+				character->script = "Default";
+				character->server = "US II";
 			}
 		} else {
 			cout << "Characters array was not an array! Aborting." << endl;
@@ -90,7 +95,7 @@ bool HttpWrapper::processCharacters(const Value &chars) {
 	}
 }
 
-bool HttpWrapper::getCharactersAndServers() {
+bool HttpWrapper::getCharacters() {
 	string out;
 	if (apiMethod("servers_and_characters", "{}", &out)) {
 		cout << "Characters fetched! Processing..." << endl;
@@ -101,6 +106,7 @@ bool HttpWrapper::getCharactersAndServers() {
 			// document.GetArray()
 			const Value &chars = document[0]["characters"].GetArray();
 			return processCharacters(chars);
+
 		} else {
 			cout << "Server did not send us an array... trying root object instead" << endl;
 			return processCharacters(document.GetArray());
@@ -111,10 +117,70 @@ bool HttpWrapper::getCharactersAndServers() {
 	}
 }
 
+bool HttpWrapper::getCharactersAndServers() {
+	string out;
+	if (apiMethod("servers_and_characters", "{}", &out)) {
+		cout << out << endl;
+		cout << "Characters fetched! Processing..." << endl;
+		Document document;
+		document.Parse(out.c_str());
+		// For some reason we don't just get an object, the API wraps it in an array.
+		if (document.IsArray()) {
+			// document.GetArray()
+			const Value &chars = document[0]["characters"].GetArray();
+			return processCharacters(chars);
+
+		} else {
+			cout << "Server did not send us an array... trying root object instead" << endl;
+			return processCharacters(document.GetArray());
+		}
+	} else {
+		cout << "Failed to fetch characters! Aborting." << endl;
+		return false;
+	}
+}
+
+bool HttpWrapper::processServers(const Value &servers) {
+	try {
+		if (servers.IsArray()) {
+			HttpWrapper::servers.resize(servers.Size());
+			for (SizeType i = 0; i < servers.Size(); i++) {
+				HttpWrapper::servers[i] = new Server;
+				const Value &server_json = servers[i];
+				HttpWrapper::servers[i]->identifier = GET_STRING(server_json["name"]);
+				HttpWrapper::servers[i]->region = GET_STRING(server_json["region"]);
+				HttpWrapper::servers[i]->port = server_json["port"].GetInt();
+				HttpWrapper::servers[i]->ip = GET_STRING(server_json["addr"]);
+			}
+		} else {
+			cout << "Servers array was not an array! Aborting." << endl;
+			return false;
+		}
+		cout << "Servers processed!" << endl;
+		return true;
+	} catch (...) {
+		cout << "Failed to process servers. Aborting." << endl;
+		throw;
+	}
+}
+
 bool HttpWrapper::getServers() {
 	string out;
-	if(apiMethod("get_servers", "{}", &out)) {
+	if (apiMethod("servers_and_characters", "{}", &out)) {
+
 		cout << out << endl;
+		cout << "Servers fetched! Processing..." << endl;
+		Document document;
+		document.Parse(out.c_str());
+		// For some reason we don't just get an object, the API wraps it in an array.
+		if (document.IsArray()) {
+			// document.GetArray()
+			const Value &servers = document[0]["servers"].GetArray();
+			return processServers(servers);
+		} else {
+			cout << "Server did not send us an array... trying root object instead" << endl;
+			return processServers(document.GetArray());
+		}
 		return true;
 	} else {
 		cout << "Failed to fetch servers! Aborting." << endl;

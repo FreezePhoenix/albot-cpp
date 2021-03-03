@@ -1,3 +1,4 @@
+#pragma once
 /*
  * GameInfo.hpp
  *
@@ -5,25 +6,16 @@
  *      Author: linuxlite
  */
 
-#ifndef GAME_INFO_HPP_
-#define GAME_INFO_HPP_
-
-#include "/usr/include/c++/9/string"
-
-class HttpWrapper;
+#include "../HttpWrapper/HttpWrapper.hpp"
+#include <rapidjson/document.h>
 
 using namespace std;
+using namespace rapidjson;
 
-class GameData {
-
-};
+typedef Value GameData;
 class GameInfo {
 	public:
-		string ip;
-		int port;
-		long characterID;
-		GameData G;
-		HttpWrapper *httpwrapper;
+		HttpWrapper::Server* server;
+		HttpWrapper::Character* character;
+		GameData *G;
 };
-
-#endif /* GAME_INFO_HPP_ */
