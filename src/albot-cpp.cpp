@@ -106,7 +106,7 @@ namespace ALBot {
 		GameInfo *info = new GameInfo;
 		info->server = nullptr;
 		info->server = HttpWrapper::servers[0];
-
+	    info->character = HttpWrapper::chars[0];
 		void *ret;
 		pthread_create(&bot_thread, NULL, hello, (void*) info);
 		pthread_join(bot_thread, &ret);
