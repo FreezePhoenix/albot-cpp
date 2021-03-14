@@ -18,4 +18,6 @@ class GameInfo {
 		HttpWrapper::Server* server;
 		HttpWrapper::Character* character;
 		GameData *G;
+		string auth;
+		long userId;
 };

@@ -13,19 +13,22 @@
 #include <pthread.h>
 #include <ctime>
 #include <unistd.h>
-#include "HttpWrapper/HttpWrapper.hpp"
-#include "GameInfo/GameInfo.hpp"
-
+#include "./HttpWrapper/HttpWrapper.hpp"
+#include "./GameInfo/GameInfo.hpp"
+#include "./JsonUtils/JsonUtils.hpp"
 #include <rapidjson/document.h>
+#include <sstream>
+#include <iomanip>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/filewritestream.h>
 #include <rapidjson/writer.h>
-#include "code-base.hpp"
+#include "Bot.hpp"
+#include <nlohmann/json.hpp>
 #include <cstdio>
 
 using namespace std;
-
+using namespace nlohmann;
 using namespace rapidjson;
 
 namespace ALBot {
@@ -34,48 +37,40 @@ namespace ALBot {
 		if (!HttpWrapper::login()) {
 			exit(1);
 		}
-		Document config;
-		if (!HttpWrapper::getConfig(&config)) {
+		json config;
+		if (!HttpWrapper::getConfig(config)) {
 			exit(1);
 		}
 
-		if (config.HasMember("fetch") && config["fetch"].GetBool()) {
+		if (!config["fetch"].is_null() && config["fetch"].get<bool>()) {
 			cout << "Instructed to fetch... fetching characters." << endl;
 			if (!HttpWrapper::getCharacters()) {
 				exit(1);
 			} else {
 				cout << "Writing characters to file..." << endl;
-				Value chars_array(kArrayType);
+				json _chars;
+				config["characters"] = _chars;
 				for (int i = 0; i < HttpWrapper::chars.size(); i++) {
 					HttpWrapper::Character *struct_char = HttpWrapper::chars[i];
-					Value _char(kObjectType);
-					Value key("name", config.GetAllocator());
-					Value name(struct_char->name.c_str(), config.GetAllocator());
-					_char.AddMember(key, name, config.GetAllocator());
-					key.SetString(StringRef("id"));
-					_char.AddMember(key, struct_char->id, config.GetAllocator());
-					key.SetString(StringRef("script"));
-					_char.AddMember(key, "Example", config.GetAllocator());
-					key.SetString(StringRef("server"));
-					_char.AddMember(key, "US II", config.GetAllocator());
-					chars_array.PushBack(_char, config.GetAllocator());
+					json _char;
+					_char["name"] = struct_char->name;
+					_char["id"] = struct_char->id;
+					_char["script"] = "Example";
+					_char["server"] = "US II";
+					_chars.push_back(_char);
 				}
-				config["fetch"].SetBool(false);
 
-				config.AddMember("characters", chars_array, config.GetAllocator());
+				config["characters"] = _chars;
+				config["fetch"] = false;
 
-				FILE *fp = fopen("bot.out.json", "w"); // non-Windows use "w"
-				char writeBuffer[65536];
-				FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
-				Writer<FileWriteStream> writer(os);
-				config.Accept(writer);
-				fclose(fp);
+				std::ofstream o("bot.out.json");
+				o << setw(4) << config << std::endl;
 				cout << "Characters written to file!" << endl;
 				exit(0);
 			}
 		}
 		cout << "Processing characters..." << endl;
-		if (!HttpWrapper::processCharacters(config["characters"].GetArray())) {
+		if (!HttpWrapper::processCharacters(config["characters"])) {
 			exit(1);
 		}
 		if (!HttpWrapper::getServers()) {
@@ -87,11 +82,10 @@ namespace ALBot {
 			pthread_exit((void*) 1);
 		}
 		// load the symbol
-		cout << "Loading symbol hello...\n";
-		typedef void* (*hello_t)(void*);
+		typedef void* (*init_t)(void*);
 		// reset errors
 		dlerror();
-		hello_t hello = (hello_t) dlsym(handle, "hello_time");
+		init_t hello = (init_t) dlsym(handle, "init");
 
 		const char *dlsym_error = dlerror();
 
@@ -105,9 +99,14 @@ namespace ALBot {
 		pthread_t bot_thread;
 		GameInfo *info = new GameInfo;
 		info->server = nullptr;
-		info->server = HttpWrapper::servers[0];
-	    info->character = HttpWrapper::chars[0];
+		cout << "uhoh" << endl;
+		info->server = HttpWrapper::servers[7];
+		cout << "What do we have here?" << endl;
+		info->character = HttpWrapper::chars[0];
+		info->auth = HttpWrapper::auth;
+		info->userId = HttpWrapper::userID;
 		void *ret;
+		cout << "It can't be, can it?" << endl;
 		pthread_create(&bot_thread, NULL, hello, (void*) info);
 		pthread_join(bot_thread, &ret);
 		pthread_exit(0);

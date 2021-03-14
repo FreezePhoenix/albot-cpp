@@ -1,1 +1,59 @@
-{"fetch":false,"characters":[{"name":"Firenus","id":6389196039127040,"script":"Example","server":"US II"},{"name":"Malthael","id":5708501262270464,"script":"Example","server":"US II"},{"name":"Boismon","id":5760997546524672,"script":"Example","server":"US II"},{"name":"AriaHarper","id":5513766260178944,"script":"Example","server":"US II"},{"name":"Raelina","id":5931316711784448,"script":"Example","server":"US II"},{"name":"Rael","id":6011174247202816,"script":"Example","server":"US II"},{"name":"Geoffriel","id":5178085749030912,"script":"Example","server":"US II"},{"name":"CuteBurn","id":4922750116823040,"script":"Example","server":"US II"},{"name":"Daedulaus","id":5826105459081216,"script":"Example","server":"US II"}],"characters":[{"name":"AriaHarper","id":5513766260178944,"script":"Example","server":"US II"},{"name":"Malthael","id":5708501262270464,"script":"Example","server":"US II"},{"name":"Firenus","id":6389196039127040,"script":"Example","server":"US II"},{"name":"Boismon","id":5760997546524672,"script":"Example","server":"US II"},{"name":"Raelina","id":5931316711784448,"script":"Example","server":"US II"},{"name":"Rael","id":6011174247202816,"script":"Example","server":"US II"},{"name":"Geoffriel","id":5178085749030912,"script":"Example","server":"US II"},{"name":"CuteBurn","id":4922750116823040,"script":"Example","server":"US II"},{"name":"Daedulaus","id":5826105459081216,"script":"Example","server":"US II"}]}
+{
+    "characters": [
+        /* {
+            "id": 5178085749030912,
+            "name": "Geoffriel",
+            "script": "Example",
+            "server": "US II"
+        }, // */
+        /* {
+            "id": 5931316711784448,
+            "name": "Raelina",
+            "script": "Example",
+            "server": "US II"
+        }, // */
+        /* {
+            "id": 6011174247202816,
+            "name": "Rael",
+            "script": "Example",
+            "server": "US II"
+        }, // */
+        {
+            "id": 5513766260178944,
+            "name": "AriaHarper",
+            "script": "Example",
+            "server": "US II"
+        }, // */
+        /* {
+            "id": 5760997546524672,
+            "name": "Boismon",
+            "script": "Example",
+            "server": "US II"
+        }, // */
+        /* {
+            "id": 6389196039127040,
+            "name": "Firenus",
+            "script": "Example",
+            "server": "US II"
+        }, // */
+        /* {
+            "id": 5708501262270464,
+            "name": "Malthael",
+            "script": "Example",
+            "server": "US II"
+        }, // */
+        /* {
+            "id": 4922750116823040,
+            "name": "CuteBurn",
+            "script": "Example",
+            "server": "US II"
+        }, // */
+        /* {
+            "id": 5826105459081216,
+            "name": "Daedulaus",
+            "script": "Example",
+            "server": "US II"
+        } // */
+    ],
+    "fetch": false
+}

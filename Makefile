@@ -150,6 +150,33 @@ src/HttpWrapper/HttpWrapper.cpp.s:
 	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/HttpWrapper/HttpWrapper.cpp.s
 .PHONY : src/HttpWrapper/HttpWrapper.cpp.s
 
+src/JsonUtils/JsonUtils.o: src/JsonUtils/JsonUtils.cpp.o
+
+.PHONY : src/JsonUtils/JsonUtils.o
+
+# target to build an object file
+src/JsonUtils/JsonUtils.cpp.o:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/JsonUtils/JsonUtils.cpp.o
+.PHONY : src/JsonUtils/JsonUtils.cpp.o
+
+src/JsonUtils/JsonUtils.i: src/JsonUtils/JsonUtils.cpp.i
+
+.PHONY : src/JsonUtils/JsonUtils.i
+
+# target to preprocess a source file
+src/JsonUtils/JsonUtils.cpp.i:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/JsonUtils/JsonUtils.cpp.i
+.PHONY : src/JsonUtils/JsonUtils.cpp.i
+
+src/JsonUtils/JsonUtils.s: src/JsonUtils/JsonUtils.cpp.s
+
+.PHONY : src/JsonUtils/JsonUtils.s
+
+# target to generate assembly for a file
+src/JsonUtils/JsonUtils.cpp.s:
+	$(MAKE) -f CMakeFiles/albot-cpp.dir/build.make CMakeFiles/albot-cpp.dir/src/JsonUtils/JsonUtils.cpp.s
+.PHONY : src/JsonUtils/JsonUtils.cpp.s
+
 src/albot-cpp.o: src/albot-cpp.cpp.o
 
 .PHONY : src/albot-cpp.o
@@ -189,6 +216,9 @@ help:
 	@echo "... src/HttpWrapper/HttpWrapper.o"
 	@echo "... src/HttpWrapper/HttpWrapper.i"
 	@echo "... src/HttpWrapper/HttpWrapper.s"
+	@echo "... src/JsonUtils/JsonUtils.o"
+	@echo "... src/JsonUtils/JsonUtils.i"
+	@echo "... src/JsonUtils/JsonUtils.s"
 	@echo "... src/albot-cpp.o"
 	@echo "... src/albot-cpp.i"
 	@echo "... src/albot-cpp.s"

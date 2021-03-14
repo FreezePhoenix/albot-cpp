@@ -1,16 +1,8 @@
-#include <Poco/Net/HTTPClientSession.h>
-#include <Poco/Net/HTTPRequest.h>
-#include <Poco/Net/HTTPResponse.h>
-#include <Poco/URI.h>
-#include <Poco/StreamCopier.h>
-#include <iostream>
-#include <fstream>
-#include "HttpWrapper.hpp"
-#include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
+#include "./HttpWrapper.hpp"
+#include "../JsonUtils/JsonUtils.hpp"
 
 using namespace std;
+using namespace nlohmann;
 using namespace Poco;
 using namespace Poco::Net;
 using namespace rapidjson;
@@ -18,6 +10,7 @@ using namespace rapidjson;
 #define GET_STRING(a) string( a .GetString(), a .GetStringLength())
 
 string HttpWrapper::password = "";
+string HttpWrapper::auth = "";
 string HttpWrapper::email = "";
 string HttpWrapper::sessionCookie = "";
 vector<HttpWrapper::Character*> HttpWrapper::chars;
@@ -66,22 +59,28 @@ bool HttpWrapper::apiMethod(string method, string args, string *str) {
 	return doPost("http://adventure.land/api/" + method, args_string, str);
 }
 
-bool HttpWrapper::processCharacters(const Value &chars) {
+bool HttpWrapper::processCharacters(json &chars) {
 	try {
-		if (chars.IsArray()) {
-			HttpWrapper::chars.resize(chars.Size());
-			for (SizeType i = 0; i < chars.Size(); i++) {
+		if (chars.is_array()) {
+			HttpWrapper::chars.resize(chars.size());
+			for (int i = 0; i < chars.size(); i++) {
 				HttpWrapper::chars[i] = new Character;
 				Character *character = HttpWrapper::chars[i];
-				const Value &character_json = chars[i];
-				character->name = GET_STRING(character_json["name"]);
-				if (character_json["id"].IsString()) {
-					character->id = stol(GET_STRING(character_json["id"]));
+				json character_json = chars[i].get<nlohmann::basic_json<>>();
+				character->name = character_json["name"].get<string>();
+				if (character_json["id"].is_string()) {
+					character->id = stol(character_json["id"].get<string>());
 				} else {
-					character->id = character_json["id"].GetInt64();
+					character->id = character_json["id"].get<long>();
 				}
-				character->script = "Default";
-				character->server = "US II";
+				if(character_json["script"].is_string()) {
+					character->script = character_json["script"].get<string>();
+				} else {
+					character->script = "Default";
+				}
+				if(character_json["server"].is_string()) {
+					character->server = character_json["server"].get<string>();
+				}
 			}
 		} else {
 			cout << "Characters array was not an array! Aborting." << endl;
@@ -99,17 +98,15 @@ bool HttpWrapper::getCharacters() {
 	string out;
 	if (apiMethod("servers_and_characters", "{}", &out)) {
 		cout << "Characters fetched! Processing..." << endl;
-		Document document;
-		document.Parse(out.c_str());
+		json characters = json::parse(out);
 		// For some reason we don't just get an object, the API wraps it in an array.
-		if (document.IsArray()) {
-			// document.GetArray()
-			const Value &chars = document[0]["characters"].GetArray();
-			return processCharacters(chars);
+		if (characters.is_array()) {
+			characters = characters[0]["characters"].get<nlohmann::basic_json<>>();
+			return processCharacters(characters);
 
 		} else {
 			cout << "Server did not send us an array... trying root object instead" << endl;
-			return processCharacters(document.GetArray());
+			return processCharacters(characters);
 		}
 	} else {
 		cout << "Failed to fetch characters! Aborting." << endl;
@@ -120,19 +117,16 @@ bool HttpWrapper::getCharacters() {
 bool HttpWrapper::getCharactersAndServers() {
 	string out;
 	if (apiMethod("servers_and_characters", "{}", &out)) {
-		cout << out << endl;
 		cout << "Characters fetched! Processing..." << endl;
-		Document document;
-		document.Parse(out.c_str());
+		json characters = json::parse(out);
 		// For some reason we don't just get an object, the API wraps it in an array.
-		if (document.IsArray()) {
-			// document.GetArray()
-			const Value &chars = document[0]["characters"].GetArray();
-			return processCharacters(chars);
+		if (characters.is_array()) {
+			characters = characters[0]["characters"].get<nlohmann::basic_json<>>();
+			return processCharacters(characters);
 
 		} else {
 			cout << "Server did not send us an array... trying root object instead" << endl;
-			return processCharacters(document.GetArray());
+			return processCharacters(characters);
 		}
 	} else {
 		cout << "Failed to fetch characters! Aborting." << endl;
@@ -140,17 +134,17 @@ bool HttpWrapper::getCharactersAndServers() {
 	}
 }
 
-bool HttpWrapper::processServers(const Value &servers) {
+bool HttpWrapper::processServers(json &servers) {
 	try {
-		if (servers.IsArray()) {
-			HttpWrapper::servers.resize(servers.Size());
-			for (SizeType i = 0; i < servers.Size(); i++) {
+		if (servers.is_array()) {
+			HttpWrapper::servers.resize(servers.size());
+			for (int i = 0; i < servers.size(); i++) {
 				HttpWrapper::servers[i] = new Server;
-				const Value &server_json = servers[i];
-				HttpWrapper::servers[i]->identifier = GET_STRING(server_json["name"]);
-				HttpWrapper::servers[i]->region = GET_STRING(server_json["region"]);
-				HttpWrapper::servers[i]->port = server_json["port"].GetInt();
-				HttpWrapper::servers[i]->ip = GET_STRING(server_json["addr"]);
+				json server = servers[i].get<nlohmann::basic_json<>>();
+				HttpWrapper::servers[i]->identifier = server["name"].get<string>();
+				HttpWrapper::servers[i]->region = server["region"].get<string>();
+				HttpWrapper::servers[i]->port = server["port"].get<int>();
+				HttpWrapper::servers[i]->ip = server["addr"].get<string>();
 			}
 		} else {
 			cout << "Servers array was not an array! Aborting." << endl;
@@ -170,16 +164,15 @@ bool HttpWrapper::getServers() {
 
 		cout << out << endl;
 		cout << "Servers fetched! Processing..." << endl;
-		Document document;
-		document.Parse(out.c_str());
+		json servers = json::parse(out);
 		// For some reason we don't just get an object, the API wraps it in an array.
-		if (document.IsArray()) {
+		if (servers.is_array()) {
 			// document.GetArray()
-			const Value &servers = document[0]["servers"].GetArray();
+			servers = servers[0]["servers"].get<nlohmann::basic_json<>>();
 			return processServers(servers);
 		} else {
 			cout << "Server did not send us an array... trying root object instead" << endl;
-			return processServers(document.GetArray());
+			return processServers(servers);
 		}
 		return true;
 	} else {
@@ -216,16 +209,20 @@ bool HttpWrapper::doRequest(string url, string *str) {
 	}
 }
 
-bool HttpWrapper::getConfig(Document *json) {
+bool HttpWrapper::getConfig(json &config) {
 	cout << "Reading config..." << endl;
 	ifstream configfile("bot.json");
 	string tmp;
 	if (configfile.is_open()) {
 		StreamCopier::copyToString(configfile, tmp);
-		json->Parse(tmp.c_str());
-		if (!json->IsObject()) {
+		JsonUtils::stripComments(&tmp);
+		config = json::parse(tmp.c_str());
+		if (!config.is_object()) {
 			cout << "Config file is empty! Aborting." << endl;
 			return false;
+		}
+		if(config["run"].is_array()) {
+
 		}
 		cout << "Config reading success!" << endl;
 		return true;
@@ -261,6 +258,7 @@ bool HttpWrapper::login() {
 						size_t pos = 0;
 						pos = sessionCookie.find('-');
 						userID = stol(sessionCookie.substr(0, pos));
+						auth = sessionCookie.substr(pos + 1, sessionCookie.length());
 						cout << "Logged in!" << endl;
 						return true;
 					}

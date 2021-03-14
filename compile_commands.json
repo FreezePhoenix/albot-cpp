@@ -8,5 +8,10 @@
   "directory": "/home/linuxlite/shared/albot-cpp",
   "command": "/usr/bin/c++      -std=c++11 -o CMakeFiles/albot-cpp.dir/src/HttpWrapper/HttpWrapper.cpp.o -c /home/linuxlite/shared/albot-cpp/src/HttpWrapper/HttpWrapper.cpp",
   "file": "/home/linuxlite/shared/albot-cpp/src/HttpWrapper/HttpWrapper.cpp"
+},
+{
+  "directory": "/home/linuxlite/shared/albot-cpp",
+  "command": "/usr/bin/c++      -std=c++11 -o CMakeFiles/albot-cpp.dir/src/JsonUtils/JsonUtils.cpp.o -c /home/linuxlite/shared/albot-cpp/src/JsonUtils/JsonUtils.cpp",
+  "file": "/home/linuxlite/shared/albot-cpp/src/JsonUtils/JsonUtils.cpp"
 }
 ]
