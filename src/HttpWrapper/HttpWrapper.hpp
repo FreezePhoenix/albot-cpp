@@ -38,13 +38,14 @@ class HttpWrapper {
 				bool pvp;
 				string ip;
 				string identifier;
+				string url;
 		};
 		static string sessionCookie;
 		static string auth;
 		static NameValueCollection cookie;
 		static vector<Character*> chars;
 		static vector<Server*> servers;
-		static long userID;
+		static string userID;
 		bool static getConfig(json &config);
 		bool static doPost(string url, string args, string *out, vector<HTTPCookie> *cookies = nullptr);
 		bool static doRequest(string url, string *str = nullptr);

@@ -16,7 +16,7 @@ string HttpWrapper::sessionCookie = "";
 vector<HttpWrapper::Character*> HttpWrapper::chars;
 vector<HttpWrapper::Server*> HttpWrapper::servers;
 NameValueCollection HttpWrapper::cookie = NameValueCollection();
-long HttpWrapper::userID = 0;
+string HttpWrapper::userID = 0;
 
 bool HttpWrapper::doPost(string url, string args, string *str, vector<HTTPCookie> *cookies) {
 	URI uri(url);
@@ -145,6 +145,8 @@ bool HttpWrapper::processServers(json &servers) {
 				HttpWrapper::servers[i]->region = server["region"].get<string>();
 				HttpWrapper::servers[i]->port = server["port"].get<int>();
 				HttpWrapper::servers[i]->ip = server["addr"].get<string>();
+				HttpWrapper::servers[i]->url = server["addr"].get<string>() + ":" + to_string(server["port"].get<int>());
+				// HttpWrapper::servers[i]->fullName = std::make_pair(server["region"].get<string>(), server["name"].get<string>());
 			}
 		} else {
 			cout << "Servers array was not an array! Aborting." << endl;
@@ -257,7 +259,7 @@ bool HttpWrapper::login() {
 						cookie.set("auth", sessionCookie);
 						size_t pos = 0;
 						pos = sessionCookie.find('-');
-						userID = stol(sessionCookie.substr(0, pos));
+						userID = sessionCookie.substr(0, pos);
 						auth = sessionCookie.substr(pos + 1, sessionCookie.length());
 						cout << "Logged in!" << endl;
 						return true;

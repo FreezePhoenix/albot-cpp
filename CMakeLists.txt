@@ -3,15 +3,17 @@
 #
 cmake_minimum_required (VERSION 3.5)
 
-add_definitions(-std=c++11)
+add_definitions(-std=c++17)
 
 project ("albot-cpp")
 
 # Add source to this project's executable.
-add_executable (albot-cpp "src/albot-cpp.cpp" "src/HttpWrapper/HttpWrapper.hpp" "src/HttpWrapper/HttpWrapper.cpp" "src/JsonUtils/JsonUtils.cpp")
+add_executable (albot-cpp
+	"src/albot-cpp.cpp"
+	"src/HttpWrapper/HttpWrapper.cpp" "src/JsonUtils/JsonUtils.cpp")
 
 # TODO: Add tests and install targets if needed.
-TARGET_LINK_LIBRARIES(albot-cpp PocoFoundation PocoNet ${CMAKE_DL_LIBS})
+TARGET_LINK_LIBRARIES(albot-cpp PocoFoundation PocoNet ${CMAKE_DL_LIBS} spdlog)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
   set_property(TARGET albot-cpp PROPERTY COMPILE_OPTIONS "-pthread")

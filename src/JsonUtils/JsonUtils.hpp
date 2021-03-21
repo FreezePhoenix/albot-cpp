@@ -4,9 +4,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
-#include "sio_client.h"
-#include "sio_socket.h"
-#include "sio_socket.h"
+#include "sio_message.h"
 #include <sstream>
 #include <iostream>
 #include <nlohmann/json.hpp>

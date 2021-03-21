@@ -1,10 +1,6 @@
-#pragma once
-/*
- * GameInfo.hpp
- *
- *  Created on: Mar 3, 2021
- *      Author: linuxlite
- */
+
+#ifndef GAMEINFO_HPP_
+#define GAMEINFO_HPP_
 
 #include "../HttpWrapper/HttpWrapper.hpp"
 #include <rapidjson/document.h>
@@ -17,7 +13,11 @@ class GameInfo {
 	public:
 		HttpWrapper::Server* server;
 		HttpWrapper::Character* character;
+		HttpWrapper* wrapper;
 		GameData *G;
 		string auth;
-		long userId;
+		string userId;
 };
+
+
+#endif /* GAMEINFO_HPP_ */

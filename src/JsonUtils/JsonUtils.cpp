@@ -1,14 +1,15 @@
 #include "./JsonUtils.hpp"
 
 using namespace std;
+using namespace sio;
 using namespace rapidjson;
 using namespace nlohmann;
 
 void JsonUtils::parse(Document* json, string* str) {
 	json->Parse(str->c_str());
 }
-sio::message::ptr JsonUtils::createObject(json o) {
-	sio::message::ptr object = object_message::create();
+message::ptr JsonUtils::createObject(json o) {
+	message::ptr object = object_message::create();
 
 	for (json::iterator it = o.begin(); it != o.end(); ++it) {
 		auto key = it.key();
