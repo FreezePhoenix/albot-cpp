@@ -15,6 +15,7 @@ add_library (albot-code SHARED
 )
 
 # TODO: Add tests and install targets if needed.
+add_subdirectory(IXWebSocket)
 TARGET_LINK_LIBRARIES(albot-code sioclient ixwebsocket)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
