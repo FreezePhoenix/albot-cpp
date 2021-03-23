@@ -39,6 +39,6 @@ albot-cpp
 */CMakeFiles/
 *.settings
 *.vs
-*/build/
+./*/build/
 *bot.json
 *bot.out.json
