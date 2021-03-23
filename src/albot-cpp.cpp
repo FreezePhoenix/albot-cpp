@@ -13,9 +13,9 @@
 #include <pthread.h>
 #include <ctime>
 #include <unistd.h>
-#include "./HttpWrapper/HttpWrapper.hpp"
-#include "./GameInfo/GameInfo.hpp"
-#include "./JsonUtils/JsonUtils.hpp"
+#include "HttpWrapper.hpp"
+#include "GameInfo.hpp"
+#include "JsonUtils.hpp"
 #include <rapidjson/document.h>
 #include <sstream>
 #include <iomanip>
@@ -27,32 +27,28 @@
 #include <nlohmann/json.hpp>
 #include <cstdio>
 
-using namespace std;
-using namespace nlohmann;
-using namespace rapidjson;
-
 namespace ALBot {
 
 	void* login(void *id) {
 		if (!HttpWrapper::login()) {
 			exit(1);
 		}
-		json config;
+		nlohmann::json config;
 		if (!HttpWrapper::getConfig(config)) {
 			exit(1);
 		}
 
 		if (!config["fetch"].is_null() && config["fetch"].get<bool>()) {
-			cout << "Instructed to fetch... fetching characters." << endl;
+			std::cout << "Instructed to fetch... fetching characters." << std::endl;
 			if (!HttpWrapper::getCharacters()) {
 				exit(1);
 			} else {
-				cout << "Writing characters to file..." << endl;
-				json _chars;
+				std::cout << "Writing characters to file..." << std::endl;
+				nlohmann::json _chars;
 				config["characters"] = _chars;
 				for (int i = 0; i < HttpWrapper::chars.size(); i++) {
 					HttpWrapper::Character *struct_char = HttpWrapper::chars[i];
-					json _char;
+					nlohmann::json _char;
 					_char["name"] = struct_char->name;
 					_char["id"] = struct_char->id;
 					_char["script"] = "Example";
@@ -64,12 +60,12 @@ namespace ALBot {
 				config["fetch"] = false;
 
 				std::ofstream o("bot.out.json");
-				o << setw(4) << config << std::endl;
-				cout << "Characters written to file!" << endl;
+				o << std::setw(4) << config << std::endl;
+				std::cout << "Characters written to file!" << std::endl;
 				exit(0);
 			}
 		}
-		cout << "Processing characters..." << endl;
+		std::cout << "Processing characters..." << std::endl;
 		if (!HttpWrapper::processCharacters(config["characters"])) {
 			exit(1);
 		}
@@ -78,7 +74,7 @@ namespace ALBot {
 		}
 		void *handle = dlopen("./libalbot-code.so", RTLD_LAZY);
 		if (!handle) {
-			cerr << "Cannot open library: " << dlerror() << '\n';
+			std::cerr << "Cannot open library: " << dlerror() << std::endl;
 			pthread_exit((void*) 1);
 		}
 		// load the symbol
@@ -90,23 +86,19 @@ namespace ALBot {
 		const char *dlsym_error = dlerror();
 
 		if (dlsym_error) {
-			cerr << "Cannot load symbol 'hello': " << dlsym_error << '\n';
+			std::cerr << "Cannot load symbol 'hello': " << dlsym_error << std::endl;
 			dlclose(handle);
 			pthread_exit((void*) 1);
 		}
 		// use it to do the calculation
-		cout << "Calling hello...\n";
 		pthread_t bot_thread;
 		GameInfo *info = new GameInfo;
 		info->server = nullptr;
-		cout << "uhoh" << endl;
 		info->server = HttpWrapper::servers[7];
-		cout << "What do we have here?" << endl;
 		info->character = HttpWrapper::chars[0];
 		info->auth = HttpWrapper::auth;
 		info->userId = HttpWrapper::userID;
 		void *ret;
-		cout << "It can't be, can it?" << endl;
 		pthread_create(&bot_thread, NULL, hello, (void*) info);
 		pthread_join(bot_thread, &ret);
 		pthread_exit(0);

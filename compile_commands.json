@@ -6,12 +6,12 @@
 },
 {
   "directory": "/home/linuxlite/shared/albot-cpp",
-  "command": "/usr/bin/c++      -std=c++17 -o CMakeFiles/albot-cpp.dir/src/HttpWrapper/HttpWrapper.cpp.o -c /home/linuxlite/shared/albot-cpp/src/HttpWrapper/HttpWrapper.cpp",
-  "file": "/home/linuxlite/shared/albot-cpp/src/HttpWrapper/HttpWrapper.cpp"
+  "command": "/usr/bin/c++      -std=c++17 -o CMakeFiles/albot-cpp.dir/src/JsonUtils.cpp.o -c /home/linuxlite/shared/albot-cpp/src/JsonUtils.cpp",
+  "file": "/home/linuxlite/shared/albot-cpp/src/JsonUtils.cpp"
 },
 {
   "directory": "/home/linuxlite/shared/albot-cpp",
-  "command": "/usr/bin/c++      -std=c++17 -o CMakeFiles/albot-cpp.dir/src/JsonUtils/JsonUtils.cpp.o -c /home/linuxlite/shared/albot-cpp/src/JsonUtils/JsonUtils.cpp",
-  "file": "/home/linuxlite/shared/albot-cpp/src/JsonUtils/JsonUtils.cpp"
+  "command": "/usr/bin/c++      -std=c++17 -o CMakeFiles/albot-cpp.dir/src/GameInfo.cpp.o -c /home/linuxlite/shared/albot-cpp/src/GameInfo.cpp",
+  "file": "/home/linuxlite/shared/albot-cpp/src/GameInfo.cpp"
 }
 ]

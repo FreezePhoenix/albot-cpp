@@ -10,7 +10,9 @@ project ("albot-cpp")
 # Add source to this project's executable.
 add_executable (albot-cpp
 	"src/albot-cpp.cpp"
-	"src/HttpWrapper/HttpWrapper.cpp" "src/JsonUtils/JsonUtils.cpp")
+	"src/JsonUtils.cpp"
+	"src/GameInfo.cpp"
+)
 
 # TODO: Add tests and install targets if needed.
 TARGET_LINK_LIBRARIES(albot-cpp PocoFoundation PocoNet ${CMAKE_DL_LIBS} spdlog)

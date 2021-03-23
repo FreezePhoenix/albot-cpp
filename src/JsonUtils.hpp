@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef JSONUTILS_HPP_
 #define JSONUTILS_HPP_
 
@@ -9,17 +11,12 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-using namespace std;
-using namespace rapidjson;
-using namespace sio;
-using namespace nlohmann;
-
 class JsonUtils {
 public:
-	static void parse(Document* json, string* str);
-	static sio::message::ptr createObject(json o);
-	static sio::message::ptr createArray(json o);
-	static void stripComments(string *str);
+	static void parse(rapidjson::Document* json, std::string* str);
+	static sio::message::ptr createObject(nlohmann::json o);
+	static sio::message::ptr createArray(nlohmann::json o);
+	static void stripComments(std::string *str);
 };
 
 #endif /* JSONUTILS_HPP_ */

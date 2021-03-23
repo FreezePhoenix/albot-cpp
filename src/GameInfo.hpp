@@ -1,11 +1,11 @@
+#pragma once
 
 #ifndef GAMEINFO_HPP_
 #define GAMEINFO_HPP_
 
-#include "../HttpWrapper/HttpWrapper.hpp"
+#include "HttpWrapper.hpp"
 #include <rapidjson/document.h>
 
-using namespace std;
 using namespace rapidjson;
 
 typedef Value GameData;
@@ -15,8 +15,8 @@ class GameInfo {
 		HttpWrapper::Character* character;
 		HttpWrapper* wrapper;
 		GameData *G;
-		string auth;
-		string userId;
+		std::string auth;
+		std::string userId;
 };
 
 
