@@ -15,7 +15,7 @@ add_library ("${prjName}" SHARED
 )
 
 # TODO: Add tests and install targets if needed.
-add_subdirectory(IXWebSocket)
+add_subdirectory(../../IXWebSocket)
 TARGET_LINK_LIBRARIES("${prjName}" sioclient ixwebsocket)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
