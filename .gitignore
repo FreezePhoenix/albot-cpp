@@ -33,12 +33,12 @@
 albot-cpp
 
 # secrets
-.env
-out
-CMakeCache.txt
-/CMakeFiles/
-.settings
-.vs
-/build/
-bot.json
-bot.out.json
+*.env
+*out
+*CMakeCache.txt
+*/CMakeFiles/
+*.settings
+*.vs
+*/build/
+*bot.json
+*bot.out.json
