@@ -24,8 +24,6 @@ SocketWrapper::SocketWrapper(std::string characterId, std::string fullUrl, Bot& 
     } else {
         this->webSocket.setUrl(fullUrl);
     }
-    this->player.log(fullUrl);
-    this->player.log(characterId);
     this->pingInterval = 4000;
     lastPing = std::chrono::high_resolution_clock::now();
 
