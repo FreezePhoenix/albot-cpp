@@ -9,7 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <chrono>
-#include "Bot.hpp"
+#include "../../../src/Bot.hpp"
 #include "../../../src/HttpWrapper.hpp"
 #include <functional>
 #include <algorithm>

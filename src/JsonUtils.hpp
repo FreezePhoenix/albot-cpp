@@ -6,17 +6,28 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
-#include "sio_message.h"
 #include <sstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 
 class JsonUtils {
 public:
-	static void parse(rapidjson::Document* json, std::string* str);
-	static sio::message::ptr createObject(nlohmann::json o);
-	static sio::message::ptr createArray(nlohmann::json o);
-	static void stripComments(std::string *str);
+	static void parse(rapidjson::Document* _json, std::string* str)  {
+		_json->Parse(str->c_str());
+	};
+	static void stripComments(std::string *str)  {
+		rapidjson::Document _json;
+		_json.Parse<rapidjson::kParseCommentsFlag | rapidjson::kParseTrailingCommasFlag>(str->c_str());
+		if(_json.HasParseError()) {
+			std::cout << _json.GetParseError() << std::endl;
+			std::cout << _json.GetErrorOffset() << std::endl;
+		}
+		rapidjson::StringBuffer buffer;
+		rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+		_json.Accept(writer);
+		const char* output = buffer.GetString();
+		str->assign(output);
+	};
 };
 
 #endif /* JSONUTILS_HPP_ */

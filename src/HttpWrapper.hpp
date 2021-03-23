@@ -1,7 +1,10 @@
+#pragma once
+
 #ifndef HTTPWRAPPER_HPP_
 #define HTTPWRAPPER_HPP_
 
-#include <Poco/Net/HTTPClientSession.h>
+#include <Poco/Net/HTTPSClientSession.h>
+#include <Poco/Net/SSLException.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
 #include <Poco/URI.h>
@@ -36,8 +39,8 @@ class HttpWrapper {
 		inline static std::string sessionCookie = "";
 		inline static std::string auth = "";
 		inline static Poco::Net::NameValueCollection cookie = Poco::Net::NameValueCollection();
-		inline static std::vector<Character*> chars = std::vector<Character*>();
-		inline static std::vector<Server*> servers = std::vector<Server*>();
+		inline static std::vector<HttpWrapper::Character*> chars = std::vector<Character*>();
+		inline static std::vector<HttpWrapper::Server*> servers = std::vector<Server*>();
 		inline static std::string userID = "";
 		bool static getConfig(nlohmann::json &config) {
 			std::cout << "Reading config..." << std::endl;
@@ -67,7 +70,7 @@ class HttpWrapper {
 			if (path.empty()) {
 				path = "/";
 			}
-			Poco::Net::HTTPClientSession session(uri.getHost(), uri.getPort());
+			Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
 
 			Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_POST, path, Poco::Net::HTTPMessage::HTTP_1_1);
 			Poco::Net::HTTPResponse response;
@@ -128,19 +131,20 @@ class HttpWrapper {
 			std::cout << "Attempting to log in..." << std::endl;
 			// Open the .env file.
 			std::ifstream envfile("./../../.env");
-			if (envfile.is_open()) {
+			try {
+				if (envfile.is_open()) {
 				// Read the email and password from a .env file...
 				std::getline(envfile, email);
 				std::getline(envfile, password);
 				// Attempt to connect to the server. Since we don't need to copy the output,
 				// We pass a nullptr for the output. TODO: Get support for HTTP HEADERS verb.
-				if (doRequest("http://adventure.land", nullptr)) {
+				if (doRequest("https://adventure.land", nullptr)) {
 					std::cout << "Successfully connected to server!" << std::endl;
 					std::string args("arguments={\"email\":\"" + email + "\",\"password\":\"" + password + "\",\"only_login\":true}&method=signup_or_login");
 					std::vector < Poco::Net::HTTPCookie > cookies;
 					// Again, we don't *really* care about the output the server sends us...
 					// We just want the cookies.
-					if (doPost("http://adventure.land/api/signup_or_login", args, nullptr, &cookies)) {
+					if (doPost("https://adventure.land/api/signup_or_login", args, nullptr, &cookies)) {
 						for (unsigned int i = 0; i < cookies.size(); i++) {
 							Poco::Net::HTTPCookie _cookie = cookies[i];
 							if (_cookie.getName() == "auth") {
@@ -166,6 +170,9 @@ class HttpWrapper {
 			} else {
 				std::cout << ".env file does not exist! Aborting." << std::endl;
 				return false;
+			}
+			} catch(Poco::Net::SSLException e) {
+				std::cout << e.displayText() << std::endl;
 			}
 		}
 		bool static getCharacters() {
@@ -289,7 +296,7 @@ class HttpWrapper {
 
 		bool static apiMethod(std::string method, std::string args, std::string *str) {
 			std::string args_string = "arguments=" + args + "&method=" + method;
-			return doPost("http://adventure.land/api/" + method, args_string, str);
+			return doPost("https://adventure.land/api/" + method, args_string, str);
 		}
 };
 

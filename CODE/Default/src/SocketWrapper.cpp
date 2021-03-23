@@ -19,8 +19,8 @@ SocketWrapper::SocketWrapper(std::string characterId, std::string fullUrl, Bot& 
     // By adding this, the connection can be established as a websocket connection.
     // A real socket.io client likely uses this or something similar internally
     fullUrl += "/socket.io/?EIO=3&transport=websocket";
-    if (fullUrl.find("ws://") == std::string::npos) {
-        this->webSocket.setUrl("ws://" + fullUrl);
+    if (fullUrl.find("wss://") == std::string::npos) {
+        this->webSocket.setUrl("wss://" + fullUrl);
     } else {
         this->webSocket.setUrl(fullUrl);
     }
@@ -111,7 +111,7 @@ void SocketWrapper::initializeSystem() {
                     return;
                 }
                 if (monster.find("hp") == monster.end()) {
-                    this->player.log("Eek!");
+                    this->player.log("Eep!");
                 	// monster["hp"] = player.getClient().getData()["monsters"][std::string(monster["mtype"])]["hp"];
                     if (monster.find("max_hp") == monster.end()) monster["max_hp"] = monster["hp"];
                 }
@@ -413,7 +413,6 @@ void SocketWrapper::dispatchEvent(std::string eventName, const nlohmann::json& e
 }
 
 void SocketWrapper::deleteEntities() {
-
     for (auto it = entities.begin(); it != entities.end();) {
         if (getOrElse((*it).second, "dead", false) || getOrElse((*it).second, "rip", false) || (*it).second.is_null()) {
             it = entities.erase(it);

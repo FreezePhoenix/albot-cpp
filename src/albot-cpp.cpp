@@ -7,7 +7,6 @@
 //============================================================================
 
 #include <iostream>
-#include "sio_client.h"
 #include <dlfcn.h>
 #include <chrono>
 #include <pthread.h>
@@ -29,6 +28,57 @@
 
 namespace ALBot {
 
+	inline std::string NULL_PIPE = " > /dev/null 2> /dev/null";
+	void clean_code() {
+		system("rm CODE/*.so");
+	}
+	void build_code(std::string name, std::string char_name) {
+		std::string CMAKE = "cmake CODE/" + name + "/." + NULL_PIPE;
+		std::string MAKE = "make --quiet -C CODE/" + name + "/." + NULL_PIPE;
+		std::string CP = "cp CODE/" + name + "/lib" + name + ".so CODE/" + char_name + ".so" + NULL_PIPE;
+		std::cout << "Running CMake on: CODE/" << name << std::endl;
+		system(CMAKE.c_str());
+		std::cout << "Finished. Compiling..." << std::endl;
+		system(MAKE.c_str());
+		std::cout << "Finished. Copying..." << std::endl;
+		system(CP.c_str());
+		std::cout << "Finished." << std::endl;
+	}
+	void start_character(int index) {
+		
+		build_code(HttpWrapper::chars[index]->script, HttpWrapper::chars[index]->name);
+		pthread_t bot_thread;
+		GameInfo *info = new GameInfo;
+		info->server = nullptr;
+		info->server = HttpWrapper::servers[7];
+		info->character = HttpWrapper::chars[index];
+		info->auth = HttpWrapper::auth;
+		info->userId = HttpWrapper::userID;
+		std::string file = "CODE/" + HttpWrapper::chars[index]->name + ".so";
+		void *handle = dlopen(file.c_str(), RTLD_LAZY);
+		if (!handle) {
+			std::cerr << "Cannot open library: " << dlerror() << std::endl;
+			pthread_exit((void*) 1);
+		}
+		// load the symbol
+		typedef void* (*init_t)(void*);
+		// reset errors
+		dlerror();
+		init_t hello = (init_t) dlsym(handle, "init");
+
+		const char *dlsym_error = dlerror();
+
+		if (dlsym_error) {
+			std::cerr << "Cannot load symbol 'hello': " << dlsym_error << std::endl;
+			dlclose(handle);
+			pthread_exit((void*) 1);
+		}
+		void *ret;
+		pthread_create(&bot_thread, NULL, hello, (void*) info);
+		pthread_join(bot_thread, &ret);
+		pthread_exit(0);
+	}
+
 	void* login(void *id) {
 		if (!HttpWrapper::login()) {
 			exit(1);
@@ -46,6 +96,7 @@ namespace ALBot {
 				std::cout << "Writing characters to file..." << std::endl;
 				nlohmann::json _chars;
 				config["characters"] = _chars;
+
 				for (int i = 0; i < HttpWrapper::chars.size(); i++) {
 					HttpWrapper::Character *struct_char = HttpWrapper::chars[i];
 					nlohmann::json _char;
@@ -72,47 +123,14 @@ namespace ALBot {
 		if (!HttpWrapper::getServers()) {
 
 		}
-		void *handle = dlopen("./libalbot-code.so", RTLD_LAZY);
-		if (!handle) {
-			std::cerr << "Cannot open library: " << dlerror() << std::endl;
-			pthread_exit((void*) 1);
-		}
-		// load the symbol
-		typedef void* (*init_t)(void*);
-		// reset errors
-		dlerror();
-		init_t hello = (init_t) dlsym(handle, "init");
-
-		const char *dlsym_error = dlerror();
-
-		if (dlsym_error) {
-			std::cerr << "Cannot load symbol 'hello': " << dlsym_error << std::endl;
-			dlclose(handle);
-			pthread_exit((void*) 1);
-		}
-		// use it to do the calculation
-		pthread_t bot_thread;
-		GameInfo *info = new GameInfo;
-		info->server = nullptr;
-		info->server = HttpWrapper::servers[7];
-		info->character = HttpWrapper::chars[0];
-		info->auth = HttpWrapper::auth;
-		info->userId = HttpWrapper::userID;
-		void *ret;
-		pthread_create(&bot_thread, NULL, hello, (void*) info);
-		pthread_join(bot_thread, &ret);
-		pthread_exit(0);
+		clean_code();
+		start_character(0);
 	}
-
-	void main() {
-		pthread_t login_thread;
-		void *ret;
-		pthread_create(&login_thread, NULL, login, (void*) 0);
-		pthread_join(login_thread, &ret);
-	}
-
 }
 
 int main() {
-	ALBot::main();
+	pthread_t login_thread;
+		void *ret;
+		pthread_create(&login_thread, NULL, ALBot::login, (void*) 0);
+		pthread_join(login_thread, &ret);
 }

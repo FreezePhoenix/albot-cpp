@@ -3,6 +3,8 @@
 
 #include <bits/types/FILE.h>
 #include <pthread.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filewritestream.h>
 #include <rapidjson/rapidjson.h>
@@ -14,27 +16,25 @@
 #include "HttpWrapper.hpp"
 #include <iostream>
 #include <string>
-#include "sio_client.h"
-#include "sio_socket.h"
-#include "sio_message.h"
 
-using namespace std;
-using namespace sio;
 using namespace rapidjson;
 
 #define PROXY_GETTER(capName, type) type get##capName();
 
 class Bot {
+	protected:
+		static auto inline const mLogger = spdlog::stdout_color_mt("Bot");;
 	public:
 		Bot(void *id);
 		nlohmann::json data;
 		nlohmann::json party;
 		GameInfo *info;
-		string name;
-		string id;
-		void log(string str);
-		void join_server(string str);
+		std::string name;
+		std::string id;
+		void log(std::string str);
+		void join_server(std::string str);
 		void login();
+		bool isMoving();
 	    virtual void onPartyRequest(std::string /* name */) {};
 	    virtual void onPartyInvite(std::string /* name */) {};
 		virtual void onCm(const std::string& /* name */, const nlohmann::json& /* data */) {};
@@ -45,7 +45,7 @@ class Bot {
 		void start();
 		void stop();
 		void updateJson(const nlohmann::json&);
-		string getUsername();
+		std::string getUsername();
 		nlohmann::json& getRawJson();
 
 		PROXY_GETTER(X, double)

@@ -1,5 +1,4 @@
-﻿#include "./Bot.hpp"
-#include <bits/types/FILE.h>
+﻿#include <bits/types/FILE.h>
 #include <pthread.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filewritestream.h>
@@ -11,14 +10,12 @@
 #include <string>
 #include <mutex>
 #include <condition_variable>
+#include "../../../src/Bot.hpp"
 #include "../../../src/HttpWrapper.hpp"
 #include "SocketWrapper.hpp"
 #include "../../../src/GameInfo.hpp"
-#include "./sio_client.h"
 #include "../../../src/JsonUtils.hpp"
 
-using namespace std;
-using namespace sio;
 using namespace rapidjson;
 
 std::mutex _lock;
@@ -27,30 +24,6 @@ std::condition_variable_any _cond;
 Bot::Bot(void *id) {
 	this->info = (GameInfo*) id;
 }
-
-class connection_listener {
-		sio::client &handler;
-
-	public:
-
-		connection_listener(sio::client &h) : handler(h) {
-		}
-
-		void on_connected() {
-			_lock.lock();
-			_cond.notify_all();
-			_lock.unlock();
-		}
-		void on_close(client::close_reason const &reason) {
-			std::cout << "sio closed " << std::endl;
-			exit(0);
-		}
-
-		void on_fail() {
-			std::cout << "sio failed " << std::endl;
-			exit(0);
-		}
-};
 
 #define PROXY_GETTER_IMPL(cls, name, capName, type)                                                                    \
     type cls::get##capName() { return data[name].get<type>(); }
@@ -69,7 +42,6 @@ PROXY_GETTER_IMPL(Bot, "speed", Speed, int)
 PROXY_GETTER_IMPL(Bot, "gold", Gold, long long)
 PROXY_GETTER_IMPL(Bot, "id", Id, std::string)
 
-
 nlohmann::json& Bot::getRawJson() {
 	return this->data;
 }
@@ -77,32 +49,35 @@ nlohmann::json& Bot::getRawJson() {
 void Bot::start() {}
 
 void Bot::stop() {}
+bool Bot::isMoving() { 
+	return data.value("moving", false);
+}
 
 
 void Bot::onConnect() {
 	this->log("Connected!");
+	this->stop();
 }
 
 void Bot::updateJson(const nlohmann::json& json) {
     this->data.update(json);
 }
 
-string Bot::getUsername() {
+std::string Bot::getUsername() {
 	return this->name;
 }
 
-void Bot::log(string str) {
-	cout << "(" << this->info->character->name << "): " << str << endl;
+void Bot::log(std::string str) {
+	mLogger->info("[" + this->name + "]: " + str);
 }
 
 class BotImpl: public Bot {
 	private:
 		SocketWrapper wrapper;
 	public:
-		BotImpl(void *id): Bot(id), wrapper(to_string(info->character->id), this->info->server->url, *this) {
+		BotImpl(void *id): Bot(id), wrapper(std::to_string(info->character->id), this->info->server->url, *this) {
 			this->name = info->character->name;
 			this->id = info->character->id;
-
 		}
 		void start() {
 			 wrapper.connect();
