@@ -22,6 +22,20 @@ class HttpWrapper {
 		inline static std::string password = "";
 		inline static std::string email = "";
 	public:
+		class GameData {
+			private:
+				nlohmann::json data;
+			public:
+				// This should never be used intentionally!
+				GameData() {}
+				GameData(std::string& rawJson) : data(nlohmann::json::parse(rawJson)) {}
+				GameData(const GameData& old) : data(old.data) {}
+				
+				const nlohmann::json& getData() const { return data; }
+
+				const nlohmann::json& operator[](const std::string& key) const { return data[key]; }
+				const nlohmann::json& at(const std::string& key) const { return data[key]; }
+		};
 		struct Character {
 				std::string name;
 				long id;
@@ -36,12 +50,28 @@ class HttpWrapper {
 				std::string identifier;
 				std::string url;
 		};
+		inline static HttpWrapper::GameData data;
 		inline static std::string sessionCookie = "";
 		inline static std::string auth = "";
 		inline static Poco::Net::NameValueCollection cookie = Poco::Net::NameValueCollection();
 		inline static std::vector<HttpWrapper::Character*> chars = std::vector<Character*>();
 		inline static std::vector<HttpWrapper::Server*> servers = std::vector<Server*>();
 		inline static std::string userID = "";
+		inline static nlohmann::json* config;
+		bool static getGameData() {
+			std::string raw_data; 
+			if(doRequest("https://adventure.land/data.js", &raw_data)) {
+				std::cout << "Data fetched! Trimming..." << std::endl;
+				raw_data = raw_data.substr(6, raw_data.length() - 8);
+				std::cout << "Data trimmed! Parsing..." << std::endl;
+				HttpWrapper::data = GameData(raw_data);
+				std::cout << "Data parsed!" << std::endl;
+				return true;
+			} else {
+				std::cout << "Fetching data failed! Aborting." << std::endl;
+				return false;
+			};
+		}
 		bool static getConfig(nlohmann::json &config) {
 			std::cout << "Reading config..." << std::endl;
 			std::ifstream configfile("bot.json");
@@ -106,7 +136,7 @@ class HttpWrapper {
 			if (path.empty()) {
 				path = "/";
 			}
-			Poco::Net::HTTPClientSession session(uri.getHost(), uri.getPort());
+			Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
 
 			Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, path, Poco::Net::HTTPMessage::HTTP_1_1);
 

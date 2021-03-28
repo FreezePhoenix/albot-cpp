@@ -10,8 +10,9 @@ set(USE_TLS TRUE)
 # Add source to this project's executable.
 get_filename_component(prjName "${CMAKE_SOURCE_DIR}" NAME_WLE)
 add_library ("${prjName}" SHARED
-	"src/Bot.cpp"
-	"src/SocketWrapper.cpp"
+	"src/BotImpl.cpp"
+  "../../src/Bot.cpp"
+	"../../src/SocketWrapper.cpp"
 )
 
 # TODO: Add tests and install targets if needed.

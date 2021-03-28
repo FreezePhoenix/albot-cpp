@@ -9,8 +9,8 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <chrono>
-#include "../../../src/Bot.hpp"
-#include "../../../src/HttpWrapper.hpp"
+#include "Bot.hpp"
+#include "HttpWrapper.hpp"
 #include <functional>
 #include <algorithm>
 #include <regex>

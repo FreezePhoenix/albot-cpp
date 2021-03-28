@@ -8,13 +8,12 @@
 
 using namespace rapidjson;
 
-typedef Value GameData;
 class GameInfo {
 	public:
 		HttpWrapper::Server* server;
 		HttpWrapper::Character* character;
 		HttpWrapper* wrapper;
-		GameData *G;
+		HttpWrapper::GameData *G;
 		std::string auth;
 		std::string userId;
 };

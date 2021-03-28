@@ -24,6 +24,7 @@
 #include <rapidjson/writer.h>
 #include "Bot.hpp"
 #include <nlohmann/json.hpp>
+#include "MapProcessing/MapProcessing.hpp"
 #include <cstdio>
 
 namespace ALBot {
@@ -124,6 +125,9 @@ namespace ALBot {
 		if (!HttpWrapper::getServers()) {
 
 		}
+		HttpWrapper::getGameData();
+		MapProcessing::MapInfo* map = MapProcessing::parseMap(HttpWrapper::data["geometry"]["main"]);
+		MapProcessing::simplify_lines(map);
 		clean_code();
 		start_character(0);
 	}

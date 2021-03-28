@@ -17,8 +17,6 @@
 #include <iostream>
 #include <string>
 
-using namespace rapidjson;
-
 #define PROXY_GETTER(capName, type) type get##capName();
 
 class Bot {
