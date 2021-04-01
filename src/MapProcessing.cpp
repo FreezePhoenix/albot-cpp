@@ -1,57 +1,27 @@
-#include <map>
-#include <math.h>
-#include <vector>
-#include <nlohmann/json.hpp>
-#include <iostream>
+#include "MapProcessing.hpp"
 
 namespace MapProcessing {
-    struct Tuple {
-        short first;
-        short second;
-        unsigned int hash;
-        Tuple(short first, short second) {
-            this->first = first;
-            this->second = second;
-            hash = static_cast<ushort>(first) << 16 | static_cast<ushort>(second);
-        }
-    };
-    struct MapInfo {
-        std::vector<std::vector<short>> x_lines;
-        std::vector<std::vector<short>> y_lines;
-    };
-
-    bool overlaps(short a, short b, short c, short d) {
+    bool  overlaps(short a, short b, short c, short d) {
         short start1 = std::min(a, b);
         short end1 = std::max(a, b);
         short start2 = std::min(c, d);
         short end2 = std::max(c, d);
         if(start1 <= start2 && start2 <= end1) {
-			return true;
-		}
-		if(start1 <= end2 && end2 <= end1) {
-			return true;
-		}
-		if(start2 <= start1 && start1 <= end2) {
-			return true;
-		}
-		if(start2 <= end1 && end1 <= end2) {
-			return true;
-		}
-		return false;
-    }
-
-    // I really hate using templates but god do they look cool
-    template<typename _Tp>
-    inline const _Tp& min(const _Tp& a, const _Tp& b, const _Tp& c, const _Tp& d) {
-        return std::min<_Tp>(std::min<_Tp>(a, b), std::min<_Tp>(c, d));
-    }
-    template<typename _Tp>
-    inline const _Tp& max(const _Tp& a, const _Tp& b, const _Tp& c, const _Tp& d) {
-        return std::max<_Tp>(std::max<_Tp>(a, b), std::max<_Tp>(c, d));
+            return true;
+        }
+        if(start1 <= end2 && end2 <= end1) {
+            return true;
+        }
+        if(start2 <= start1 && start1 <= end2) {
+            return true;
+        }
+        if(start2 <= end1 && end1 <= end2) {
+            return true;
+        }
+        return false;
     }
 
     typedef std::map<short, std::vector<Tuple>> shortTupleVector;
-    // Accepts the "G.maps[<map_name>].data property."
     MapInfo* parseMap(const nlohmann::json& json) {
         MapInfo* info = new MapInfo();
         std::cout << "Parsing map..." << std::endl;

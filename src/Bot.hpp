@@ -5,19 +5,15 @@
 #include <pthread.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
-#include <rapidjson/document.h>
-#include <rapidjson/filewritestream.h>
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/writer.h>
-#include <nlohmann/json.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include "GameInfo.hpp"
 #include "HttpWrapper.hpp"
 #include <iostream>
-#include <string>
 
 #define PROXY_GETTER(capName, type) type get##capName();
+
+enum CharacterType { PRIEST = 1, MAGE = 2, RANGER = 3, ROGUE = 4, WARRIOR = 5, PALADIN = 6, MERCHANT = 7 };
 
 class Bot {
 	protected:
@@ -45,6 +41,7 @@ class Bot {
 		void updateJson(const nlohmann::json&);
 		std::string getUsername();
 		nlohmann::json& getRawJson();
+		void setParty(const nlohmann::json& j);
 
 		PROXY_GETTER(X, double)
 		PROXY_GETTER(Y, double)

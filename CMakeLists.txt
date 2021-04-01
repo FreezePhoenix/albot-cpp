@@ -4,12 +4,14 @@
 cmake_minimum_required (VERSION 3.5)
 
 add_definitions(-std=c++17 -w)
-
 project ("albot-cpp")
 
 # Add source to this project's executable.
 add_executable (albot-cpp
 	"src/albot-cpp.cpp"
+  "src/JsonUtils.cpp"
+  "src/MapProcessing.cpp"
+  "src/HttpWrapper.cpp"
 )
 
 # TODO: Add tests and install targets if needed.

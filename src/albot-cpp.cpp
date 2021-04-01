@@ -8,24 +8,14 @@
 
 #include <iostream>
 #include <dlfcn.h>
-#include <chrono>
 #include <pthread.h>
-#include <ctime>
-#include <unistd.h>
 #include "HttpWrapper.hpp"
 #include "GameInfo.hpp"
 #include "JsonUtils.hpp"
-#include <rapidjson/document.h>
-#include <sstream>
 #include <iomanip>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/filewritestream.h>
-#include <rapidjson/writer.h>
 #include "Bot.hpp"
 #include <nlohmann/json.hpp>
-#include "MapProcessing/MapProcessing.hpp"
-#include <cstdio>
+#include "MapProcessing.hpp"
 
 namespace ALBot {
 
@@ -47,7 +37,6 @@ namespace ALBot {
 		std::cout << "Finished." << std::endl;
 	}
 	void start_character(int index) {
-		
 		build_code(HttpWrapper::chars[index]->script, HttpWrapper::chars[index]->name);
 		pthread_t bot_thread;
 		GameInfo *info = new GameInfo;

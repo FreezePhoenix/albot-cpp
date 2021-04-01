@@ -110,7 +110,7 @@ void SocketWrapper::initializeSystem() {
                 }
                 if (monster.find("hp") == monster.end()) {
                     this->player.log("Eep!");
-                	// monster["hp"] = player.getClient().getData()["monsters"][std::string(monster["mtype"])]["hp"];
+                	monster["hp"] = HttpWrapper::data.getData()["monsters"][std::string(monster["mtype"])]["hp"];
                     if (monster.find("max_hp") == monster.end()) monster["max_hp"] = monster["hp"];
                 }
                 if (this->updatedEntities.find(id) == updatedEntities.end())
@@ -154,11 +154,11 @@ void SocketWrapper::initializeSystem() {
         player.updateJson(event);
         if (player.getSpeed() != cachedSpeed) {
         	this->player.log("Should update movement speed... but...");
-//            if (player.isMoving()) {
-//                auto vxy = MovementMath::calculateVelocity(player.getRawJson());
-//                player.getRawJson()["vx"] = vxy.first;
-//                player.getRawJson()["vy"] = vxy.second;
-//            }
+            if (player.isMoving()) {
+               auto vxy = MovementMath::calculateVelocity(player.getRawJson());
+               player.getRawJson()["vx"] = vxy.first;
+               player.getRawJson()["vy"] = vxy.second;
+           }
         }
     });
     this->registerEventCallback("new_map", [this](const nlohmann::json& event) {
@@ -193,7 +193,7 @@ void SocketWrapper::initializeSystem() {
     });
     this->registerEventCallback("party_update", [this](const nlohmann::json& event) {
         this->player.log("Party updated.");
-    	// player.setParty(event["party"]);
+    	player.setParty(event["party"]);
     });
 
     this->registerEventCallback("game_error", [this](const nlohmann::json& event) {

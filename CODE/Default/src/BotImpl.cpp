@@ -1,17 +1,13 @@
 ﻿#include <bits/types/FILE.h>
 #include <pthread.h>
-#include <rapidjson/document.h>
-#include <rapidjson/filewritestream.h>
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/writer.h>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <mutex>
 #include <condition_variable>
-#include "../../../src/Bot.hpp"
-#include "../../../src/HttpWrapper.hpp"
+#include "Bot.hpp"
+#include "HttpWrapper.hpp"
 #include "../../../src/SocketWrapper.hpp"
 #include "../../../src/GameInfo.hpp"
 #include "../../../src/JsonUtils.hpp"
@@ -27,7 +23,7 @@ class BotImpl: public Bot {
 			this->id = info->character->id;
 		}
 		void start() {
-			 wrapper.connect();
+			wrapper.connect();
 		}
 		void stop() {
 			wrapper.close();

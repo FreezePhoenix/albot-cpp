@@ -10,11 +10,11 @@
 #include <string>
 #include <mutex>
 #include <condition_variable>
-#include "../../../src/Bot.hpp"
-#include "../../../src/HttpWrapper.hpp"
-#include "../../../src/SocketWrapper.hpp"
-#include "../../../src/GameInfo.hpp"
-#include "../../../src/JsonUtils.hpp"
+#include "Bot.hpp"
+#include "HttpWrapper.hpp"
+#include "SocketWrapper.hpp"
+#include "GameInfo.hpp"
+#include "JsonUtils.hpp"
 
 std::mutex _lock;
 std::condition_variable_any _cond;
@@ -50,7 +50,9 @@ void Bot::stop() {}
 bool Bot::isMoving() { 
 	return data.value("moving", false);
 }
-
+void Bot::setParty(const nlohmann::json& j) {
+	party.update(j);
+}
 
 void Bot::onConnect() {
 	this->log("Connected!");
