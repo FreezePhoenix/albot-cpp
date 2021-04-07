@@ -26,6 +26,10 @@ Customize CODE/YourScript/src/BotImpl.cpp. Currently, this project is *very* ear
 
 Finally, edit bot.json's fetch property to false. Then, run `./albot-cpp`, watch it build your code, and run it!
 
+## Thanks for using it!
+
+If you do use this, I would be glad to know, I'm `Aria / Freeze#4333` on discord, if you have any suggestions or changes that you would like to be made, just let me know!
+
 ## Credits
 
 Huge thanks to LunarWatcher for the PlayerSkeleton/Player pattern, SocketWrapper class, MovementMath class, and advice on general C++ styling.
