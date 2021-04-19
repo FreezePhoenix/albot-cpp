@@ -1,0 +1,16 @@
+name: "build"
+
+on:
+  push:
+    branches:
+      - master
+    pull_request:
+
+jobs:
+  build:
+    name: "Test build"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Build:checkout"
+        uses: actions/checkout@v2
+      - name: "build:dockerimage"

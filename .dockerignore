@@ -1,0 +1,22 @@
+.git/
+.gitignore
+.gitmodules
+
+# Executables
+*.exe
+*.out
+*.app
+albot-cpp
+Makefile
+
+# secrets
+**/.env
+**/out
+**/CMakeCache.txt
+**/CMakeFiles/
+**/cmake_install.cmake
+**/.settings
+**.vs
+**/build/
+**/bot.json
+**/bot.out.json

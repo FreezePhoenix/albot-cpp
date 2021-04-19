@@ -1,0 +1,9 @@
+version: "2"
+services:
+  compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: alpine
+    container_name: compiler
+    working_dir: /var/albot-cpp
