@@ -43,5 +43,5 @@ Makefile
 **/build/
 **/bot.json
 **/bot.out.json
-cmake_install.cmake
+**/cmake_install.cmake
 
