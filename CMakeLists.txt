@@ -13,7 +13,6 @@ add_executable (albot-cpp
   "src/MapProcessing.cpp"
   "src/HttpWrapper.cpp"
 )
-
 # TODO: Add tests and install targets if needed.
 TARGET_LINK_LIBRARIES(albot-cpp PocoFoundation PocoNet ${CMAKE_DL_LIBS} spdlog PocoNetSSL)
 find_package(Threads REQUIRED)

@@ -260,7 +260,7 @@ bool HttpWrapper::processServers(nlohmann::json &servers) {
                 HttpWrapper::servers[i]->port = server["port"].get<int>();
                 HttpWrapper::servers[i]->ip = server["addr"].get<std::string>();
                 HttpWrapper::servers[i]->url = server["addr"].get<std::string>() + ":" + std::to_string(server["port"].get<int>());
-                // HttpWrapper::servers[i]->fullName = std::make_pair(server["region"].get<string>(), server["name"].get<string>());
+                HttpWrapper::servers[i]->fullName = server["region"].get<std::string>() + " " + server["name"].get<std::string>();
             }
         } else {
             std::cout << "Servers array was not an array! Aborting." << std::endl;

@@ -1,4 +1,4 @@
-#include "./SocketWrapper.hpp"
+#include "SocketWrapper.hpp"
 
 #define WIDTH_HEIGHT_SCALE                                                                                             \
     {"width", 1920}, {"height", 1080}, { "scale", 2 }
@@ -110,7 +110,7 @@ void SocketWrapper::initializeSystem() {
                 }
                 if (monster.find("hp") == monster.end()) {
                     this->player.log("Eep!");
-                	monster["hp"] = HttpWrapper::data.getData()["monsters"][std::string(monster["mtype"])]["hp"];
+                	monster["hp"] = this->player.info->G->getData()["monsters"][std::string(monster["mtype"])]["hp"];
                     if (monster.find("max_hp") == monster.end()) monster["max_hp"] = monster["hp"];
                 }
                 if (this->updatedEntities.find(id) == updatedEntities.end())

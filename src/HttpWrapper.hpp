@@ -44,6 +44,7 @@ class HttpWrapper {
 				std::string ip;
 				std::string identifier;
 				std::string url;
+				std::string fullName;
 		};
 		static HttpWrapper::GameData data;
 		static std::string sessionCookie;

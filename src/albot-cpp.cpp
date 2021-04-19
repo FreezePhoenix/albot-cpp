@@ -40,11 +40,20 @@ namespace ALBot {
 		build_code(HttpWrapper::chars[index]->script, HttpWrapper::chars[index]->name);
 		pthread_t bot_thread;
 		GameInfo *info = new GameInfo;
-		info->server = nullptr;
-		info->server = HttpWrapper::servers[7];
+		int server_index = 0;
+		for(int i = 0; i < HttpWrapper::servers.size(); i++) {
+			HttpWrapper::Server* server = HttpWrapper::servers[i];
+			if(server->fullName == HttpWrapper::chars[index]->server) {
+				server_index = i;
+				std::cout << "Server found!" << std::endl;
+				break;
+			}
+		}
+		info->server = HttpWrapper::servers[server_index];
 		info->character = HttpWrapper::chars[index];
 		info->auth = HttpWrapper::auth;
 		info->userId = HttpWrapper::userID;
+		info->G = &HttpWrapper::data;
 		std::string file = "CODE/" + HttpWrapper::chars[index]->name + ".so";
 		void *handle = dlopen(file.c_str(), RTLD_LAZY);
 		if (!handle) {
