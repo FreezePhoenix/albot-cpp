@@ -14,3 +14,4 @@ jobs:
       - name: "Build:checkout"
         uses: actions/checkout@v2
       - name: "build:dockerimage"
+        uses: docker/build-push-actions@v1
