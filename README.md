@@ -2,6 +2,17 @@
 
 This is an alternative to a JS bot for Adventure Land. Currently in the very early testing phases, I would love feedback.
 
+## Dependencies
+
+The following dependencies need to be installed to compile albot-cpp:
+
+ - nlohmann-json (`nlohmann-json3-dev`)
+ - RapidJSON (`rapidjson-dev`)
+ - LibPOCO (`libpoco-dev`, `libpocofoundation62`, `libpoconet62`, and `libpoconetssl62`)
+ - spdlog (`libspdlog1` and `libspdlog-dev`)
+
+All dependencies should be installable using `sudo apt-get install`
+
 ## Use
 
 All files should be created at the root of the git directory.
