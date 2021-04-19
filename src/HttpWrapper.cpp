@@ -111,7 +111,7 @@ bool HttpWrapper::doRequest(std::string url, std::string *str) {
 bool HttpWrapper::login() {
     std::cout << "Attempting to log in..." << std::endl;
     // Open the .env file.
-    std::ifstream envfile("./../../.env");
+    std::ifstream envfile(".env");
     try {
         if (envfile.is_open()) {
         // Read the email and password from a .env file...
