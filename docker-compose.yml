@@ -1,12 +1,16 @@
 version: "2"
 services:
-  compiler:
+  albot-cpp:
+    # Say where the work directory and docker file is for this service
     build:
       context: .
       dockerfile: Dockerfile
+    # Base image
     image: ubuntu:20.10
-    container_name: compiler
+    container_name: albot-cpp
+    # Work directory inside image
     working_dir: /var/albot-cpp
+    # Connect files from outside the container as given files inside the container
     volumes:
       - ./.env:/var/albot-cpp/.env
       - ./bot.out.json:/var/albot-cpp/bot.out.json
