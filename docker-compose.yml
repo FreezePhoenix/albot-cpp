@@ -4,6 +4,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: alpine
+    image: ubuntu:20.10
     container_name: compiler
     working_dir: /var/albot-cpp
+    volumes:
+      - ./.env:/var/albot-cpp/.env
+      - ./bot.out.json:/var/albot-cpp/bot.out.json
+      - ./bot.json:/var/albot-cpp/bot.json

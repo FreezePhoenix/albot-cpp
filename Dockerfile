@@ -11,11 +11,11 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libspdlog-dev \
     clang
 
-RUN mkdir /var/albot-cpp
+RUN mkdir -p /var/albot-cpp
 WORKDIR /var/albot-cpp
 COPY . .
 
 RUN cmake .
 RUN make .
 
-CMD ["albot-cpp"]
+CMD ["./albot-cpp"]
