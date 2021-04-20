@@ -17,3 +17,5 @@ COPY . .
 
 RUN cmake .
 RUN make .
+
+CMD ["albot-cpp"]
