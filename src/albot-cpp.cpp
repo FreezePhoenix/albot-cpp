@@ -25,7 +25,7 @@ namespace ALBot {
 		system("rm CODE/*.so");
 	}
 	void build_code(std::string name, std::string char_name) {
-		std::string CMAKE = "cmake CODE/" + name + "/." + NULL_PIPE_ALL;
+		std::string CMAKE = "cmake -S CODE/" + name + "/. -B CODE/" + name + "/." + NULL_PIPE_ALL;
 		std::string MAKE = "make --quiet -C CODE/" + name + "/." + NULL_PIPE_ERR;
 		std::string CP = "cp CODE/" + name + "/lib" + name + ".so CODE/" + char_name + ".so" + NULL_PIPE_ALL;
 		std::cout << "Running CMake on: CODE/" << name << std::endl;
