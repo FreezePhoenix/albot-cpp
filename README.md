@@ -37,6 +37,14 @@ Customize CODE/YourScript/src/BotImpl.cpp. Currently, this project is *very* ear
 
 Finally, edit bot.json's fetch property to false. Then, run `./albot-cpp`, watch it build your code, and run it!
 
+## FAQ
+
+Q: I can't find a library that's required to compile. What should I do?
+A: Check to see if you can find it using their instructions on their github. You may have to manually install it. Alternatively, use our docker script!
+
+Q: Where are all of the builtin functions?
+A: ALBot-CPP is designed to be very lightweight, and we only define the bare minimum to interact with the game. We leave it as an exercise to the user to implement more functionality. However, we may have some pre-written functionality in the future, like pathfinding.
+
 ## Thanks for using it!
 
 If you do use this, I would be glad to know, I'm `Aria / Freeze#4333` on discord, if you have any suggestions or changes that you would like to be made, just let me know!
