@@ -6,8 +6,8 @@
 #include <string>
 #include <mutex>
 #include <condition_variable>
-#include "Bot.hpp"
-#include "HttpWrapper.hpp"
+#include "../../../src/Bot.hpp"
+#include "../../../src/HttpWrapper.hpp"
 #include "../../../src/SocketWrapper.hpp"
 #include "../../../src/GameInfo.hpp"
 #include "../../../src/JsonUtils.hpp"

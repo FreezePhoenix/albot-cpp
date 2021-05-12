@@ -17,7 +17,7 @@ enum CharacterType { PRIEST = 1, MAGE = 2, RANGER = 3, ROGUE = 4, WARRIOR = 5, P
 
 class Bot {
 	protected:
-		static auto inline const mLogger = spdlog::stdout_color_mt("Bot");;
+		std::shared_ptr<spdlog::logger> mLogger;
 	public:
 		Bot(void *id);
 		nlohmann::json data;

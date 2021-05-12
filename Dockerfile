@@ -10,6 +10,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     nlohmann-json3-dev \
     rapidjson-dev \
     libspdlog-dev \
+    libspdlog1 \
+    make \
     clang
 
 RUN mkdir -p /var/albot-cpp
@@ -18,8 +20,10 @@ WORKDIR /var/albot-cpp
 # Copy the content outside the container (except .dockerignore files) inside the container
 COPY . .
 
+RUN ls > nano.txt
+
 RUN cmake .
-RUN make .
+RUN cmake --build .
 
 # Define default start app
 CMD ["./albot-cpp"]

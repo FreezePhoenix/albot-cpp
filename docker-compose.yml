@@ -10,6 +10,8 @@ services:
     container_name: albot-cpp
     # Work directory inside image
     working_dir: /var/albot-cpp
+    ports:
+      - "5000:5000"
     # Connect files from outside the container as given files inside the container
     volumes:
       - ./.env:/var/albot-cpp/.env

@@ -21,6 +21,7 @@ std::condition_variable_any _cond;
 
 Bot::Bot(void *id) {
 	this->info = (GameInfo*) id;
+	this->mLogger = spdlog::stdout_color_mt(this->info->character->name);
 }
 
 #define PROXY_GETTER_IMPL(cls, name, capName, type)                                                                    \
