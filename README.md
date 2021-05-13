@@ -1,4 +1,5 @@
-# albot-cpp
+
+# albot-cpp ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/FreezePhoenix/albot-cpp/build) ![Lines of code](https://img.shields.io/tokei/lines/github/FreezePhoenix/albot-cpp) ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/FreezePhoenix/albot-cpp) ![GitHub User's stars](https://img.shields.io/github/stars/FreezePhoenix/albot-cpp)
 
 This is an alternative to a JS bot for Adventure Land. Currently in the very early testing phases, I would love feedback.
 
@@ -39,7 +40,7 @@ Finally, edit bot.json's fetch property to false. Then, run `./albot-cpp`, watch
 
 ## FAQ
 
-Q: I can't find a library that's required to compile. What should I do?
+Q: I can't find a library that's required to compile. What should I do
 A: Check to see if you can find it using their instructions on their github. You may have to manually install it. Alternatively, use our docker script!
 
 Q: Where are all of the builtin functions?
