@@ -1,4 +1,3 @@
-#include <bits/types/FILE.h>
 #include <pthread.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filewritestream.h>

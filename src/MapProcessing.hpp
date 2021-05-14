@@ -12,7 +12,7 @@ namespace MapProcessing {
         Tuple(short first, short second) {
             this->first = first;
             this->second = second;
-            hash = static_cast<ushort>(first) << 16 | static_cast<ushort>(second);
+            hash = static_cast<unsigned short int>(first) << 16 | static_cast<unsigned short int>(second);
         }
     };
     struct MapInfo {

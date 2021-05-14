@@ -1,5 +1,5 @@
 
-# albot-cpp ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/FreezePhoenix/albot-cpp/build) ![Lines of code](https://img.shields.io/tokei/lines/github/FreezePhoenix/albot-cpp) ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/FreezePhoenix/albot-cpp) ![GitHub User's stars](https://img.shields.io/github/stars/FreezePhoenix/albot-cpp)
+# albot-cpp ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/FreezePhoenix/albot-cpp/ubuntu-build?label=ubuntu-build) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/FreezePhoenix/albot-cpp/alpine-build?label=alpine-build) ![Lines of code](https://img.shields.io/tokei/lines/github/FreezePhoenix/albot-cpp) ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/FreezePhoenix/albot-cpp) ![GitHub User's stars](https://img.shields.io/github/stars/FreezePhoenix/albot-cpp)
 
 This is an alternative to a JS bot for Adventure Land. Currently in the very early testing phases, I would love feedback.
 
