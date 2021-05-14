@@ -1,3 +1,6 @@
 [submodule "IXWebSocket"]
 	path = IXWebSocket
 	url = https://github.com/machinezone/IXWebSocket/
+[submodule "Poco"]
+	path = Poco
+	url = https://github.com/pocoproject/poco

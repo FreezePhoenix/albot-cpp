@@ -1,0 +1,47 @@
+# Start from ubuntu as start image
+FROM alpine:latest as intermediate
+RUN apk update && apk upgrade && apk add \
+    cmake \
+    make \
+    openssl-dev \
+    linux-headers \
+    g++ \
+    gcc
+
+RUN mkdir -p /var/albot-cpp/Poco
+WORKDIR /var/albot-cpp
+COPY ./Poco ./Poco
+
+RUN cd Poco && cmake . && make -j7
+
+FROM alpine:latest
+
+RUN apk update && apk upgrade && apk add \
+    cmake \
+    spdlog-dev \
+    spdlog \
+    openssl \
+    openssl-dev \
+    nlohmann-json \
+    rapidjson \
+    rapidjson-dev \
+    make \
+    linux-headers \
+    g++ \
+    gcc
+
+RUN apk del --force fmt fmt-dev
+
+RUN mkdir -p /var/albot-cpp
+# Create a work space inside the container
+WORKDIR /var/albot-cpp
+# Copy the content outside the container (except .dockerignore files) inside the container
+COPY . .
+COPY --from=intermediate /var/albot-cpp/Poco/ /var/albot-cpp/Poco
+RUN cd Poco && cmake --install .
+
+RUN cmake .
+RUN cmake --build .
+
+# Define default start app
+CMD ["./albot-cpp"]

@@ -16,6 +16,8 @@ All dependencies should be installable using `sudo apt-get install`
 
 ## Use
 
+# Make sure you clone the repo with `--recurse-submodules --depth=1` or you will have to manually activate the submodules.
+
 All files should be created at the root of the git directory.
 
 First create a bot.json file. Write the following contents:
@@ -43,6 +45,9 @@ Finally, edit bot.json's fetch property to false. Then, run `./albot-cpp`, watch
 Q: I can't find a library that's required to compile. What should I do
 A: Check to see if you can find it using their instructions on their github. You may have to manually install it. Alternatively, use our docker script!
 
+Q: How do I use the docker scripts?
+A: You have to have docker-compose installed. On linux, you should be able to do `docker-compose build albot-cpp-PLATFORM` and replace `PLATFORM` with either `alpine` or `ubuntu`, depending on which platform you want to run on. Currently, only `ubuntu` is functional. To start the bot, do `docker-compose up albot-cpp-PLATFORM`.
+
 Q: Where are all of the builtin functions?
 A: ALBot-CPP is designed to be very lightweight, and we only define the bare minimum to interact with the game. We leave it as an exercise to the user to implement more functionality. However, we may have some pre-written functionality in the future, like pathfinding.
 
@@ -53,3 +58,4 @@ If you do use this, I would be glad to know, I'm `Aria / Freeze#4333` on discord
 ## Credits
 
 Huge thanks to LunarWatcher for the PlayerSkeleton/Player pattern, SocketWrapper class, MovementMath class, and advice on general C++ styling.
+Thanks to AVDG for supplying the original docker scripts.
