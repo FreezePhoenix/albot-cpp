@@ -1,19 +1,44 @@
 version: "2"
 services:
-  albot-cpp:
-    # Say where the work directory and docker file is for this service
+  albot-cpp-alpine:
+        # Say where the work directory and docker file is for this service
+    env_file:
+      - .env
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: DockerfileAlpine
     # Base image
     image: ubuntu:20.10
-    container_name: albot-cpp
+    container_name: albot-cpp-alpine
     # Work directory inside image
     working_dir: /var/albot-cpp
     ports:
       - "5000:5000"
     # Connect files from outside the container as given files inside the container
     volumes:
+      - ./CODE:/var/albot-cpp/CODE
+      - ./IXWebSocket:/var/albot-cpp/IXWebSocket
+      - ./.env:/var/albot-cpp/.env
+      - ./bot.out.json:/var/albot-cpp/bot.out.json
+      - ./bot.json:/var/albot-cpp/bot.json
+  albot-cpp-ubuntu:
+    # Say where the work directory and docker file is for this service
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: DockerfileUbuntu
+    # Base image
+    image: ubuntu:20.10
+    container_name: albot-cpp-ubuntu
+    # Work directory inside image
+    working_dir: /var/albot-cpp
+    ports:
+      - "5000:5000"
+    # Connect files from outside the container as given files inside the container
+    volumes:
+      - ./CODE:/var/albot-cpp/CODE
+      - ./IXWebSocket:/var/albot-cpp/IXWebSocket
       - ./.env:/var/albot-cpp/.env
       - ./bot.out.json:/var/albot-cpp/bot.out.json
       - ./bot.json:/var/albot-cpp/bot.json
