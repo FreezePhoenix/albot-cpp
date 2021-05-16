@@ -16,7 +16,7 @@ All dependencies should be installable using `sudo apt-get install`
 
 ## Use
 
-# Make sure you clone the repo with `--recurse-submodules --depth=1` or you will have to manually activate the submodules.
+### Make sure you clone the repo with `--recurse-submodules --depth=1` or you will have to manually activate the submodules.
 
 All files should be created at the root of the git directory.
 
