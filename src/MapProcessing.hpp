@@ -1,8 +1,7 @@
 #include <map>
-#include <math.h>
 #include <vector>
+#include <math.h>
 #include <nlohmann/json.hpp>
-#include <iostream>
 
 namespace MapProcessing {
     struct Tuple {
@@ -31,8 +30,13 @@ namespace MapProcessing {
     inline const _Tp& max(const _Tp& a, const _Tp& b, const _Tp& c, const _Tp& d) {
         return std::max<_Tp>(std::max<_Tp>(a, b), std::max<_Tp>(c, d));
     }
-    // Accepts the "G.maps[<map_name>].data property."
+    // Accepts "G.maps"
+    // Read: Actually accepts "G.geometry"
+    void simplify_maps(const nlohmann::json& json);
+    // Accepts the "G.maps[<map_name>].data" property."
+    // Read: Actually accepts "G.geometry[<map_name>]"
+    // Outputs a MapInfo, which contains all the lines in the map.
     MapInfo* parseMap(const nlohmann::json& json);
-
+    // Accepts a map info, and simplifies it, remove unnecessary lines.
     MapInfo* simplify_lines(MapInfo* info);
 }

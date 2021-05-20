@@ -6,16 +6,16 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
+#include "MapProcessing.hpp"
+#include "HttpWrapper.hpp"
+#include "GameInfo.hpp"
+#include "Bot.hpp"
 #include <iostream>
 #include <dlfcn.h>
 #include <pthread.h>
-#include "HttpWrapper.hpp"
-#include "GameInfo.hpp"
-#include "JsonUtils.hpp"
 #include <iomanip>
-#include "Bot.hpp"
+#include <fstream>
 #include <nlohmann/json.hpp>
-#include "MapProcessing.hpp"
 
 namespace ALBot {
 
@@ -104,6 +104,7 @@ namespace ALBot {
 					_char["id"] = struct_char->id;
 					_char["script"] = "Default";
 					_char["server"] = "US II";
+					_char["enabled"] = false;
 					_chars.push_back(_char);
 				}
 

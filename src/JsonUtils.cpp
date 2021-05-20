@@ -1,4 +1,7 @@
 #include "JsonUtils.hpp"
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <iostream>
 
 namespace JsonUtils {
     void parse(rapidjson::Document* _json, std::string* str)  {

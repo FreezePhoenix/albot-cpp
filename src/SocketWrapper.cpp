@@ -1,4 +1,7 @@
 #include "SocketWrapper.hpp"
+#include "MovementMath.hpp"
+#include <regex>
+#include <algorithm>
 
 #define WIDTH_HEIGHT_SCALE                                                                                             \
     {"width", 1920}, {"height", 1080}, { "scale", 2 }

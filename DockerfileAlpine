@@ -12,7 +12,7 @@ RUN mkdir -p /var/albot-cpp/Poco
 WORKDIR /var/albot-cpp
 COPY ./Poco ./Poco
 
-RUN cd Poco && cmake . && make -j7
+RUN cd Poco && cmake . && cmake --build . -j12
 
 FROM alpine:latest
 
@@ -41,7 +41,7 @@ COPY --from=intermediate /var/albot-cpp/Poco/ /var/albot-cpp/Poco
 RUN cd Poco && cmake --install .
 
 RUN cmake .
-RUN cmake --build .
+RUN cmake --build . -j12
 
 # Define default start app
 CMD ["./albot-cpp"]

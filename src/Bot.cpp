@@ -12,7 +12,6 @@
 #include "Bot.hpp"
 #include "HttpWrapper.hpp"
 #include "SocketWrapper.hpp"
-#include "GameInfo.hpp"
 #include "JsonUtils.hpp"
 
 std::mutex _lock;

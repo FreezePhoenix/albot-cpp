@@ -11,10 +11,7 @@
 #include <chrono>
 #include "Bot.hpp"
 #include "HttpWrapper.hpp"
-#include "MovementMath.hpp"
 #include <functional>
-#include <algorithm>
-#include <regex>
 
 
 typedef std::function<void(const ix::WebSocketMessagePtr&)> RawCallback;

@@ -22,10 +22,8 @@ WORKDIR /var/albot-cpp
 # Copy the content outside the container (except .dockerignore files) inside the container
 COPY . .
 
-RUN ls > nano.txt
-
 RUN cmake .
-RUN cmake --build .
+RUN cmake --build . -j12
 
 # Define default start app
 CMD ["./albot-cpp"]

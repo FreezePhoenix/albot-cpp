@@ -7,8 +7,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include "GameInfo.hpp"
-#include "HttpWrapper.hpp"
-#include <iostream>
 
 #define PROXY_GETTER(capName, type) type get##capName();
 

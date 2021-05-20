@@ -4,9 +4,6 @@
 #define GAMEINFO_HPP_
 
 #include "HttpWrapper.hpp"
-#include <rapidjson/document.h>
-
-using namespace rapidjson;
 
 class GameInfo {
 	public:

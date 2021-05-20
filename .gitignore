@@ -42,6 +42,9 @@ Makefile
 **.vs
 **/build/
 **/bot.json
+**/data.json
 **/bot.out.json
 **/cmake_install.cmake
-
+**/game_version
+**/Makefile
+**/*.ninja*

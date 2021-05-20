@@ -1,16 +1,9 @@
 #ifndef HTTPWRAPPER_HPP_
 #define HTTPWRAPPER_HPP_
 
-#include <Poco/Net/HTTPSClientSession.h>
-#include <Poco/Net/SSLException.h>
-#include <Poco/Net/HTTPRequest.h>
-#include <Poco/Net/HTTPResponse.h>
-#include <Poco/URI.h>
-#include <Poco/StreamCopier.h>
-#include <iostream>
-#include <fstream>
+
+#include <Poco/Net/HTTPCookie.h>
 #include <nlohmann/json.hpp>
-#include "JsonUtils.hpp"
 
 class HttpWrapper {
 	private:
@@ -34,6 +27,7 @@ class HttpWrapper {
 		struct Character {
 				std::string name;
 				long id;
+				bool enabled;
 				std::string script;
 				std::string server;
 		};
@@ -54,6 +48,8 @@ class HttpWrapper {
 		static std::vector<HttpWrapper::Server*> servers;
 		static std::string userID;
 		static nlohmann::json* config;
+		bool static getCachedGameVersion(std::string &version);
+		bool static getGameVersion(std::string &version);
 		bool static getGameData();
 		bool static getConfig(nlohmann::json &config);
 		bool static doPost(std::string url, std::string args, std::string *str, std::vector<Poco::Net::HTTPCookie> *cookies = nullptr);

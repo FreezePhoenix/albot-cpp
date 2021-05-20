@@ -1,4 +1,5 @@
 #include "MapProcessing.hpp"
+#include <iostream>
 
 namespace MapProcessing {
     bool  overlaps(short a, short b, short c, short d) {
@@ -21,6 +22,9 @@ namespace MapProcessing {
         return false;
     }
 
+    void simplify_maps(const nlohmann::json& json) {
+
+    }
     typedef std::map<short, std::vector<Tuple>> shortTupleVector;
     MapInfo* parseMap(const nlohmann::json& json) {
         MapInfo* info = new MapInfo();

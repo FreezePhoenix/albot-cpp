@@ -1,5 +1,15 @@
 #include "HttpWrapper.hpp"
-
+#include "JsonUtils.hpp"
+#include <Poco/Net/HTTPSClientSession.h>
+#include <Poco/Net/SSLException.h>
+#include <Poco/Net/HTTPRequest.h>
+#include <Poco/Net/HTTPResponse.h>
+#include <Poco/StreamCopier.h>
+#include <Poco/URI.h>
+#include <iostream>
+#include <sys/stat.h>
+#include <fstream>
+#include <regex>
 HttpWrapper::GameData HttpWrapper::data = HttpWrapper::GameData();
 std::string HttpWrapper::password = "";
 std::string HttpWrapper::email = "";
@@ -9,19 +19,81 @@ Poco::Net::NameValueCollection HttpWrapper::cookie = Poco::Net::NameValueCollect
 std::vector<HttpWrapper::Character*> HttpWrapper::chars = std::vector<HttpWrapper::Character*>();
 std::vector<HttpWrapper::Server*> HttpWrapper::servers = std::vector<HttpWrapper::Server*>();
 std::string HttpWrapper::userID = "";
-bool HttpWrapper::getGameData() {
-    std::string raw_data; 
-    if(HttpWrapper::doRequest("https://adventure.land/data.js", &raw_data)) {
-        std::cout << "Data fetched! Trimming..." << std::endl;
-        raw_data = raw_data.substr(6, raw_data.length() - 8);
-        std::cout << "Data trimmed! Parsing..." << std::endl;
-        HttpWrapper::data = HttpWrapper::GameData(raw_data);
-        std::cout << "Data parsed!" << std::endl;
-        return true;
+
+bool HttpWrapper::getCachedGameVersion(std::string &version) {
+    std::ifstream version_file("game_version");
+    if(version_file.fail() || !version_file.is_open()) {
+        std::cout << "Failed to find local cache version! Continuing with version 0." << std::endl;
+        version = "0";
     } else {
-        std::cout << "Fetching data failed! Aborting." << std::endl;
+        std::getline(version_file, version);
+        version_file.close();
+        std::cout << "Found cached version: " << version << std::endl;
+    }
+    return true;        
+}
+
+bool HttpWrapper::getGameVersion(std::string &version) {
+    std::string raw_data;
+    std::cout << "Fetching game version..." << std::endl;
+    if(HttpWrapper::doRequest("https://adventure.land/", &raw_data)) {
+        std::regex version_regex = std::regex("data\\.js\\?v=([0-9]+)\"", std::regex::extended);
+        std::smatch sm;
+        std::regex_search(raw_data, sm, version_regex);
+        // std::regex_match(raw_data.cbegin(), raw_data.cend(), sm, version_regex);
+        if(sm.size() > 0) {
+            version = sm[1];
+            std::cout << "Fetched game version: " << version << std::endl;
+            return true;
+        } else {
+            std::cout << "Failed to find version in file! Aborting." << std::endl;
+            return false;
+        }
+    } else {
+        std::cout << "Fetching game version failed! Aborting." << std::endl;
         return false;
-    };
+    }
+}
+bool HttpWrapper::getGameData() {
+    std::string raw_data;
+    std::string current_version = "",
+        cached_version = "";
+    if(getCachedGameVersion(cached_version) && getGameVersion(current_version)) {
+        if(cached_version == current_version) {
+            std::ifstream cached_file("data.json");
+            if(cached_file.fail() || !cached_file.is_open()) {
+                std::cout << "Local cache invalid. Fetching." << std::endl;
+            } else {
+                std::ostringstream string_stream;
+                string_stream << cached_file.rdbuf();
+                raw_data = string_stream.str();
+                HttpWrapper::data = HttpWrapper::GameData(raw_data);
+                return true;
+            }
+            cached_file.close();
+        } else {
+            std::cout << "Cached game version does not match! Need: " << current_version << " Have: " << cached_version << " Fetching." << std::endl;
+        }
+        std::ofstream version_cache("game_version");
+        version_cache.write(current_version.c_str(), current_version.length());
+        if(HttpWrapper::doRequest("https://adventure.land/data.js", &raw_data)) {
+            std::cout << "Data fetched! Trimming..." << std::endl;
+            raw_data = raw_data.substr(6, raw_data.length() - 8);
+            std::cout << "Data trimmed! Parsing..." << std::endl;
+            HttpWrapper::data = HttpWrapper::GameData(raw_data);
+            std::cout << "Data parsed! Writing cache..." << std::endl;
+            std::ofstream cache_file("data.json");
+            cache_file.write(raw_data.c_str(), raw_data.length());
+            cache_file.close();
+            return true;
+        } else {
+            std::cout << "Fetching data failed! Aborting." << std::endl;
+            return false;
+        };
+    } else {
+        std::cout << "Error while checking game versions. Aborting." << std::endl;
+        return false;
+    }
 }
 
 bool HttpWrapper::getConfig(nlohmann::json &config) {
@@ -91,7 +163,9 @@ bool HttpWrapper::doRequest(std::string url, std::string *str) {
     Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
 
     Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, path, Poco::Net::HTTPMessage::HTTP_1_1);
-
+    if (!sessionCookie.empty()) {
+        request.setCookies(cookie);
+    }
     session.sendRequest(request);
     std::istream &rs = session.receiveResponse(response);
     if (response.getStatus() != Poco::Net::HTTPResponse::HTTP_UNAUTHORIZED) {
@@ -115,8 +189,13 @@ bool HttpWrapper::login() {
     try {
         if (envfile.is_open()) {
         // Read the email and password from a .env file...
-        std::getline(envfile, email);
+        std::getline(envfile, HttpWrapper::email);
+        size_t pos = 0;
+        pos = HttpWrapper::email.find('=');
+        HttpWrapper::email = HttpWrapper::email.substr(pos + 1);
         std::getline(envfile, password);
+        pos = HttpWrapper::password.find('=');
+        HttpWrapper::password = HttpWrapper::password.substr(pos + 1);
         // Attempt to connect to the server. Since we don't need to copy the output,
         // We pass a nullptr for the output. TODO: Get support for HTTP HEADERS verb.
         if (HttpWrapper::doRequest("https://adventure.land", nullptr)) {
@@ -212,6 +291,11 @@ bool HttpWrapper::processCharacters(nlohmann::json &chars) {
                     character->script = character_json["script"].get<std::string>();
                 } else {
                     character->script = "Default";
+                }
+                if(character_json["enabled"].is_boolean()) {
+                    character->enabled = character_json["script"].get<bool>();
+                } else {
+                    character->enabled = false;
                 }
                 if (character_json["server"].is_string()) {
                     character->server = character_json["server"].get<std::string>();
