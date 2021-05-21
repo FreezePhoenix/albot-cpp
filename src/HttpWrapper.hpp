@@ -8,8 +8,21 @@
 
 class HttpWrapper {
 	private:
+		class MutableGameData {
+			public:
+				nlohmann::json data;
+				MutableGameData() {}
+				MutableGameData(std::string& rawJson) : data(nlohmann::json::parse(rawJson)) {}
+				MutableGameData(const MutableGameData& old) : data(old.data) {}
+				
+				nlohmann::json& getData() { return data; }
+
+				nlohmann::json& operator[](const std::string& key) { return data[key]; }
+				nlohmann::json& at(const std::string& key) { return data[key]; }
+		};
 		static std::string password;
 		static std::string email;
+		static void handleGameJson(HttpWrapper::MutableGameData& json);
 	public:
 		class GameData {
 			private:
@@ -19,6 +32,7 @@ class HttpWrapper {
 				GameData() {}
 				GameData(std::string& rawJson) : data(nlohmann::json::parse(rawJson)) {}
 				GameData(const GameData& old) : data(old.data) {}
+				GameData(const MutableGameData& old) : data(old.data) {}
 				
 				const nlohmann::json& getData() const { return data; }
 

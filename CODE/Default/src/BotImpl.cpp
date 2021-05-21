@@ -1,17 +1,16 @@
-﻿#include <bits/types/FILE.h>
+﻿#include <condition_variable>
+#include <bits/types/FILE.h>
 #include <pthread.h>
-#include <cstdio>
-#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <mutex>
-#include <condition_variable>
+
 #include "../../../src/Enums/ClassEnum.hpp"
-#include "../../../src/Bot.hpp"
-#include "../../../src/HttpWrapper.hpp"
 #include "../../../src/SocketWrapper.hpp"
-#include "../../../src/GameInfo.hpp"
+#include "../../../src/HttpWrapper.hpp"
 #include "../../../src/JsonUtils.hpp"
+#include "../../../src/GameInfo.hpp"
+#include "../../../src/Bot.hpp"
 
 #ifndef CHARACTER_NAME
 	#define CHARACTER_NAME	0
@@ -43,7 +42,7 @@ BotImpl *BotInstance;
 
 extern "C" void* init(void *id) {
 	BotInstance = new BotImpl(id);
-	BotInstance->log("Class: " + ClassEnum::getClassString(static_cast<ClassEnum::CLASS>(CHARACTER_CLASS)));
+	BotInstance->log("Class: " + ClassEnum::getClassStringInt(CHARACTER_CLASS));
 	BotInstance->log("Logging in... ");
 	BotInstance->start();
 	sleep(5000);

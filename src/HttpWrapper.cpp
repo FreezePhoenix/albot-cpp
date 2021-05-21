@@ -1,3 +1,4 @@
+#include "MapProcessing.hpp"
 #include "HttpWrapper.hpp"
 #include "JsonUtils.hpp"
 #include <Poco/Net/HTTPSClientSession.h>
@@ -56,6 +57,10 @@ bool HttpWrapper::getGameVersion(std::string &version) {
         return false;
     }
 }
+void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
+    MapProcessing::simplify_map(data["geometry"]["main"]);
+    HttpWrapper::data = HttpWrapper::GameData(data);
+}
 bool HttpWrapper::getGameData() {
     std::string raw_data;
     std::string current_version = "",
@@ -82,7 +87,9 @@ bool HttpWrapper::getGameData() {
             std::cout << "Data fetched! Trimming..." << std::endl;
             raw_data = raw_data.substr(6, raw_data.length() - 8);
             std::cout << "Data trimmed! Parsing..." << std::endl;
-            HttpWrapper::data = HttpWrapper::GameData(raw_data);
+            HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(raw_data);
+            HttpWrapper::handleGameJson(data);
+            raw_data = HttpWrapper::data.getData().dump();
             std::cout << "Data parsed! Writing cache..." << std::endl;
             std::ofstream cache_file("data.json");
             cache_file.write(raw_data.c_str(), raw_data.length());

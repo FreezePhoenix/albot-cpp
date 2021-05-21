@@ -3,16 +3,14 @@
 #include <rapidjson/filewritestream.h>
 #include <rapidjson/rapidjson.h>
 #include <rapidjson/writer.h>
-#include <cstdio>
-#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <mutex>
 #include <condition_variable>
-#include "Bot.hpp"
-#include "HttpWrapper.hpp"
 #include "SocketWrapper.hpp"
+#include "HttpWrapper.hpp"
 #include "JsonUtils.hpp"
+#include "Bot.hpp"
 
 std::mutex _lock;
 std::condition_variable_any _cond;

@@ -11,7 +11,6 @@ set(USE_TLS TRUE)
 get_filename_component(prjName "${CMAKE_SOURCE_DIR}" NAME_WLE)
 add_library ("${prjName}" SHARED
   "src/BotImpl.cpp"
-  "../../src/Bot.cpp"
   "../../src/SocketWrapper.cpp"
 )
 
@@ -20,7 +19,8 @@ target_compile_definitions("${prjName}" PUBLIC "CHARACTER_NAME=${CHARACTER_NAME}
 # TODO: Add tests and install targets if needed.
 add_subdirectory(../../IXWebSocket ../../IXWebSocket)
 target_include_directories("${prjName}" PUBLIC "../../src")
-TARGET_LINK_LIBRARIES("${prjName}" ixwebsocket)
+target_link_directories("${prjName}" PUBLIC "../../")
+TARGET_LINK_LIBRARIES("${prjName}" ixwebsocket Bot HttpWrapper)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
   set_property(TARGET "${prjName}" PROPERTY COMPILE_OPTIONS "-pthread")

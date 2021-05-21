@@ -6,16 +6,18 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
+
+#include <nlohmann/json.hpp>
+#include <pthread.h>
+#include <iostream>
+#include <dlfcn.h>
+#include <iomanip>
+#include <fstream>
+
 #include "MapProcessing.hpp"
 #include "HttpWrapper.hpp"
 #include "GameInfo.hpp"
 #include "Bot.hpp"
-#include <iostream>
-#include <dlfcn.h>
-#include <pthread.h>
-#include <iomanip>
-#include <fstream>
-#include <nlohmann/json.hpp>
 
 namespace ALBot {
 	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";
@@ -25,7 +27,7 @@ namespace ALBot {
 	}
 	void build_code(std::string name, std::string char_name, ClassEnum::CLASS klass) {
 		std::string FOLDER = "CODE/" + name;
-		std::string CMAKE = "cmake -DCHARACTER_NAME=" + std::to_string(HttpWrapper::NAME_TO_NUMBER[char_name]) + " -DCHARACTER_CLASS=" + std::to_string(klass) + " -S " + FOLDER + "/. -B " + FOLDER + "/." + NULL_PIPE_ALL;
+		std::string CMAKE = "cmake -DCHARACTER_NAME=" + std::to_string(HttpWrapper::NAME_TO_NUMBER[char_name]) + " -DCHARACTER_CLASS=" + std::to_string(klass) + " -S " + FOLDER + "/. -B " + FOLDER + "/.";
 		std::string MAKE = "make --quiet -C " + FOLDER + "/. -j12";
 		std::string CP = "cp " + FOLDER + "/lib" + name + ".so CODE/" + char_name + ".so" + NULL_PIPE_ERR;
 		std::cout << "Running CMake on: CODE/" << name << std::endl;
@@ -126,8 +128,8 @@ namespace ALBot {
 
 		}
 		HttpWrapper::getGameData();
-		MapProcessing::MapInfo* map = MapProcessing::parseMap(HttpWrapper::data["geometry"]["main"]);
-		MapProcessing::simplify_lines(map);
+		// std::cout << map["x_lines"].size() << std::endl;
+		std::cout << HttpWrapper::data["geometry"]["main"]["x_lines"].size() << std::endl;
 		clean_code();
 		start_character(0);
 	}

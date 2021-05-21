@@ -52,6 +52,9 @@ namespace ClassEnum {
                 return "unkown";
         }
     }
+    inline std::string getClassStringInt(int classEnum) {
+        return ClassEnum::getClassString(static_cast<CLASS>(classEnum));
+    }
 }
 
 #endif /* ENUM_CLASS_HPP_ */

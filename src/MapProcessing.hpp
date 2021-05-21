@@ -32,11 +32,11 @@ namespace MapProcessing {
     }
     // Accepts "G.maps"
     // Read: Actually accepts "G.geometry"
-    void simplify_maps(const nlohmann::json& json);
+    void simplify_map(nlohmann::json& json);
     // Accepts the "G.maps[<map_name>].data" property."
     // Read: Actually accepts "G.geometry[<map_name>]"
     // Outputs a MapInfo, which contains all the lines in the map.
-    MapInfo* parseMap(const nlohmann::json& json);
+    MapInfo* parseMap(nlohmann::json& json);
     // Accepts a map info, and simplifies it, remove unnecessary lines.
     MapInfo* simplify_lines(MapInfo* info);
 }

@@ -1,7 +1,6 @@
 #ifndef BOT_HPP_
 #define BOT_HPP_
 
-#include <pthread.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <cstdio>
