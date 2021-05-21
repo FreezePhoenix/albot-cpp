@@ -2,7 +2,6 @@
 # project specific logic here.
 #
 cmake_minimum_required (VERSION 3.5)
-
 add_definitions(-std=c++17 -w)
 project ("albot-cpp")
 # Add source to this project's executable.
@@ -13,7 +12,7 @@ add_executable (albot-cpp
   "src/HttpWrapper.cpp"
 )
 # TODO: Add tests and install targets if needed.
-set(CMAKE_BUILD_PARALLEL_LEVEL "8")
+
 TARGET_LINK_LIBRARIES(albot-cpp PocoFoundation PocoNet ${CMAKE_DL_LIBS} spdlog PocoNetSSL)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)

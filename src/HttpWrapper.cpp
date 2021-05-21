@@ -16,6 +16,8 @@ std::string HttpWrapper::email = "";
 std::string HttpWrapper::sessionCookie = "";
 std::string HttpWrapper::auth = "";
 Poco::Net::NameValueCollection HttpWrapper::cookie = Poco::Net::NameValueCollection();
+std::vector<HttpWrapper::nameNumberPair*> HttpWrapper::NAME_NUMBER_PAIRS = std::vector<HttpWrapper::nameNumberPair*>();
+std::map<std::string, int> HttpWrapper::NAME_TO_NUMBER = std::map<std::string, int>();
 std::vector<HttpWrapper::Character*> HttpWrapper::chars = std::vector<HttpWrapper::Character*>();
 std::vector<HttpWrapper::Server*> HttpWrapper::servers = std::vector<HttpWrapper::Server*>();
 std::string HttpWrapper::userID = "";
@@ -277,11 +279,16 @@ bool HttpWrapper::processCharacters(nlohmann::json &chars) {
     try {
         if (chars.is_array()) {
             HttpWrapper::chars.resize(chars.size());
+            HttpWrapper::NAME_NUMBER_PAIRS.resize(chars.size());
             for (int i = 0; i < chars.size(); i++) {
+                HttpWrapper::NAME_NUMBER_PAIRS[i] = new std::pair<std::string, int>;
+                HttpWrapper::nameNumberPair *pair = HttpWrapper::NAME_NUMBER_PAIRS[i];
                 HttpWrapper::chars[i] = new HttpWrapper::Character;
                 HttpWrapper::Character *character = HttpWrapper::chars[i];
                 nlohmann::json character_json = chars[i].get<nlohmann::basic_json<>>();
-                character->name = character_json["name"].get<std::string>();
+                pair->first = character->name = character_json["name"].get<std::string>();
+                pair->second = i;
+                HttpWrapper::NAME_TO_NUMBER.insert(*pair);
                 if (character_json["id"].is_string()) {
                     character->id = std::stol(character_json["id"].get<std::string>());
                 } else {
@@ -292,8 +299,13 @@ bool HttpWrapper::processCharacters(nlohmann::json &chars) {
                 } else {
                     character->script = "Default";
                 }
+                if(character_json["type"].is_string()) {
+                    character->klass = ClassEnum::getClassEnum(character_json["type"].get<std::string>());
+                } else {
+                    character->klass = ClassEnum::CLASS_UNKOWN;
+                }
                 if(character_json["enabled"].is_boolean()) {
-                    character->enabled = character_json["script"].get<bool>();
+                    character->enabled = character_json["enabled"].get<bool>();
                 } else {
                     character->enabled = false;
                 }

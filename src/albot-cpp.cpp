@@ -18,16 +18,16 @@
 #include <nlohmann/json.hpp>
 
 namespace ALBot {
-
 	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";
 	inline std::string NULL_PIPE_ERR = " 2> /dev/null";
 	void clean_code() {
 		system("rm CODE/*.so");
 	}
-	void build_code(std::string name, std::string char_name) {
-		std::string CMAKE = "cmake -S CODE/" + name + "/. -B CODE/" + name + "/." + NULL_PIPE_ALL;
-		std::string MAKE = "make --quiet -C CODE/" + name + "/." + NULL_PIPE_ERR;
-		std::string CP = "cp CODE/" + name + "/lib" + name + ".so CODE/" + char_name + ".so" + NULL_PIPE_ALL;
+	void build_code(std::string name, std::string char_name, ClassEnum::CLASS klass) {
+		std::string FOLDER = "CODE/" + name;
+		std::string CMAKE = "cmake -DCHARACTER_NAME=" + std::to_string(HttpWrapper::NAME_TO_NUMBER[char_name]) + " -DCHARACTER_CLASS=" + std::to_string(klass) + " -S " + FOLDER + "/. -B " + FOLDER + "/." + NULL_PIPE_ALL;
+		std::string MAKE = "make --quiet -C " + FOLDER + "/. -j12";
+		std::string CP = "cp " + FOLDER + "/lib" + name + ".so CODE/" + char_name + ".so" + NULL_PIPE_ERR;
 		std::cout << "Running CMake on: CODE/" << name << std::endl;
 		system(CMAKE.c_str());
 		std::cout << "Finished. Compiling..." << std::endl;
@@ -37,7 +37,7 @@ namespace ALBot {
 		std::cout << "Finished." << std::endl;
 	}
 	void start_character(int index) {
-		build_code(HttpWrapper::chars[index]->script, HttpWrapper::chars[index]->name);
+		build_code(HttpWrapper::chars[index]->script, HttpWrapper::chars[index]->name, HttpWrapper::chars[index]->klass);
 		pthread_t bot_thread;
 		GameInfo *info = new GameInfo;
 		int server_index = 0;
@@ -78,7 +78,7 @@ namespace ALBot {
 		pthread_join(bot_thread, &ret);
 		pthread_exit(0);
 	}
-
+	
 	void* login(void *id) {
 		if (!HttpWrapper::login()) {
 			exit(1);
@@ -105,6 +105,7 @@ namespace ALBot {
 					_char["script"] = "Default";
 					_char["server"] = "US II";
 					_char["enabled"] = false;
+					_char["type"] = ClassEnum::getClassString(struct_char->klass);
 					_chars.push_back(_char);
 				}
 

@@ -4,6 +4,7 @@
 
 #include <Poco/Net/HTTPCookie.h>
 #include <nlohmann/json.hpp>
+#include "Enums/ClassEnum.hpp"
 
 class HttpWrapper {
 	private:
@@ -28,6 +29,7 @@ class HttpWrapper {
 				std::string name;
 				long id;
 				bool enabled;
+				ClassEnum::CLASS klass;
 				std::string script;
 				std::string server;
 		};
@@ -40,6 +42,9 @@ class HttpWrapper {
 				std::string url;
 				std::string fullName;
 		};
+		typedef std::pair<std::string, int> nameNumberPair;
+		static std::vector<nameNumberPair*> NAME_NUMBER_PAIRS;
+		static std::map<std::string, int> NAME_TO_NUMBER;
 		static HttpWrapper::GameData data;
 		static std::string sessionCookie;
 		static std::string auth;

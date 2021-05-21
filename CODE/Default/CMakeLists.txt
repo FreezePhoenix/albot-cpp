@@ -15,6 +15,8 @@ add_library ("${prjName}" SHARED
   "../../src/SocketWrapper.cpp"
 )
 
+target_compile_definitions("${prjName}" PUBLIC "CHARACTER_NAME=${CHARACTER_NAME}" "CHARACTER_CLASS=${CHARACTER_CLASS}")
+
 # TODO: Add tests and install targets if needed.
 add_subdirectory(../../IXWebSocket ../../IXWebSocket)
 target_include_directories("${prjName}" PUBLIC "../../src")
