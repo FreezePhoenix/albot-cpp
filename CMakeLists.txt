@@ -19,16 +19,26 @@ add_library(Bot SHARED
   "src/Bot.cpp"
 )
 
+add_library(alclient-cpp SHARED
+  "src/alclient-cpp.cpp"
+  "src/BotSkeleton.cpp"
+)
+
 set_property(TARGET Bot PROPERTY COMPILE_OPTIONS "-fPIC")
 # TODO: Add tests and install targets if needed.
 target_link_directories(albot-cpp PUBLIC "./")
 target_include_directories(Bot PUBLIC "./IXWebSocket")
 TARGET_LINK_LIBRARIES(HttpWrapper PocoFoundation PocoNet spdlog PocoNetSSL)
 TARGET_LINK_LIBRARIES(albot-cpp ${CMAKE_DL_LIBS} spdlog HttpWrapper)
+TARGET_LINK_LIBRARIES(alclient-cpp ${CMAKE_DL_LIBS} spdlog HttpWrapper Bot)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
   set_property(TARGET albot-cpp PROPERTY COMPILE_OPTIONS "-pthread")
+  set_property(TARGET HttpWrapper PROPERTY COMPILE_OPTIONS "-pthread")
+  set_property(TARGET Bot PROPERTY COMPILE_OPTIONS "-pthread")
   set_property(TARGET albot-cpp PROPERTY INTERFACE_COMPILE_OPTIONS "-pthread")
+  set_property(TARGET HttpWrapper PROPERTY INTERFACE_COMPILE_OPTIONS "-pthread")
+  set_property(TARGET Bot PROPERTY INTERFACE_COMPILE_OPTIONS "-pthread")
 endif()
 if(CMAKE_THREAD_LIBS_INIT)
   target_link_libraries(albot-cpp "${CMAKE_THREAD_LIBS_INIT}")
