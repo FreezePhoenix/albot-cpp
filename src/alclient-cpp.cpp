@@ -7,7 +7,13 @@ void ALClient::login() {
     }
 }
 
-void ALClient::fetchGameData() {
+void ALClient::get_characters() {
+    if(!HttpWrapper::getCharacters()) {
+        exit(1);
+    }
+}
+
+void ALClient::fetch_game_data() {
     if(!HttpWrapper::getGameData()) {
         exit(1);
     }

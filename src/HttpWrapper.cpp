@@ -59,7 +59,7 @@ bool HttpWrapper::getGameVersion(std::string &version) {
 }
 void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
     MapProcessing::simplify_map(data["geometry"]["main"]);
-    HttpWrapper::data = HttpWrapper::GameData(data);
+    HttpWrapper::data = data;
 }
 bool HttpWrapper::getGameData() {
     std::string raw_data;
@@ -246,7 +246,7 @@ bool HttpWrapper::login() {
 }
 bool HttpWrapper::getCharacters() {
     std::string out;
-    if (HttpWrapper::apiMethod("servers_and_characters", "{}", &out)) {
+    if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
         std::cout << "Characters fetched! Processing..." << std::endl;
         nlohmann::json characters = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
@@ -265,7 +265,7 @@ bool HttpWrapper::getCharacters() {
 }
 bool HttpWrapper::getCharactersAndServers() {
     std::string out;
-    if (HttpWrapper::apiMethod("servers_and_characters", "{}", &out)) {
+    if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
         std::cout << "Characters fetched! Processing..." << std::endl;
         nlohmann::json characters = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
@@ -333,7 +333,7 @@ bool HttpWrapper::processCharacters(nlohmann::json &chars) {
 }
 bool HttpWrapper::getServers() {
     std::string out;
-    if (HttpWrapper::apiMethod("servers_and_characters", "{}", &out)) {
+    if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
         std::cout << "Servers fetched! Processing..." << std::endl;
         nlohmann::json servers = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
@@ -376,7 +376,7 @@ bool HttpWrapper::processServers(nlohmann::json &servers) {
         throw;
     }
 }
-bool HttpWrapper::apiMethod(std::string method, std::string args, std::string *str) {
+bool HttpWrapper::api_method(std::string method, std::string args, std::string *str) {
     std::string args_string = "arguments=" + args + "&method=" + method;
     return HttpWrapper::doPost("https://adventure.land/api/" + method, args_string, str);
 }

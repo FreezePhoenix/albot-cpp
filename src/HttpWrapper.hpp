@@ -79,7 +79,7 @@ class HttpWrapper {
 		bool static processCharacters(nlohmann::json &chars);
 		bool static getServers();
 		bool static processServers(nlohmann::json &servers);
-		bool static apiMethod(std::string method, std::string args, std::string *str);
+		bool static api_method(std::string method, std::string args, std::string *str);
 };
 
 #endif /* HTTPWRAPPER_HPP_ */

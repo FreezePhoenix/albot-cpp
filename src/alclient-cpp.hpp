@@ -8,7 +8,8 @@
 class ALClient {
     public:
         static void login();
-        static void fetchGameData();
+        static void get_characters();
+        static void fetch_game_data();
         static void getServers();
         static BotSkeleton* start_character(GameInfo *info);
 };
