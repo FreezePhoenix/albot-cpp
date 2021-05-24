@@ -23,15 +23,14 @@ namespace MapProcessing {
     }
     
     void simplify_map(nlohmann::json& json) {
-        MapInfo* info = parseMap(json);
+        MapInfo* info = parse_map(json);
         simplify_lines(info);
         nlohmann::json x_lines(info->x_lines);
         json["x_lines"] = x_lines;
     }
     typedef std::map<short, std::vector<Tuple>> shortTupleVector;
-    MapInfo* parseMap(nlohmann::json& json) {
+    MapInfo* parse_map(nlohmann::json& json) {
         MapInfo* info = new MapInfo();
-        std::cout << "Parsing map..." << std::endl;
         nlohmann::json x_lines = json["x_lines"];
         nlohmann::json y_lines = json["y_lines"];
         if(x_lines.is_array() && y_lines.is_array()) {
@@ -56,7 +55,6 @@ namespace MapProcessing {
         return info;
     }
     MapInfo* simplify_lines(MapInfo* info) {
-        std::cout << "Simplifying..." << std::endl;
         short before, after;
         shortTupleVector x_lines_temp = std::map<short, std::vector<Tuple>>();
         std::vector<Tuple> new_ys = std::vector<Tuple>(); 
@@ -105,7 +103,6 @@ namespace MapProcessing {
             new_ys.clear();
         }
         after = info->x_lines.size();
-        std::cout << "x_lines before: " << std::to_string(before) << " after: " << std::to_string(after) << std::endl;
         before = after = 0;
         shortTupleVector y_lines_temp = std::map<short, std::vector<Tuple>>();
         std::vector<Tuple> new_xs = std::vector<Tuple>();
@@ -154,7 +151,6 @@ namespace MapProcessing {
             new_xs.clear();
         }
         after = info->y_lines.size();
-        std::cout << "y_lines before: " << std::to_string(before) << " after: " << std::to_string(after) << std::endl;
         return info;
     }
 

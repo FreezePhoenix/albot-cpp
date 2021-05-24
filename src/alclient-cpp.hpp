@@ -10,7 +10,7 @@ class ALClient {
         static void login();
         static void get_characters();
         static void fetch_game_data();
-        static void getServers();
+        static void get_servers();
         static BotSkeleton* start_character(GameInfo *info);
 };
 

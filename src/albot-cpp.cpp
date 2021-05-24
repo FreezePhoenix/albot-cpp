@@ -86,13 +86,13 @@ namespace ALBot {
 			exit(1);
 		}
 		nlohmann::json config;
-		if (!HttpWrapper::getConfig(config)) {
+		if (!HttpWrapper::get_config(config)) {
 			exit(1);
 		}
 
 		if (!config["fetch"].is_null() && config["fetch"].get<bool>()) {
 			std::cout << "Instructed to fetch... fetching characters." << std::endl;
-			if (!HttpWrapper::getCharacters()) {
+			if (!HttpWrapper::get_characters()) {
 				exit(1);
 			} else {
 				std::cout << "Writing characters to file..." << std::endl;
@@ -121,13 +121,13 @@ namespace ALBot {
 			}
 		}
 		std::cout << "Processing characters..." << std::endl;
-		if (!HttpWrapper::processCharacters(config["characters"])) {
+		if (!HttpWrapper::process_characters(config["characters"])) {
 			exit(1);
 		}
-		if (!HttpWrapper::getServers()) {
+		if (!HttpWrapper::get_servers()) {
 
 		}
-		HttpWrapper::getGameData();
+		HttpWrapper::get_game_data();
 		// std::cout << map["x_lines"].size() << std::endl;
 		std::cout << HttpWrapper::data["geometry"]["main"]["x_lines"].size() << std::endl;
 		clean_code();

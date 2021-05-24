@@ -8,19 +8,19 @@ void ALClient::login() {
 }
 
 void ALClient::get_characters() {
-    if(!HttpWrapper::getCharacters()) {
+    if(!HttpWrapper::get_characters()) {
         exit(1);
     }
 }
 
 void ALClient::fetch_game_data() {
-    if(!HttpWrapper::getGameData()) {
+    if(!HttpWrapper::get_game_data()) {
         exit(1);
     }
 }
 
-void ALClient::getServers() {
-    if(!HttpWrapper::getServers()) {
+void ALClient::get_servers() {
+    if(!HttpWrapper::get_servers()) {
         exit(1);
     }
 }

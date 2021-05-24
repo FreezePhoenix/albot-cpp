@@ -1,9 +1,9 @@
 #ifndef HTTPWRAPPER_HPP_
 #define HTTPWRAPPER_HPP_
 
-
 #include <Poco/Net/HTTPCookie.h>
 #include <nlohmann/json.hpp>
+
 #include "Enums/ClassEnum.hpp"
 
 class HttpWrapper {
@@ -60,25 +60,25 @@ class HttpWrapper {
 		static std::vector<nameNumberPair*> NAME_NUMBER_PAIRS;
 		static std::map<std::string, int> NAME_TO_NUMBER;
 		static HttpWrapper::GameData data;
-		static std::string sessionCookie;
+		static std::string session_cookie;
 		static std::string auth;
 		static Poco::Net::NameValueCollection cookie;
 		static std::vector<HttpWrapper::Character*> chars;
 		static std::vector<HttpWrapper::Server*> servers;
 		static std::string userID;
 		static nlohmann::json* config;
-		bool static getCachedGameVersion(std::string &version);
-		bool static getGameVersion(std::string &version);
-		bool static getGameData();
-		bool static getConfig(nlohmann::json &config);
-		bool static doPost(std::string url, std::string args, std::string *str, std::vector<Poco::Net::HTTPCookie> *cookies = nullptr);
-		bool static doRequest(std::string url, std::string *str = nullptr);
+		bool static get_cached_game_version(std::string &version);
+		bool static get_game_version(std::string &version);
+		bool static get_game_data();
+		bool static get_config(nlohmann::json &config);
+		bool static do_post(std::string url, std::string args, std::string *str, std::vector<Poco::Net::HTTPCookie> *cookies = nullptr);
+		bool static do_request(std::string url, std::string *str = nullptr);
 		bool static login();
-		bool static getCharacters();
-		bool static getCharactersAndServers();
-		bool static processCharacters(nlohmann::json &chars);
-		bool static getServers();
-		bool static processServers(nlohmann::json &servers);
+		bool static get_characters();
+		bool static get_characters_and_servers();
+		bool static process_characters(nlohmann::json &chars);
+		bool static get_servers();
+		bool static process_servers(nlohmann::json &servers);
 		bool static api_method(std::string method, std::string args, std::string *str);
 };
 

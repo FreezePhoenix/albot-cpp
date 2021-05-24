@@ -7,7 +7,7 @@
 
 namespace JsonUtils {
 	void parse(rapidjson::Document* _json, std::string* str);
-	void stripComments(std::string *str);
+	void strip_comments(std::string *str);
 };
 
 #endif /* JSONUTILS_HPP_ */

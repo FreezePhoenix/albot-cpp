@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef GAMEINFO_HPP_
 #define GAMEINFO_HPP_
 

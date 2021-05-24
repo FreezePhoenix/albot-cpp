@@ -1,20 +1,23 @@
+#include <Poco/Net/HTTPSClientSession.h>
+#include <Poco/Net/HTTPResponse.h>
+#include <Poco/Net/SSLException.h>
+#include <Poco/Net/HTTPRequest.h>
+#include <Poco/StreamCopier.h>
+#include <sys/stat.h>
+#include <Poco/URI.h>
+#include <iostream>
+#include <fstream>
+#include <regex>
+
 #include "MapProcessing.hpp"
 #include "HttpWrapper.hpp"
 #include "JsonUtils.hpp"
-#include <Poco/Net/HTTPSClientSession.h>
-#include <Poco/Net/SSLException.h>
-#include <Poco/Net/HTTPRequest.h>
-#include <Poco/Net/HTTPResponse.h>
-#include <Poco/StreamCopier.h>
-#include <Poco/URI.h>
-#include <iostream>
-#include <sys/stat.h>
-#include <fstream>
-#include <regex>
+
+
 HttpWrapper::GameData HttpWrapper::data = HttpWrapper::GameData();
 std::string HttpWrapper::password = "";
 std::string HttpWrapper::email = "";
-std::string HttpWrapper::sessionCookie = "";
+std::string HttpWrapper::session_cookie = "";
 std::string HttpWrapper::auth = "";
 Poco::Net::NameValueCollection HttpWrapper::cookie = Poco::Net::NameValueCollection();
 std::vector<HttpWrapper::nameNumberPair*> HttpWrapper::NAME_NUMBER_PAIRS = std::vector<HttpWrapper::nameNumberPair*>();
@@ -23,7 +26,7 @@ std::vector<HttpWrapper::Character*> HttpWrapper::chars = std::vector<HttpWrappe
 std::vector<HttpWrapper::Server*> HttpWrapper::servers = std::vector<HttpWrapper::Server*>();
 std::string HttpWrapper::userID = "";
 
-bool HttpWrapper::getCachedGameVersion(std::string &version) {
+bool HttpWrapper::get_cached_game_version(std::string &version) {
     std::ifstream version_file("game_version");
     if(version_file.fail() || !version_file.is_open()) {
         std::cout << "Failed to find local cache version! Continuing with version 0." << std::endl;
@@ -36,10 +39,10 @@ bool HttpWrapper::getCachedGameVersion(std::string &version) {
     return true;        
 }
 
-bool HttpWrapper::getGameVersion(std::string &version) {
+bool HttpWrapper::get_game_version(std::string &version) {
     std::string raw_data;
     std::cout << "Fetching game version..." << std::endl;
-    if(HttpWrapper::doRequest("https://adventure.land/", &raw_data)) {
+    if(HttpWrapper::do_request("https://adventure.land/", &raw_data)) {
         std::regex version_regex = std::regex("data\\.js\\?v=([0-9]+)\"", std::regex::extended);
         std::smatch sm;
         std::regex_search(raw_data, sm, version_regex);
@@ -58,14 +61,20 @@ bool HttpWrapper::getGameVersion(std::string &version) {
     }
 }
 void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
-    MapProcessing::simplify_map(data["geometry"]["main"]);
+    nlohmann::json &geo = data["geometry"];
+    for(nlohmann::detail::iter_impl<nlohmann::json> it = geo.begin(); it != geo.end(); it++) {
+        if(it.value()["x_lines"].is_array()) {
+            MapProcessing::simplify_map(it.value());
+        }
+    }
     HttpWrapper::data = data;
 }
-bool HttpWrapper::getGameData() {
+
+bool HttpWrapper::get_game_data() {
     std::string raw_data;
     std::string current_version = "",
         cached_version = "";
-    if(getCachedGameVersion(cached_version) && getGameVersion(current_version)) {
+    if(get_cached_game_version(cached_version) && get_game_version(current_version)) {
         if(cached_version == current_version) {
             std::ifstream cached_file("data.json");
             if(cached_file.fail() || !cached_file.is_open()) {
@@ -83,7 +92,7 @@ bool HttpWrapper::getGameData() {
         }
         std::ofstream version_cache("game_version");
         version_cache.write(current_version.c_str(), current_version.length());
-        if(HttpWrapper::doRequest("https://adventure.land/data.js", &raw_data)) {
+        if(HttpWrapper::do_request("https://adventure.land/data.js", &raw_data)) {
             std::cout << "Data fetched! Trimming..." << std::endl;
             raw_data = raw_data.substr(6, raw_data.length() - 8);
             std::cout << "Data trimmed! Parsing..." << std::endl;
@@ -105,13 +114,13 @@ bool HttpWrapper::getGameData() {
     }
 }
 
-bool HttpWrapper::getConfig(nlohmann::json &config) {
+bool HttpWrapper::get_config(nlohmann::json &config) {
     std::cout << "Reading config..." << std::endl;
     std::ifstream configfile("bot.json");
     std::string tmp;
     if (configfile.is_open()) {
         Poco::StreamCopier::copyToString(configfile, tmp);
-        JsonUtils::stripComments(&tmp);
+        JsonUtils::strip_comments(&tmp);
         config = nlohmann::json::parse(tmp.c_str());
         if (!config.is_object()) {
             std::cout << "Config file is empty! Aborting." << std::endl;
@@ -127,7 +136,7 @@ bool HttpWrapper::getConfig(nlohmann::json &config) {
         return false;
     }
 }
-bool HttpWrapper::doPost(std::string url, std::string args, std::string *str, std::vector<Poco::Net::HTTPCookie> *cookies) {
+bool HttpWrapper::do_post(std::string url, std::string args, std::string *str, std::vector<Poco::Net::HTTPCookie> *cookies) {
     Poco::URI uri(url);
     std::string path(uri.getPathAndQuery());
     if (path.empty()) {
@@ -139,7 +148,7 @@ bool HttpWrapper::doPost(std::string url, std::string args, std::string *str, st
     Poco::Net::HTTPResponse response;
 
     request.setContentLength(args.length());
-    if (!sessionCookie.empty()) {
+    if (!session_cookie.empty()) {
         request.setCookies(cookie);
     }
     session.sendRequest(request) << args;
@@ -162,7 +171,7 @@ bool HttpWrapper::doPost(std::string url, std::string args, std::string *str, st
         return false;
     }
 }
-bool HttpWrapper::doRequest(std::string url, std::string *str) {
+bool HttpWrapper::do_request(std::string url, std::string *str) {
     Poco::Net::HTTPResponse response;
     Poco::URI uri(url);
     std::string path(uri.getPathAndQuery());
@@ -172,7 +181,7 @@ bool HttpWrapper::doRequest(std::string url, std::string *str) {
     Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
 
     Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, path, Poco::Net::HTTPMessage::HTTP_1_1);
-    if (!sessionCookie.empty()) {
+    if (!session_cookie.empty()) {
         request.setCookies(cookie);
     }
     session.sendRequest(request);
@@ -207,22 +216,22 @@ bool HttpWrapper::login() {
         HttpWrapper::password = HttpWrapper::password.substr(pos + 1);
         // Attempt to connect to the server. Since we don't need to copy the output,
         // We pass a nullptr for the output. TODO: Get support for HTTP HEADERS verb.
-        if (HttpWrapper::doRequest("https://adventure.land", nullptr)) {
+        if (HttpWrapper::do_request("https://adventure.land", nullptr)) {
             std::cout << "Successfully connected to server!" << std::endl;
             std::string args("arguments={\"email\":\"" + email + "\",\"password\":\"" + password + "\",\"only_login\":true}&method=signup_or_login");
             std::vector < Poco::Net::HTTPCookie > cookies;
             // Again, we don't *really* care about the output the server sends us...
             // We just want the cookies.
-            if (HttpWrapper::doPost("https://adventure.land/api/signup_or_login", args, nullptr, &cookies)) {
+            if (HttpWrapper::do_post("https://adventure.land/api/signup_or_login", args, nullptr, &cookies)) {
                 for (unsigned int i = 0; i < cookies.size(); i++) {
                     Poco::Net::HTTPCookie _cookie = cookies[i];
                     if (_cookie.getName() == "auth") {
-                        HttpWrapper::sessionCookie = _cookie.getValue();
-                        HttpWrapper::cookie.set("auth", sessionCookie);
+                        HttpWrapper::session_cookie = _cookie.getValue();
+                        HttpWrapper::cookie.set("auth", session_cookie);
                         size_t pos = 0;
-                        pos = sessionCookie.find('-');
-                        HttpWrapper::userID = HttpWrapper::sessionCookie.substr(0, pos);
-                        HttpWrapper::auth = HttpWrapper::sessionCookie.substr(pos + 1, HttpWrapper::sessionCookie.length());
+                        pos = session_cookie.find('-');
+                        HttpWrapper::userID = HttpWrapper::session_cookie.substr(0, pos);
+                        HttpWrapper::auth = HttpWrapper::session_cookie.substr(pos + 1, HttpWrapper::session_cookie.length());
                         std::cout << "Logged in!" << std::endl;
                         return true;
                     }
@@ -244,7 +253,7 @@ bool HttpWrapper::login() {
         std::cout << e.displayText() << std::endl;
     }
 }
-bool HttpWrapper::getCharacters() {
+bool HttpWrapper::get_characters() {
     std::string out;
     if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
         std::cout << "Characters fetched! Processing..." << std::endl;
@@ -252,18 +261,18 @@ bool HttpWrapper::getCharacters() {
         // For some reason we don't just get an object, the API wraps it in an array.
         if (characters.is_array()) {
             characters = characters[0]["characters"].get<nlohmann::basic_json<>>();
-            return HttpWrapper::processCharacters(characters);
+            return HttpWrapper::process_characters(characters);
 
         } else {
             std::cout << "Server did not send us an array... trying root object instead" << std::endl;
-            return HttpWrapper::processCharacters(characters);
+            return HttpWrapper::process_characters(characters);
         }
     } else {
         std::cout << "Failed to fetch characters! Aborting." << std::endl;
         return false;
     }
 }
-bool HttpWrapper::getCharactersAndServers() {
+bool HttpWrapper::get_characters_and_servers() {
     std::string out;
     if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
         std::cout << "Characters fetched! Processing..." << std::endl;
@@ -271,18 +280,18 @@ bool HttpWrapper::getCharactersAndServers() {
         // For some reason we don't just get an object, the API wraps it in an array.
         if (characters.is_array()) {
             characters = characters[0]["characters"].get<nlohmann::basic_json<>>();
-            return HttpWrapper::processCharacters(characters);
+            return HttpWrapper::process_characters(characters);
 
         } else {
             std::cout << "Server did not send us an array... trying root object instead" << std::endl;
-            return HttpWrapper::processCharacters(characters);
+            return HttpWrapper::process_characters(characters);
         }
     } else {
         std::cout << "Failed to fetch characters! Aborting." << std::endl;
         return false;
     }
 }
-bool HttpWrapper::processCharacters(nlohmann::json &chars) {
+bool HttpWrapper::process_characters(nlohmann::json &chars) {
     try {
         if (chars.is_array()) {
             HttpWrapper::chars.resize(chars.size());
@@ -331,7 +340,7 @@ bool HttpWrapper::processCharacters(nlohmann::json &chars) {
         throw;
     }
 }
-bool HttpWrapper::getServers() {
+bool HttpWrapper::get_servers() {
     std::string out;
     if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
         std::cout << "Servers fetched! Processing..." << std::endl;
@@ -340,10 +349,10 @@ bool HttpWrapper::getServers() {
         if (servers.is_array()) {
             // document.GetArray()
             servers = servers[0]["servers"].get<nlohmann::basic_json<>>();
-            return HttpWrapper::processServers(servers);
+            return HttpWrapper::process_servers(servers);
         } else {
             std::cout << "Server did not send us an array... trying root object instead" << std::endl;
-            return HttpWrapper::processServers(servers);
+            return HttpWrapper::process_servers(servers);
         }
         return true;
     } else {
@@ -351,7 +360,7 @@ bool HttpWrapper::getServers() {
         return false;
     }
 }
-bool HttpWrapper::processServers(nlohmann::json &servers) {
+bool HttpWrapper::process_servers(nlohmann::json &servers) {
     try {
         if (servers.is_array()) {
             HttpWrapper::servers.resize(servers.size());
@@ -378,5 +387,5 @@ bool HttpWrapper::processServers(nlohmann::json &servers) {
 }
 bool HttpWrapper::api_method(std::string method, std::string args, std::string *str) {
     std::string args_string = "arguments=" + args + "&method=" + method;
-    return HttpWrapper::doPost("https://adventure.land/api/" + method, args_string, str);
+    return HttpWrapper::do_post("https://adventure.land/api/" + method, args_string, str);
 }
