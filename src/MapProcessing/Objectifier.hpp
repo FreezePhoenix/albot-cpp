@@ -5,6 +5,7 @@
 
 #include "MapProcessing.hpp"
 #include "../Utils/DoubleLinkedList.hpp"
+#include <set>
 
 class Objectifier {
     typedef DoubleLinkedList<MapProcessing::Tuple> TupleList;

@@ -9,8 +9,9 @@
 #include <fstream>
 #include <regex>
 
-#include "MapProcessing/Objectifier.hpp"
 #include "MapProcessing/MapProcessing.hpp"
+#include "MapProcessing/Objectifier.hpp"
+#include "MapProcessing/Writer.hpp"
 #include "HttpWrapper.hpp"
 #include "JsonUtils.hpp"
 
@@ -72,8 +73,10 @@ void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
             nlohmann::json y_lines(info->y_lines);
             it.value()["x_lines"] = x_lines;
             it.value()["y_lines"] = y_lines;
-            Objectifier object(info);
-            object.run();
+            Objectifier objectifier(info);
+            objectifier.run();
+            Writer writer(&objectifier);
+            writer.write();
         }
     }
     HttpWrapper::data = data;

@@ -11,9 +11,9 @@ add_executable (albot-cpp
 )
 
 add_library(MapProcessing SHARED
-  "src/MapProcessing/Objectifier.cpp"
   "src/MapProcessing/MapProcessing.cpp"
-  "src/Utils/DoubleLinkedList.cpp"
+  "src/MapProcessing/Objectifier.cpp"
+  "src/MapProcessing/Writer.cpp"
 )
 
 add_library(HttpWrapper SHARED
