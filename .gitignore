@@ -48,3 +48,4 @@ Makefile
 **/game_version
 **/Makefile
 **/*.ninja*
+**/.vscode

@@ -1,5 +1,5 @@
-#ifndef BOTSKELETON_HPP_
-#define BOTSKELETON_HPP_
+#ifndef ALBOT_BOTSKELETON_HPP_
+#define ALBOT_BOTSKELETON_HPP_
 
 #include "SocketWrapper.hpp"
 #include "GameInfo.hpp"
@@ -13,4 +13,4 @@ class BotSkeleton: public Bot {
 		void stop();
 };
 
-#endif /* BOTSKELETON_HPP_ */
+#endif /* ALBOT_BOTSKELETON_HPP_ */

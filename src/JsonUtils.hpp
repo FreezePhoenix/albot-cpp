@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef JSONUTILS_HPP_
-#define JSONUTILS_HPP_
+#ifndef ALBOT_JSONUTILS_HPP_
+#define ALBOT_JSONUTILS_HPP_
 
 #include <rapidjson/document.h>
 
@@ -10,4 +10,4 @@ namespace JsonUtils {
 	void strip_comments(std::string *str);
 };
 
-#endif /* JSONUTILS_HPP_ */
+#endif /* ALBOT_JSONUTILS_HPP_ */

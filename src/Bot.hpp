@@ -1,5 +1,5 @@
-#ifndef BOT_HPP_
-#define BOT_HPP_
+#ifndef ALBOT_BOT_HPP_
+#define ALBOT_BOT_HPP_
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -54,4 +54,4 @@ class Bot {
 		PROXY_GETTER(Id, std::string)
 };
 
-#endif /* BOT_HPP_ */
+#endif /* ALBOT_BOT_HPP_ */

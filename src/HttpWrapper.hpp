@@ -1,5 +1,7 @@
-#ifndef HTTPWRAPPER_HPP_
-#define HTTPWRAPPER_HPP_
+#pragma once
+
+#ifndef ALBOT_HTTPWRAPPER_HPP_
+#define ALBOT_HTTPWRAPPER_HPP_
 
 #include <Poco/Net/HTTPCookie.h>
 #include <nlohmann/json.hpp>
@@ -82,4 +84,4 @@ class HttpWrapper {
 		bool static api_method(std::string method, std::string args, std::string *str);
 };
 
-#endif /* HTTPWRAPPER_HPP_ */
+#endif /* ALBOT_HTTPWRAPPER_HPP_ */

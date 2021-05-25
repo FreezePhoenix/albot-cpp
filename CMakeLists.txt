@@ -8,7 +8,12 @@ project ("albot-cpp")
 add_executable (albot-cpp
 	"src/albot-cpp.cpp"
   "src/JsonUtils.cpp"
-  "src/MapProcessing.cpp"
+)
+
+add_library(MapProcessing SHARED
+  "src/MapProcessing/Objectifier.cpp"
+  "src/MapProcessing/MapProcessing.cpp"
+  "src/Utils/DoubleLinkedList.cpp"
 )
 
 add_library(HttpWrapper SHARED
@@ -29,7 +34,7 @@ set_property(TARGET Bot PROPERTY COMPILE_OPTIONS "-fPIC")
 target_link_directories(albot-cpp PUBLIC "./")
 target_include_directories(Bot PUBLIC "./IXWebSocket")
 TARGET_LINK_LIBRARIES(HttpWrapper PocoFoundation PocoNet spdlog PocoNetSSL)
-TARGET_LINK_LIBRARIES(albot-cpp ${CMAKE_DL_LIBS} spdlog HttpWrapper)
+TARGET_LINK_LIBRARIES(albot-cpp ${CMAKE_DL_LIBS} spdlog HttpWrapper MapProcessing)
 TARGET_LINK_LIBRARIES(alclient-cpp ${CMAKE_DL_LIBS} spdlog HttpWrapper Bot)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)

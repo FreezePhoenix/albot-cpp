@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef MOVEMENTMATH_HPP_
-#define MOVEMENTMATH_HPP_
+#ifndef ALBOT_MOVEMENTMATH_HPP_
+#define ALBOT_MOVEMENTMATH_HPP_
 
 #include <nlohmann/json.hpp>
 #include <utility>
@@ -55,4 +55,4 @@ public:
     }
 };
 
-#endif
+#endif /* ALBOT_MOVEMENTMATH_HPP_ */

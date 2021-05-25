@@ -1,20 +1,32 @@
+#pragma once
+
+#ifndef ALBOT_MAPPROCESSING_HPP_
+#define ALBOT_MAPPROCESSING_HPP_
+
 #include <map>
 #include <vector>
 #include <math.h>
 #include <nlohmann/json.hpp>
 
 namespace MapProcessing {
+    typedef unsigned int TupleHash;
     struct Tuple {
         short first;
         short second;
-        unsigned int hash;
+        TupleHash hash;
         Tuple(short first, short second) {
             this->first = first;
             this->second = second;
-            hash = static_cast<unsigned short int>(first) << 16 | static_cast<unsigned short int>(second);
+            this->hash = static_cast<unsigned int>(first) << 16 | static_cast<unsigned short>(second);
+        }
+        Tuple() {
+            this->first = 0;
+            this->second = 0;
+            this->hash = 0;
         }
     };
     struct MapInfo {
+        std::string name;
         std::vector<std::vector<short>> x_lines;
         std::vector<std::vector<short>> y_lines;
     };
@@ -30,9 +42,6 @@ namespace MapProcessing {
     inline const _Tp& max(const _Tp& a, const _Tp& b, const _Tp& c, const _Tp& d) {
         return std::max<_Tp>(std::max<_Tp>(a, b), std::max<_Tp>(c, d));
     }
-    // Accepts "G.maps"
-    // Read: Actually accepts "G.geometry"
-    void simplify_map(nlohmann::json& json);
     // Accepts the "G.maps[<map_name>].data" property."
     // Read: Actually accepts "G.geometry[<map_name>]"
     // Outputs a MapInfo, which contains all the lines in the map.
@@ -40,3 +49,5 @@ namespace MapProcessing {
     // Accepts a map info, and simplifies it, remove unnecessary lines.
     MapInfo* simplify_lines(MapInfo* info);
 }
+
+#endif /* MAPPROCESSING_HPP_ */

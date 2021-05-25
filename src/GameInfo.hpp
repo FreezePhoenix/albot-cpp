@@ -1,5 +1,5 @@
-#ifndef GAMEINFO_HPP_
-#define GAMEINFO_HPP_
+#ifndef ALBOT_GAMEINFO_HPP_
+#define ALBOT_GAMEINFO_HPP_
 
 #include "HttpWrapper.hpp"
 
@@ -14,4 +14,4 @@ class GameInfo {
 };
 
 
-#endif /* GAMEINFO_HPP_ */
+#endif /* ALBOT_GAMEINFO_HPP_ */

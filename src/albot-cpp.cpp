@@ -11,13 +11,14 @@
 #include <pthread.h>
 #include <iostream>
 #include <dlfcn.h>
+#include <memory>
 #include <iomanip>
 #include <fstream>
 
-#include "MapProcessing.hpp"
 #include "HttpWrapper.hpp"
 #include "GameInfo.hpp"
 #include "Bot.hpp"
+#include "Utils/DoubleLinkedList.hpp"
 
 namespace ALBot {
 	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";
@@ -130,7 +131,9 @@ namespace ALBot {
 		HttpWrapper::get_game_data();
 		// std::cout << map["x_lines"].size() << std::endl;
 		std::cout << HttpWrapper::data["geometry"]["main"]["x_lines"].size() << std::endl;
+		std::cout << HttpWrapper::data["geometry"]["main"]["y_lines"].size() << std::endl;
 		clean_code();
+		std::shared_ptr<int> a;
 		start_character(0);
 	}
 }

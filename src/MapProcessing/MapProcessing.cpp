@@ -21,13 +21,6 @@ namespace MapProcessing {
         }
         return false;
     }
-    
-    void simplify_map(nlohmann::json& json) {
-        MapInfo* info = parse_map(json);
-        simplify_lines(info);
-        nlohmann::json x_lines(info->x_lines);
-        json["x_lines"] = x_lines;
-    }
     typedef std::map<short, std::vector<Tuple>> shortTupleVector;
     MapInfo* parse_map(nlohmann::json& json) {
         MapInfo* info = new MapInfo();

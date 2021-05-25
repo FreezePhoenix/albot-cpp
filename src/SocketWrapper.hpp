@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef SOCKETWRAPPER_HPP_
-#define SOCKETWRAPPER_HPP_
+#ifndef ALBOT_SOCKETWRAPPER_HPP_
+#define ALBOT_SOCKETWRAPPER_HPP_
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -139,4 +139,4 @@ class SocketWrapper {
 		}
 };
 
-#endif /* SOCKETWRAPPER_HPP_ */
+#endif /* ALBOT_SOCKETWRAPPER_HPP_ */

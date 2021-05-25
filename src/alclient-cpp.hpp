@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef ALCLIENT_CPP_HPP_
 #define ALCLIENT_CPP_HPP_
 
