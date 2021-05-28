@@ -1,6 +1,11 @@
 #include "Writer.hpp"
 #include <fstream>
-#include<sstream>
+#include <sstream>
+#include <vector>
+#include <bits/stdc++.h>
+#include "TriangleManipulator.hpp"
+#include <functional>
+#include "ShapeManipulator.hpp"
 
 Writer::Writer(Objectifier* objectifier) {
     this->objectifier = objectifier;
@@ -17,54 +22,40 @@ std::string pad_right(std::string const& str, size_t s) {
 
 void Writer::write() {
     MapProcessing::MapInfo* info = this->objectifier->info;
-    std::ofstream outfile("Maps/" + info->name);
-    std::stringstream first_header;
-    std::stringstream second_header;
-    std::stringstream content_header;
-    int segments = 0;
-    int object_number = 1;
-    int point_count = 0;
-    outfile.clear();
+    triangulateio* output = TriangleManipulator::create_instance();
+    ShapeManipulator::from_list(this->objectifier->objects, output);
+    TriangleManipulator::write_poly_file("Maps/" + info->name + ".poly", output);
+    int index = 0;
     for(const DoubleLinkedList<MapProcessing::Tuple>* list : this->objectifier->objects) {
-        segments += list->length - 1;
-        content_header << " # Object " << (object_number++) << std::endl;
-        TupleList::Node* current = list->head;
-        bool first = true;
-        do {
-            if(!first) {
-                current = current->next;
-            }
-            if(this->points.find(current->value.hash) != this->points.end()) {
-                content_header << "  #";
-            } else {
-                content_header << "   ";
-                point_count++;
-                this->points.insert(std::pair<MapProcessing::TupleHash, int>(current->value.hash, point_count));
-            }
-            content_header << " " << pad_right(std::to_string(point_count), 7) << " " << pad_right(std::to_string(current->value.first), 5) << " " << pad_right(std::to_string(current->value.second), 7) << " " << object_number << std::endl;
-            first = false;
-        } while(current->next != nullptr);
+        if(list == (*this->objectifier->objects.begin())) {
+            continue;
+        }
+        triangulateio* triangle = TriangleManipulator::create_instance();
+        ShapeManipulator::from_list((TupleList*) list, triangle);
+        TriangleManipulator::write_poly_file("Maps/" + info->name + ".object" + std::to_string(index++) + ".poly", triangle);
+        TriangleManipulator::cleanup(triangle);
     }
-    content_header << segments << " 1" << std::endl;
-    object_number = 1;
-    int segment_index = 1;
-    for(const DoubleLinkedList<MapProcessing::Tuple>* list : this->objectifier->objects) {
-        segments += list->length - 1;
-        content_header << " # Object " << (object_number++) << std::endl;
-        TupleList::Node* current = list->head;
-        bool first = true;
-        do {
-            if(!first) {
-                current = current->next;
-            }
-            content_header << "    " << pad_right(std::to_string(segment_index++), 7) << " " << pad_right(std::to_string(points[current->value.hash]), 5) << " " << pad_right(std::to_string(points[current->next->value.hash]), 7) << " " << object_number << std::endl;
-            first = false;
-        } while(current->next != nullptr && current->next->next != nullptr);
+    if(output->numberofpoints < 3) {
+        return;
     }
-    first_header << "# Generated from map: " << info->name << std::endl;
-    first_header << points.size() << " 2 0 1" << std::endl;
-    outfile << first_header.str();
-    outfile << content_header.str();
-    outfile << "0";
-    outfile.close();
+    // triangulateio* trian = output;
+
+    // triangulateio* outstuff = TriangleManipulator::create_instance();
+    // triangulateio* voutstuff = TriangleManipulator::create_instance();
+    // triangulate("pvDQa1000", trian, outstuff, voutstuff);
+
+    // voutstuff->pointlist = holeoutstuff->pointlist;
+    // voutstuff->numberofpoints = holeoutstuff->numberofpoints;
+    // voutstuff->numberofpointattributes = holeoutstuff->numberofpointattributes;
+    // voutstuff->pointmarkerlist = holeoutstuff->pointmarkerlist;
+    // voutstuff->pointattributelist = holeoutstuff->pointattributelist;
+    // TriangleManipulator::filter_edges(voutstuff, outstuff, [](int p1, int p2, REAL norm1, REAL norm2) {
+    //     return p2 != -1;
+    // });
+    triangulateio* map = TriangleManipulator::create_instance();
+    ShapeManipulator::from_list(*objectifier->objects.begin(), map);
+    TriangleManipulator::write_poly_file("Maps/" + info->name + ".poly", map);
+    // TriangleManipulator::cleanup(trian);
+    // TriangleManipulator::cleanup(outstuff);
+    // TriangleManipulator::cleanup(voutstuff);
 }

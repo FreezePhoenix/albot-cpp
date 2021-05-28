@@ -95,7 +95,9 @@ bool HttpWrapper::get_game_data() {
                 std::ostringstream string_stream;
                 string_stream << cached_file.rdbuf();
                 raw_data = string_stream.str();
+                HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(raw_data);
                 HttpWrapper::data = HttpWrapper::GameData(raw_data);
+                handleGameJson(data);
                 return true;
             }
             cached_file.close();

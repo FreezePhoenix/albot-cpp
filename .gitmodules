@@ -4,3 +4,6 @@
 [submodule "Poco"]
 	path = Poco
 	url = https://github.com/pocoproject/poco
+[submodule "TriangleManipulator"]
+	path = TriangleManipulator
+	url = https://github.com/FreezePhoenix/TriangleManipulator
