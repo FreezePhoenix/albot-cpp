@@ -33,13 +33,13 @@ add_library(alclient-cpp SHARED
 set_property(TARGET Bot PROPERTY COMPILE_OPTIONS "-fPIC")
 # TODO: Add tests and install targets if needed.
 target_link_directories(albot-cpp PUBLIC "./")
-add_subdirectory(../TriangleManipulator ../TriangleManipulator)
+add_subdirectory(./TriangleManipulator ./TriangleManipulator)
 target_include_directories(Bot PUBLIC "./IXWebSocket")
 TARGET_LINK_LIBRARIES(HttpWrapper PocoFoundation PocoNet spdlog PocoNetSSL)
 
 TARGET_LINK_LIBRARIES(MapProcessing LIBTriangleManipulator)
 
-target_include_directories(MapProcessing PUBLIC "../TriangleManipulator/src")
+target_include_directories(MapProcessing PUBLIC "./TriangleManipulator/src")
 TARGET_LINK_LIBRARIES(albot-cpp ${CMAKE_DL_LIBS} spdlog HttpWrapper MapProcessing)
 TARGET_LINK_LIBRARIES(alclient-cpp ${CMAKE_DL_LIBS} spdlog HttpWrapper Bot)
 find_package(Threads REQUIRED)
