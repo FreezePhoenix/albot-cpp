@@ -9,22 +9,7 @@
 #include <nlohmann/json.hpp>
 
 namespace MapProcessing {
-    typedef unsigned int TupleHash;
-    struct Tuple {
-        short first;
-        short second;
-        TupleHash hash;
-        Tuple(short first, short second) {
-            this->first = first;
-            this->second = second;
-            this->hash = static_cast<unsigned int>(first) << 16 | static_cast<unsigned short>(second);
-        }
-        Tuple() {
-            this->first = 0;
-            this->second = 0;
-            this->hash = 0;
-        }
-    };
+    typedef std::pair<short, short> Tuple;
     struct MapInfo {
         std::string name;
         std::vector<std::vector<short>> x_lines;

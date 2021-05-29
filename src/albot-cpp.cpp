@@ -18,6 +18,7 @@
 #include "HttpWrapper.hpp"
 #include "GameInfo.hpp"
 #include "Bot.hpp"
+#include "Common.hpp"
 #include "Utils/DoubleLinkedList.hpp"
 
 namespace ALBot {

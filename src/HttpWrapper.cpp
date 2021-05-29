@@ -13,6 +13,7 @@
 #include "MapProcessing/Objectifier.hpp"
 #include "MapProcessing/Writer.hpp"
 #include "HttpWrapper.hpp"
+#include "Common.hpp"
 #include "JsonUtils.hpp"
 
 

@@ -1,15 +1,14 @@
-#include "Writer.hpp"
-#include <fstream>
-#include <sstream>
 #include <vector>
-#include <bits/stdc++.h>
+
+
 #include "TriangleManipulator.hpp"
-#include <functional>
 #include "ShapeManipulator.hpp"
+#include "MapProcessing.hpp"
+#include "Writer.hpp"
 
 Writer::Writer(Objectifier* objectifier) {
     this->objectifier = objectifier;
-    this->points = std::map<MapProcessing::TupleHash, int>();
+    this->points = std::unordered_map<std::pair<short, short>, int, pair_hash>();
 }
 
 std::string pad_right(std::string const& str, size_t s) {
@@ -26,12 +25,12 @@ void Writer::write() {
     ShapeManipulator::from_list(this->objectifier->objects, output);
     TriangleManipulator::write_poly_file("Maps/" + info->name + ".poly", output);
     int index = 0;
-    for(const DoubleLinkedList<MapProcessing::Tuple>* list : this->objectifier->objects) {
+    for(const DoubleLinkedList<std::pair<short, short>>* list : this->objectifier->objects) {
         if(list == (*this->objectifier->objects.begin())) {
             continue;
         }
         triangulateio* triangle = TriangleManipulator::create_instance();
-        ShapeManipulator::from_list((TupleList*) list, triangle);
+        ShapeManipulator::from_list((DoubleLinkedList<std::pair<short, short>>*) list, triangle);
         TriangleManipulator::write_poly_file("Maps/" + info->name + ".object" + std::to_string(index++) + ".poly", triangle);
         TriangleManipulator::cleanup(triangle);
     }

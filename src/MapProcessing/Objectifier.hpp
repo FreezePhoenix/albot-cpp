@@ -3,12 +3,11 @@
 #ifndef ALBOT_OBJECTIFIER_HPP_
 #define ALBOT_OBJECTIFIER_HPP_
 
+#include "../Common.hpp"
 #include "MapProcessing.hpp"
-#include "../Utils/DoubleLinkedList.hpp"
 #include <set>
 
 class Objectifier {
-    typedef DoubleLinkedList<MapProcessing::Tuple> TupleList;
     public:
         struct Object {
             short min_x = NULL;
@@ -24,7 +23,7 @@ class Objectifier {
             Object() {
                 this->min_x = this->max_x = this->min_y = this->max_y = NULL;
             };
-            void adopt(MapProcessing::Tuple point) {
+            void adopt(std::pair<short, short> point) {
                 if(this->min_x == NULL) {
                     this->min_x = this->max_x = point.first;
                     this->min_y = this->max_y = point.second;
@@ -42,12 +41,12 @@ class Objectifier {
                 }
             }
         };
-        std::vector<TupleList*> objects;
-        std::map<TupleList*, Object*> list_to_objects;
-        std::map<MapProcessing::TupleHash, TupleList::Node*> tuple_to_node;
+        std::vector<DoubleLinkedList<std::pair<short, short>>*> objects;
+        std::unordered_map<DoubleLinkedList<std::pair<short, short>>*, Object*> list_to_objects;
+        std::unordered_map<std::pair<short, short>, DoubleLinkedList<std::pair<short, short>>::Node*, pair_hash> tuple_to_node;
         MapProcessing::MapInfo* info;
         Objectifier(MapProcessing::MapInfo* info);
-        void chain(MapProcessing::Tuple first, MapProcessing::Tuple second);
+        void chain(const std::pair<short, short>& first, const std::pair<short, short>& second);
         void run();
 };
 
