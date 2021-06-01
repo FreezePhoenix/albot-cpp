@@ -6,6 +6,7 @@
 #include "../Common.hpp"
 #include "MapProcessing.hpp"
 #include <set>
+#include <unordered_set>
 
 class Objectifier {
     public:
@@ -23,27 +24,30 @@ class Objectifier {
             Object() {
                 this->min_x = this->max_x = this->min_y = this->max_y = NULL;
             };
-            void adopt(std::pair<short, short> point) {
+            Object* adopt(MapProcessing::Point& point) {
                 if(this->min_x == NULL) {
-                    this->min_x = this->max_x = point.first;
-                    this->min_y = this->max_y = point.second;
+                    this->min_x = this->max_x = point.x;
+                    this->min_y = this->max_y = point.y;
                 } else {
-                    if(point.first < this->min_x) {
-                        this->min_x = point.first;
-                    } else if(point.first > this->max_x) {
-                        this->max_x = point.first;
+                    if(point.x < this->min_x) {
+                        this->min_x = point.x;
+                    } else if(point.x > this->max_x) {
+                        this->max_x = point.x;
                     }
-                    if(point.second < this->min_y) {
-                        this->min_y = point.second;
-                    } else if(point.second > this->max_y) {
-                        this->max_y = point.second;
+                    if(point.y < this->min_y) {
+                        this->min_y = point.y;
+                    } else if(point.y > this->max_y) {
+                        this->max_y = point.y;
                     }
                 }
+                return this;
             }
         };
-        std::vector<DoubleLinkedList<std::pair<short, short>>*> objects;
-        std::unordered_map<DoubleLinkedList<std::pair<short, short>>*, Object*> list_to_objects;
-        std::unordered_map<std::pair<short, short>, DoubleLinkedList<std::pair<short, short>>::Node*, pair_hash> tuple_to_node;
+        std::unordered_map<MapProcessing::Line, std::vector<MapProcessing::Line>*, MapProcessing::LineHash> lines_to_object;
+        std::unordered_map<std::vector<MapProcessing::Line>*, Object*>* object_sizes;
+        std::vector<MapProcessing::Point> points;
+        std::vector<std::vector<MapProcessing::Line>*> objects;
+        std::vector<MapProcessing::Line> lines;
         MapProcessing::MapInfo* info;
         Objectifier(MapProcessing::MapInfo* info);
         void chain(const std::pair<short, short>& first, const std::pair<short, short>& second);

@@ -74,10 +74,10 @@ void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
             nlohmann::json y_lines(info->y_lines);
             it.value()["x_lines"] = x_lines;
             it.value()["y_lines"] = y_lines;
-            Objectifier objectifier(info);
-            objectifier.run();
-            Writer writer(&objectifier);
-            writer.write();
+                Objectifier objectifier(info);
+                objectifier.run();
+                Writer writer(&objectifier);
+                writer.write();
         }
     }
     HttpWrapper::data = data;

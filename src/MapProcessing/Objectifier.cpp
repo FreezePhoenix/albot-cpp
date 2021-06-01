@@ -5,129 +5,179 @@
 #include "Objectifier.hpp"
 
 Objectifier::Objectifier(MapProcessing::MapInfo* info) {
-    this->list_to_objects = std::unordered_map<DoubleLinkedList<std::pair<short, short>>*, Object*>();
-    this->objects = std::vector<DoubleLinkedList<std::pair<short, short>>*>();
-
-    this->tuple_to_node = std::unordered_map<std::pair<short, short>, DoubleLinkedList<std::pair<short, short>>::Node*, pair_hash>();
     this->info = info;
+    this->points = std::vector<MapProcessing::Point>();
+    this->lines = std::vector<MapProcessing::Line>();
+    this->lines_to_object = std::unordered_map<MapProcessing::Line, std::vector<MapProcessing::Line>*, MapProcessing::LineHash>();
+    this->objects = std::vector<std::vector<MapProcessing::Line>*>();
+    this->object_sizes = new std::unordered_map<std::vector<MapProcessing::Line>*, Object*>();
+};
+std::string format(MapProcessing::Line lin) {
+    return "{first:{x:" + std::to_string(lin.first.x) + ",y:" + std::to_string(lin.first.y) + "},second:{x:" + std::to_string(lin.second.x) + ",y:" + std::to_string(lin.second.y) + "}}";
 }
-void Objectifier::chain(const std::pair<short, short>& first, const std::pair<short, short>& second) {
-    bool first_found = tuple_to_node.find(first) != tuple_to_node.end();
-    bool second_found = tuple_to_node.find(second) != tuple_to_node.end();
-    if(!first_found && !second_found) {
-        DoubleLinkedList<std::pair<short, short>>* list = new DoubleLinkedList<std::pair<short, short>>();
-        DoubleLinkedList<std::pair<short, short>>::Node* first_node = list->push(first);
-        DoubleLinkedList<std::pair<short, short>>::Node* second_node = list->push(second);
-        tuple_to_node.insert(std::pair<std::pair<short, short>, DoubleLinkedList<std::pair<short, short>>::Node*>(first, first_node));
-        tuple_to_node.insert(std::pair<std::pair<short, short>, DoubleLinkedList<std::pair<short, short>>::Node*>(second, second_node));
-        objects.push_back(list);
-        short min_x = std::min(first.first, second.first);
-        short max_x = std::max(first.first, second.first);
-        short min_y = std::min(first.second, second.second);
-        short max_y = std::max(first.second, second.second);
-        Object* obj = new Object(min_x, max_x, min_y, max_y);
-        list_to_objects.insert(std::pair<DoubleLinkedList<std::pair<short, short>>*, Object*>(list, obj));
-    } else {
-        if(first_found && second_found) {
-            DoubleLinkedList<std::pair<short, short>>::Node* first_node = tuple_to_node[first];
-            DoubleLinkedList<std::pair<short, short>>::Node* second_node = tuple_to_node[second];
-            DoubleLinkedList<std::pair<short, short>>* old_list = second_node->list;
-            if(first_node->list != second_node->list) {
-                if(first_node->next == nullptr) {
-                    // Hecc, they're running in opposite directions.
-                    if(second_node->next == nullptr) {
-                        DoubleLinkedList<std::pair<short, short>>::Node* temp = second_node->previous;
-                        first_node->push(second_node);
-                        list_to_objects[first_node->list]->adopt(second_node->value);
-                        if(temp != nullptr) {
-                            chain(second, temp->value);
-                        } else if(old_list->length == 0) {
-                            std::vector<DoubleLinkedList<std::pair<short, short>>*>::iterator find = std::find(objects.begin(), objects.end(), old_list);
-                            objects.erase(find);
-                            list_to_objects.erase(old_list);
-                        }
-                    } else if(second_node->previous == nullptr) {
-                        DoubleLinkedList<std::pair<short, short>>::Node* temp = second_node->next;
-                        first_node->push(second_node);
-                        list_to_objects[first_node->list]->adopt(second_node->value);
-                        chain(second, temp->value);
+MapProcessing::Line normalize(MapProcessing::Line inp) {
+    return MapProcessing::Line(std::min(inp.first.x, inp.second.x), std::max(inp.first.x, inp.second.x), std::min(inp.first.y, inp.second.y), std::max(inp.first.y, inp.second.y));
+}
+bool intersects(MapProcessing::Line& line_one, MapProcessing::Line& line_two) {
+    line_one = normalize(line_one);
+    line_two = normalize(line_two);
+    if(line_one.first.x == line_one.second.x) {
+        // line_one is vertical.
+        if(line_two.first.x == line_two.second.x) {
+            // line_two is also vertical? This isn't looking that good...
+            if(line_two.first.x == line_one.first.x) {
+                // All on same X. Treat as range overlaping problem.
+                if(line_one.first.y <= line_two.second.y) {
+                    // line_one's bottom point is below line_two's top point
+                    if(line_one.second.y >= line_two.first.y) {
+                        // line_one's top point is above line_two's bottom point
+                        return true;
                     } else {
-                        first_node->push(second_node->copy());
+                        return false;
                     }
-                } else if(first_node->previous == nullptr) {
-                    // Hecc... opposite directions again?
-                    if(second_node->previous == nullptr) {
-                        DoubleLinkedList<std::pair<short, short>>::Node* temp = second_node->next;
-                        first_node->unshift(second_node);
-                        list_to_objects[first_node->list]->adopt(second_node->value);
-                        if(temp != nullptr) {
-                            chain(second, temp->value);
-                        } else if(old_list->length == 0) {
-                            std::vector<DoubleLinkedList<std::pair<short, short>>*>::iterator find = std::find(objects.begin(), objects.end(), old_list);
-                            objects.erase(find);
-                            list_to_objects.erase(old_list);
-                        }
-                    } else if(second_node->next == nullptr) {
-                        DoubleLinkedList<std::pair<short, short>>::Node* temp = second_node->previous;
-                        first_node->unshift(second_node);
-                        list_to_objects[first_node->list]->adopt(second_node->value);
-                        chain(second, temp->value);
-                    } else {
-                        first_node->unshift(second_node->copy());
-                    }
+                } else {
+                    return false;
                 }
             } else {
-                if(first_node->next == nullptr) {
-                    first_node->push(second_node->copy());
-                } else if(first_node->previous == nullptr) {
-                    first_node->unshift(second_node->copy());
-                }
+                // Line segments are parallel but not on same X. Cannot cross.
+                return false;
             }
         } else {
-            if(first_found) {
-                DoubleLinkedList<std::pair<short, short>>::Node* first_node = tuple_to_node[first];
-                DoubleLinkedList<std::pair<short, short>>::Node* second_node = nullptr;
-                if(first_node->next == nullptr) {
-                    second_node = first_node->push(new DoubleLinkedList<std::pair<short, short>>::Node(second));
-                } else if(first_node->previous == nullptr) {
-                    second_node = first_node->unshift(new DoubleLinkedList<std::pair<short, short>>::Node(second));
+            // line_two is horizontal.
+            if(line_two.first.x <= line_one.first.x && line_two.second.x >= line_one.first.x) {
+                // line_two contains line_one's x...
+                if(line_one.first.y <= line_two.first.y && line_one.second.y >= line_two.first.y) {
+                    // And line_one contains line_two's y!
+                    return true;
+                } else {
+                    return false;
                 }
-                tuple_to_node.insert(std::pair<std::pair<short, short>, DoubleLinkedList<std::pair<short, short>>::Node*>(second, second_node));
-            } else if(second_found) {
-                DoubleLinkedList<std::pair<short, short>>::Node* first_node = nullptr;
-                DoubleLinkedList<std::pair<short, short>>::Node* second_node = tuple_to_node[second];
-                if(second_node->next == nullptr) {
-                    first_node = second_node->push(new DoubleLinkedList<std::pair<short, short>>::Node(first));
-                } else if(second_node->previous == nullptr) {
-                    first_node = second_node->unshift(new DoubleLinkedList<std::pair<short, short>>::Node(first));
+            } else {
+                // No chance of anything working.
+                return false;
+            }
+        }
+    } else {
+        // line_one is horizontal.
+        if(line_two.first.x == line_two.second.x) {
+            // line_two is vertical.
+            if(line_two.first.y <= line_one.first.y && line_two.second.y >= line_one.first.y) {
+                // line_two contains line_one's Y
+                if(line_one.first.x <= line_two.first.x && line_one.second.x >= line_two.first.x) {
+                    // And line_one contains line_two's X
+                    return true;
+                } else {
+                    return false;
                 }
-                tuple_to_node.insert(std::pair<std::pair<short, short>, DoubleLinkedList<std::pair<short, short>>::Node*>(first, first_node));
+            } else {
+                return false;
+            }
+        } else {
+            if(line_one.first.y == line_two.first.y) {
+                // line_two is horizontal as well... treat as normal range overlap
+                if(line_one.first.x <= line_two.second.x) {
+                    // line_one's left point is below line_two's top point
+                    if(line_one.second.x >= line_two.first.x) {
+                        // line_one's 
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
             }
         }
     }
-};
-
+    return false;
+}
 void Objectifier::run() {
-    for(int i = 0; i < this->info->x_lines.size(); i++) {
-        std::vector<short> line = this->info->x_lines[i];
+    for(const std::vector<short>& line : this->info->x_lines) {
         int x = line[0];
         int y1 = line[1];
         int y2 = line[2];
-        chain(std::pair<short, short>(x, y1), std::pair<short, short>(x, y2));
+        MapProcessing::Point p1 = MapProcessing::Point(x, y1);
+        MapProcessing::Point p2 = MapProcessing::Point(x, y2);
+        this->points.push_back(p1);
+        this->points.push_back(p2);
+        this->lines.push_back(MapProcessing::Line(p1, p2));
     }
-    for(int i = 0; i < this->info->y_lines.size(); i++) {
-        std::vector<short> line = this->info->y_lines[i];
+    for(const std::vector<short>& line : this->info->y_lines) {
         int y = line[0];
         int x1 = line[1];
         int x2 = line[2];
-        chain(std::pair<short, short>(x1, y), std::pair<short, short>(x2, y));
+        MapProcessing::Point p1 = MapProcessing::Point(x1, y);
+        MapProcessing::Point p2 = MapProcessing::Point(x2, y);
+        this->points.push_back(p1);
+        this->points.push_back(p2);
+        this->lines.push_back(MapProcessing::Line(p1, p2));
     }
-    std::cout << this->objects.size() << " : " << this->info->name << std::endl;
+    for(MapProcessing::Line& line_one : this->lines) {
+        for(MapProcessing::Line& line_two : this->lines) {
+            if(line_one.hash == line_two.hash) {
+                continue;
+            }
+            if(intersects(line_one, line_two)) {
+                std::unordered_map<MapProcessing::Line, std::vector<MapProcessing::Line>*, MapProcessing::LineHash>::iterator find1 = this->lines_to_object.find(line_one);
+                std::unordered_map<MapProcessing::Line, std::vector<MapProcessing::Line>*, MapProcessing::LineHash>::iterator find2 = this->lines_to_object.find(line_two);
+                if(find1 != this->lines_to_object.end()) {
+                    if(find2 != this->lines_to_object.end()) {
+                        // They're both in the array? Huh.
+                        std::vector<MapProcessing::Line>* obj1 = find1->second;
+                        std::vector<MapProcessing::Line>* obj2 = find2->second;;
+                        if(obj1 == obj2) {
+                            continue;
+                        }
+                        for(std::vector<MapProcessing::Line>::iterator it3 = obj2->begin(); it3 != obj2->end(); it3++) {
+                            this->lines_to_object.insert_or_assign(*it3, obj1);
+                            obj1->push_back(*it3);
+                            this->object_sizes->at(obj1)->adopt(it3->first)->adopt(it3->second);
+                        }
+                        std::vector<std::vector<MapProcessing::Line>*>::iterator find3 = std::find(this->objects.begin(), this->objects.end(), obj2);
+                        if(find3 != this->objects.end()) {
+                            this->objects.erase(find3);
+                        }
+                        // this->object_sizes.erase(obj2);
+                    } else {
+                        // Only it1 is in the list.
+                        std::vector<MapProcessing::Line>* obj = find1->second;
+                        obj->push_back(line_two);
+                        this->object_sizes->at(obj)->adopt(line_two.first)->adopt(line_two.second);
+                        this->lines_to_object.insert(std::pair<MapProcessing::Line, std::vector<MapProcessing::Line>*>(line_one, obj));
+                    }
+                } else {
+                    if(find2 != this->lines_to_object.end()) {
+                        // Only it2 is in the list.
+                        std::vector<MapProcessing::Line>* obj = find2->second;
+                        obj->push_back(line_one);
+                        this->object_sizes->at(obj)->adopt(line_one.first)->adopt(line_one.second);
+                        this->lines_to_object.insert(std::pair<MapProcessing::Line, std::vector<MapProcessing::Line>*>(line_one, obj));
+                    } else {
+                        // None of them are in the list... wow.
+                        std::vector<MapProcessing::Line>* obj = new std::vector<MapProcessing::Line>();
+                        this->lines_to_object.insert(std::pair<MapProcessing::Line, std::vector<MapProcessing::Line>*>(line_one, obj));
+                        this->lines_to_object.insert(std::pair<MapProcessing::Line, std::vector<MapProcessing::Line>*>(line_two, obj));
+                        obj->push_back(line_one);
+                        obj->push_back(line_two);
+                        this->objects.push_back(obj);
+                        Object* size = new Object();
+                        size->adopt(line_one.first)->adopt(line_one.second)->adopt(line_two.first)->adopt(line_two.second);
+                        this->object_sizes->insert(std::pair<std::vector<MapProcessing::Line>*, Object*>(obj, size));
+                    }
+                }
+            }
+        }
+    }
     for (const auto &i: this->objects) {
-        std::sort(this->objects.begin(), this->objects.end(), [this](const DoubleLinkedList<std::pair<short, short>>* lhs, const DoubleLinkedList<std::pair<short, short>>* rhs) {
-            Object left_object = *list_to_objects[(DoubleLinkedList<std::pair<short, short>>*) lhs];
-            Object right_object = *list_to_objects[(DoubleLinkedList<std::pair<short, short>>*) rhs];
-            return (left_object.max_x - left_object.min_x) * (left_object.max_y - left_object.min_y) > (right_object.max_x - right_object.min_x) * (right_object.max_y - right_object.min_y);
+        std::sort(this->objects.begin(), this->objects.end(), [this](const std::vector<MapProcessing::Line>* first, std::vector<MapProcessing::Line>* second) {
+            Object* first_obj = (*this->object_sizes)[(std::vector<MapProcessing::Line>*) first];
+            Object* second_obj = (*this->object_sizes)[(std::vector<MapProcessing::Line>*) second];
+            return std::abs(((first_obj->max_x - first_obj->min_x) * (first_obj->max_y - first_obj->min_y))) > std::abs(((second_obj->max_x - second_obj->min_x) * (second_obj->max_y - second_obj->min_y)));
         });
+    }
+    for(int i = 0; i < this->objects.size(); i++) {
+        Object* obj = this->object_sizes->operator[](this->objects[i]);
     }
 };

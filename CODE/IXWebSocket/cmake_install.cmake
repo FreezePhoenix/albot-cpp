@@ -66,6 +66,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
     "/home/linuxlite/shared/albot-cpp/IXWebSocket/ixwebsocket/IXSocketTLSOptions.h"
     "/home/linuxlite/shared/albot-cpp/IXWebSocket/ixwebsocket/IXStrCaseCompare.h"
     "/home/linuxlite/shared/albot-cpp/IXWebSocket/ixwebsocket/IXUdpSocket.h"
+    "/home/linuxlite/shared/albot-cpp/IXWebSocket/ixwebsocket/IXUniquePtr.h"
     "/home/linuxlite/shared/albot-cpp/IXWebSocket/ixwebsocket/IXUrlParser.h"
     "/home/linuxlite/shared/albot-cpp/IXWebSocket/ixwebsocket/IXUuid.h"
     "/home/linuxlite/shared/albot-cpp/IXWebSocket/ixwebsocket/IXUtf8Validator.h"

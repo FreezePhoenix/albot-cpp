@@ -15,7 +15,64 @@ namespace MapProcessing {
         std::vector<std::vector<short>> x_lines;
         std::vector<std::vector<short>> y_lines;
     };
+    struct Point {
+        short x;
+        short y;
+        unsigned int hash;
+        Point() {
+            this->x = this->y = 0;
+            this->hash = 0;
+        }
+        Point(short x, short y) {
+            this->x = x;
+            this->y = y;
+            this->hash = (static_cast<unsigned int>(x) << 16) + static_cast<unsigned short>(y);
+        };
+        bool operator==(const Point& other) {
+            return other.hash == this->hash;
+        }
+    };
+    struct PointHash {
+        inline unsigned int operator () (const Point &p) const {
+            return p.hash;
+        }
+        inline std::size_t operator () (const Point &p, const Point &p2) const {
+            return this->operator()(p) - this->operator()(p2);
+        }
+    };
+    struct Line {
+        Point first;
+        Point second;
+        unsigned long int hash;
+        Line() {
+            this->first = Point(0, 0);
+            this->second = Point(0, 0);
+            this->hash = 0;
+        }
+        Line(Point first, Point second) {
+            if(first.x < second.x || first.y < second.y) {
+                this->first = first;
+                this->second = second;
+            } else {
+                this->first = second;
+                this->second = first;
+            }
+            this->hash = (static_cast<unsigned long int>(this->first.hash) << 32) + static_cast<unsigned int>(this->second.hash);
+        }
+        bool operator==(const Line& other) {
+            return other.hash == this->hash;
+        }
+        Line(short x1, short x2, short y1, short y2): Line(Point(x1, y1), Point(x2, y2)) {}
+    };
 
+    struct LineHash {
+        inline unsigned long int operator () (const Line &l) const {
+            return l.hash;
+        }
+        inline std::size_t operator () (const Line &p, const Line &p2) const {
+            return this->operator()(p) - this->operator()(p2);
+        }
+    };
     bool overlaps(short a, short b, short c, short d);
 
     // I really hate using templates but god do they look cool
@@ -34,5 +91,12 @@ namespace MapProcessing {
     // Accepts a map info, and simplifies it, remove unnecessary lines.
     MapInfo* simplify_lines(MapInfo* info);
 }
-
+namespace std {
+    inline bool operator==(MapProcessing::Point first, MapProcessing::Point second) {
+        return first.hash == second.hash;
+    }
+    inline bool operator==(MapProcessing::Line first, MapProcessing::Line second) {
+        return first.hash == second.hash;
+    }
+}
 #endif /* MAPPROCESSING_HPP_ */

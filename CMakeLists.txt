@@ -3,6 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.5)
 add_definitions(-std=c++17 -w)
+add_definitions(-g)
 project ("albot-cpp")
 # Add source to this project's executable.
 add_executable (albot-cpp
