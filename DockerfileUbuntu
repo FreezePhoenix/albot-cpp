@@ -19,6 +19,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
 RUN mkdir -p /var/albot-cpp
 # Create a work space inside the container
 WORKDIR /var/albot-cpp
+RUN ln /bin/g++-10 /bin/g++ 
 # Copy the content outside the container (except .dockerignore files) inside the container
 COPY . .
 
