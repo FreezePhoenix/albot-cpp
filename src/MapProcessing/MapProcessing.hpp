@@ -7,9 +7,9 @@
 #include <vector>
 #include <math.h>
 #include <nlohmann/json.hpp>
+#include <any>
 
 namespace MapProcessing {
-    typedef std::pair<short, short> Tuple;
     struct MapInfo {
         std::string name;
         std::vector<std::vector<short>> x_lines;
@@ -26,7 +26,7 @@ namespace MapProcessing {
         Point(short x, short y) {
             this->x = x;
             this->y = y;
-            this->hash = (static_cast<unsigned int>(x) << 16) + static_cast<unsigned short>(y);
+            this->hash = ((unsigned int) x << 16) + (unsigned int) y;
         };
         bool operator==(const Point& other) {
             return other.hash == this->hash;
@@ -37,7 +37,7 @@ namespace MapProcessing {
             return p.hash;
         }
         inline std::size_t operator () (const Point &p, const Point &p2) const {
-            return this->operator()(p) - this->operator()(p2);
+            return p.hash - p2.hash;
         }
     };
     struct Line {
@@ -49,7 +49,7 @@ namespace MapProcessing {
             this->second = Point(0, 0);
             this->hash = 0;
         }
-        Line(Point first, Point second) {
+        Line(Point& first, Point& second) {
             if(first.x < second.x || first.y < second.y) {
                 this->first = first;
                 this->second = second;
@@ -57,7 +57,17 @@ namespace MapProcessing {
                 this->first = second;
                 this->second = first;
             }
-            this->hash = (static_cast<unsigned long int>(this->first.hash) << 32) + static_cast<unsigned int>(this->second.hash);
+            this->hash = ((unsigned long int) this->first.hash << 32) + (unsigned long int) this->second.hash;
+        }
+        Line(const Point& first, const Point& second) {
+            if(first.x < second.x || first.y < second.y) {
+                this->first = first;
+                this->second = second;
+            } else {
+                this->first = second;
+                this->second = first;
+            }
+            this->hash = ((unsigned long int) this->first.hash << 32) + (unsigned long int) this->second.hash;
         }
         bool operator==(const Line& other) {
             return other.hash == this->hash;
@@ -70,10 +80,11 @@ namespace MapProcessing {
             return l.hash;
         }
         inline std::size_t operator () (const Line &p, const Line &p2) const {
-            return this->operator()(p) - this->operator()(p2);
+            return p.hash - p2.hash;
         }
     };
-    bool overlaps(short a, short b, short c, short d);
+
+    inline bool overlaps(short a, short b, short c, short d);
 
     // I really hate using templates but god do they look cool
     template<typename _Tp>
@@ -88,14 +99,15 @@ namespace MapProcessing {
     // Read: Actually accepts "G.geometry[<map_name>]"
     // Outputs a MapInfo, which contains all the lines in the map.
     MapInfo* parse_map(nlohmann::json& json);
+    void process(MapInfo* json);
     // Accepts a map info, and simplifies it, remove unnecessary lines.
     MapInfo* simplify_lines(MapInfo* info);
 }
 namespace std {
-    inline bool operator==(MapProcessing::Point first, MapProcessing::Point second) {
+    inline bool operator==(const MapProcessing::Point& first, const MapProcessing::Point& second) {
         return first.hash == second.hash;
     }
-    inline bool operator==(MapProcessing::Line first, MapProcessing::Line second) {
+    inline bool operator==(const MapProcessing::Line& first, const MapProcessing::Line& second) {
         return first.hash == second.hash;
     }
 }

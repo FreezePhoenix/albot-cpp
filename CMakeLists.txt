@@ -2,19 +2,17 @@
 # project specific logic here.
 #
 cmake_minimum_required (VERSION 3.5)
-add_definitions(-std=c++17 -w)
-add_definitions(-g)
+add_definitions(-std=c++20 -w)
+# add_definitions(-ggdb)
 project ("albot-cpp")
 # Add source to this project's executable.
 add_executable (albot-cpp
 	"src/albot-cpp.cpp"
   "src/JsonUtils.cpp"
-  "src/Common.cpp"
 )
 
 add_library(MapProcessing OBJECT
   "src/MapProcessing/MapProcessing.cpp"
-  "src/Utils/DoubleLinkedList.cpp"
   "src/MapProcessing/Objectifier.cpp"
   "src/MapProcessing/Writer.cpp"
   "src/MapProcessing/ShapeManipulator.cpp"

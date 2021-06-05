@@ -7,15 +7,14 @@
 #include <Poco/URI.h>
 #include <iostream>
 #include <fstream>
+#include <pthread.h>
 #include <regex>
 
 #include "MapProcessing/MapProcessing.hpp"
-#include "MapProcessing/Objectifier.hpp"
-#include "MapProcessing/Writer.hpp"
 #include "HttpWrapper.hpp"
-#include "Common.hpp"
 #include "JsonUtils.hpp"
 
+#pragma GCC optimize ("unroll-loops")
 
 HttpWrapper::GameData HttpWrapper::data = HttpWrapper::GameData();
 std::string HttpWrapper::password = "";
@@ -63,21 +62,28 @@ bool HttpWrapper::get_game_version(std::string &version) {
         return false;
     }
 }
+
 void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
+    std::vector<pthread_t*> threads = std::vector<pthread_t*>();
+    std::vector<void *> results = std::vector<void *>();
     nlohmann::json &geo = data["geometry"];
+    int max = geo.size() - 1;
+    std::cout << "Parsing maps... 0%" << std::endl;
+    int current = 0;
     for(nlohmann::detail::iter_impl<nlohmann::json> it = geo.begin(); it != geo.end(); it++) {
         if(it.value()["x_lines"].is_array()) {
             MapProcessing::MapInfo* info = MapProcessing::parse_map(it.value());
             info->name = it.key();
             MapProcessing::simplify_lines(info);
+            MapProcessing::process(info);
+
             nlohmann::json x_lines(info->x_lines);
             nlohmann::json y_lines(info->y_lines);
-            it.value()["x_lines"] = x_lines;
-            it.value()["y_lines"] = y_lines;
-                Objectifier objectifier(info);
-                objectifier.run();
-                Writer writer(&objectifier);
-                writer.write();
+            geo[info->name]["x_lines"] = x_lines;
+            geo[info->name]["y_lines"] = y_lines;
+            current++;
+
+            std::cout << "\x1b[A" << "Parsing maps... " << ((current * 100) / max) << "%" << std::endl;
         }
     }
     HttpWrapper::data = data;

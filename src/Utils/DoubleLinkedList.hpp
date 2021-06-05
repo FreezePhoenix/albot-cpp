@@ -39,7 +39,4 @@ class DoubleLinkedList {
     private:
         void push(Node* new_node);
 };
-
-extern template class DoubleLinkedList<MapProcessing::Tuple>;
-
 #endif /* ALBOT_DOUBLE_LINKED_LIST_HPP_ */

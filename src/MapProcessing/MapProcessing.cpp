@@ -1,9 +1,10 @@
 #include "MapProcessing.hpp"
+#include "Objectifier.hpp"
+#include "Writer.hpp"
 #include <iostream>
-#include "../Common.hpp"
 
 namespace MapProcessing {
-    bool  overlaps(short a, short b, short c, short d) {
+    inline bool  overlaps(short a, short b, short c, short d) {
         short start1 = std::min(a, b);
         short end1 = std::max(a, b);
         short start2 = std::min(c, d);
@@ -22,22 +23,28 @@ namespace MapProcessing {
         }
         return false;
     }
-    typedef std::unordered_map<short, std::vector<std::pair<short, short>>> shortTupleVector;
+
+    void process(MapInfo* info) {
+        Objectifier objectifier(info);
+        objectifier.run();
+        Writer writer(objectifier);
+        writer.write();
+    }
     MapInfo* parse_map(nlohmann::json& json) {
         MapInfo* info = new MapInfo();
         nlohmann::json x_lines = json["x_lines"];
         nlohmann::json y_lines = json["y_lines"];
         if(x_lines.is_array() && y_lines.is_array()) {
-            for(nlohmann::json::iterator x_it = x_lines.begin(); x_it != x_lines.end(); ++x_it) {
-                if(x_it.value().is_array()) {
-                    std::vector<short> _line = x_it.value().get<std::vector<short>>();
+            for(const nlohmann::json& line : x_lines) {
+                if(line.is_array()) {
+                    std::vector<short> _line = line.get<std::vector<short>>();
                     _line.resize(3);
                     info->x_lines.push_back(_line);
                 }
             }
-            for(nlohmann::json::iterator y_it = y_lines.begin(); y_it != y_lines.end(); ++y_it) {
-                if(y_it.value().is_array()) {
-                    std::vector<short> _line = y_it.value().get<std::vector<short>>();
+            for(const nlohmann::json& line : y_lines) {
+                if(line.is_array()) {
+                    std::vector<short> _line = line.get<std::vector<short>>();
                     _line.resize(3);
                     info->y_lines.push_back(_line);
                 }
@@ -46,13 +53,14 @@ namespace MapProcessing {
         return info;
     }
     MapInfo* simplify_lines(MapInfo* info) {
-        shortTupleVector x_lines_temp = std::unordered_map<short, std::vector<std::pair<short, short>>>();
+        std::unordered_map<short, std::vector<std::pair<short, short>>> x_lines_temp = std::unordered_map<short, std::vector<std::pair<short, short>>>();
         std::vector<std::pair<short, short>> new_ys = std::vector<std::pair<short, short>>(); 
         for(const std::vector<short>& _line : info->x_lines) {
             std::pair<short, short> tup = std::pair<short, short>(_line[1], _line[2]);
             if(x_lines_temp.find(_line[0]) != x_lines_temp.end()) {
                 x_lines_temp[_line[0]].push_back(tup);
             } else {
+                
                 x_lines_temp[_line[0]] = std::vector<std::pair<short, short>>();
                 x_lines_temp[_line[0]].push_back(tup);
             }
@@ -62,9 +70,9 @@ namespace MapProcessing {
             short x = pair.first;
             std::vector<std::pair<short, short>> ys = pair.second;
             for(int i = 0, size = ys.size(); i < size; i++) {
-                std::pair<short, short> first = ys[i];
+                std::pair<short, short>& first = ys[i];
                 for(int j = 0; j < size; j++) {
-                    std::pair<short, short> second = ys[j];
+                    std::pair<short, short>& second = ys[j];
                     if(first == second) {
                         short a = first.first,
                             b = first.second,
@@ -86,10 +94,9 @@ namespace MapProcessing {
             }
             new_ys.clear();
         }
-        shortTupleVector y_lines_temp = std::unordered_map<short, std::vector<std::pair<short, short>>>();
+        std::unordered_map<short, std::vector<std::pair<short, short>>> y_lines_temp = std::unordered_map<short, std::vector<std::pair<short, short>>>();
         std::vector<std::pair<short, short>> new_xs = std::vector<std::pair<short, short>>();
-        for(int i = 0, size = info->y_lines.size(); i < size; i++) {
-            std::vector<short> _line = info->y_lines[i];
+        for(const std::vector<short>& _line : info->y_lines) {
             std::pair<short, short> tup = std::pair<short, short>(_line[1], _line[2]);
             if(y_lines_temp.find(_line[0]) != y_lines_temp.end()) {
                 y_lines_temp[_line[0]].push_back(tup);
@@ -99,9 +106,9 @@ namespace MapProcessing {
             }
         }
         info->y_lines.clear();
-        for(shortTupleVector::iterator y_it = y_lines_temp.begin(); y_it != y_lines_temp.end(); ++y_it) {
-            short y = y_it->first;
-            std::vector<std::pair<short, short>> xs = y_it->second;
+        for(const std::pair<short, std::vector<std::pair<short, short>>>& line : y_lines_temp) {
+            short y = line.first;
+            std::vector<std::pair<short, short>> xs = line.second;
             for(int i = 0, size = xs.size(); i < size; i++) {
                 std::pair<short, short> first = xs[i];
                 for(int j = 0; j < size; j++) {

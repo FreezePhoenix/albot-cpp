@@ -10,17 +10,18 @@ Objectifier::Objectifier(MapProcessing::MapInfo* info) {
     this->lines = std::vector<MapProcessing::Line>();
     this->lines_to_object = std::unordered_map<MapProcessing::Line, std::vector<MapProcessing::Line>*, MapProcessing::LineHash>();
     this->objects = std::vector<std::vector<MapProcessing::Line>*>();
-    this->object_sizes = new std::unordered_map<std::vector<MapProcessing::Line>*, Object*>();
+    this->object_sizes = std::unordered_map<std::vector<MapProcessing::Line>*, Object*>();
 };
 std::string format(MapProcessing::Line lin) {
     return "{first:{x:" + std::to_string(lin.first.x) + ",y:" + std::to_string(lin.first.y) + "},second:{x:" + std::to_string(lin.second.x) + ",y:" + std::to_string(lin.second.y) + "}}";
 }
-MapProcessing::Line normalize(MapProcessing::Line inp) {
+MapProcessing::Line normalize(MapProcessing::Line& inp) {
     return MapProcessing::Line(std::min(inp.first.x, inp.second.x), std::max(inp.first.x, inp.second.x), std::min(inp.first.y, inp.second.y), std::max(inp.first.y, inp.second.y));
 }
+
 bool intersects(MapProcessing::Line& line_one, MapProcessing::Line& line_two) {
-    line_one = normalize(line_one);
-    line_two = normalize(line_two);
+    // line_one = normalize(line_one);
+    // line_two = normalize(line_two);
     if(line_one.first.x == line_one.second.x) {
         // line_one is vertical.
         if(line_two.first.x == line_two.second.x) {
@@ -93,7 +94,18 @@ bool intersects(MapProcessing::Line& line_one, MapProcessing::Line& line_two) {
     }
     return false;
 }
+
+
+int summnation(short input) {
+    return (input * (input - 1)) / 2;
+}
+
+unsigned int unique(short a, short b) {
+    return a * b + (a + b) / 2 + (a - b) * (a - b) / 2 - summnation(std::min(a, b));
+}
+
 void Objectifier::run() {
+    std::unordered_set<unsigned int> checked_pairs = std::unordered_set<unsigned int>();
     for(const std::vector<short>& line : this->info->x_lines) {
         int x = line[0];
         int y1 = line[1];
@@ -114,9 +126,11 @@ void Objectifier::run() {
         this->points.push_back(p2);
         this->lines.push_back(MapProcessing::Line(p1, p2));
     }
-    for(MapProcessing::Line& line_one : this->lines) {
-        for(MapProcessing::Line& line_two : this->lines) {
-            if(line_one.hash == line_two.hash) {
+    for(int i = 0, size = this->lines.size(); i < size; i++) {
+        MapProcessing::Line& line_one = this->lines[i];
+        for(int j = i; j < size; j++) {
+            MapProcessing::Line& line_two = this->lines[j];
+            if(line_one == line_two) {
                 continue;
             }
             if(intersects(line_one, line_two)) {
@@ -130,41 +144,41 @@ void Objectifier::run() {
                         if(obj1 == obj2) {
                             continue;
                         }
+                        this->object_sizes.at(obj1)->adopt(*this->object_sizes[obj2]);
                         for(std::vector<MapProcessing::Line>::iterator it3 = obj2->begin(); it3 != obj2->end(); it3++) {
                             this->lines_to_object.insert_or_assign(*it3, obj1);
                             obj1->push_back(*it3);
-                            this->object_sizes->at(obj1)->adopt(it3->first)->adopt(it3->second);
                         }
                         std::vector<std::vector<MapProcessing::Line>*>::iterator find3 = std::find(this->objects.begin(), this->objects.end(), obj2);
                         if(find3 != this->objects.end()) {
                             this->objects.erase(find3);
                         }
-                        // this->object_sizes.erase(obj2);
+                        this->object_sizes.erase(obj2);
                     } else {
                         // Only it1 is in the list.
                         std::vector<MapProcessing::Line>* obj = find1->second;
                         obj->push_back(line_two);
-                        this->object_sizes->at(obj)->adopt(line_two.first)->adopt(line_two.second);
-                        this->lines_to_object.insert(std::pair<MapProcessing::Line, std::vector<MapProcessing::Line>*>(line_one, obj));
+                        this->object_sizes.at(obj)->adopt(line_two);
+                        this->lines_to_object.emplace(line_two, obj);
                     }
                 } else {
                     if(find2 != this->lines_to_object.end()) {
                         // Only it2 is in the list.
                         std::vector<MapProcessing::Line>* obj = find2->second;
                         obj->push_back(line_one);
-                        this->object_sizes->at(obj)->adopt(line_one.first)->adopt(line_one.second);
-                        this->lines_to_object.insert(std::pair<MapProcessing::Line, std::vector<MapProcessing::Line>*>(line_one, obj));
+                        this->object_sizes.at(obj)->adopt(line_one);
+                        this->lines_to_object.emplace(line_one, obj);
                     } else {
                         // None of them are in the list... wow.
                         std::vector<MapProcessing::Line>* obj = new std::vector<MapProcessing::Line>();
-                        this->lines_to_object.insert(std::pair<MapProcessing::Line, std::vector<MapProcessing::Line>*>(line_one, obj));
-                        this->lines_to_object.insert(std::pair<MapProcessing::Line, std::vector<MapProcessing::Line>*>(line_two, obj));
+                        this->lines_to_object.emplace(line_one, obj);
+                        this->lines_to_object.emplace(line_two, obj);
                         obj->push_back(line_one);
                         obj->push_back(line_two);
                         this->objects.push_back(obj);
                         Object* size = new Object();
-                        size->adopt(line_one.first)->adopt(line_one.second)->adopt(line_two.first)->adopt(line_two.second);
-                        this->object_sizes->insert(std::pair<std::vector<MapProcessing::Line>*, Object*>(obj, size));
+                        size->adopt(line_one)->adopt(line_two);
+                        this->object_sizes.emplace(obj, size);
                     }
                 }
             }
@@ -172,12 +186,9 @@ void Objectifier::run() {
     }
     for (const auto &i: this->objects) {
         std::sort(this->objects.begin(), this->objects.end(), [this](const std::vector<MapProcessing::Line>* first, std::vector<MapProcessing::Line>* second) {
-            Object* first_obj = (*this->object_sizes)[(std::vector<MapProcessing::Line>*) first];
-            Object* second_obj = (*this->object_sizes)[(std::vector<MapProcessing::Line>*) second];
+            Object* first_obj = this->object_sizes[(std::vector<MapProcessing::Line>*) first];
+            Object* second_obj = this->object_sizes[(std::vector<MapProcessing::Line>*) second];
             return std::abs(((first_obj->max_x - first_obj->min_x) * (first_obj->max_y - first_obj->min_y))) > std::abs(((second_obj->max_x - second_obj->min_x) * (second_obj->max_y - second_obj->min_y)));
         });
-    }
-    for(int i = 0; i < this->objects.size(); i++) {
-        Object* obj = this->object_sizes->operator[](this->objects[i]);
     }
 };

@@ -169,5 +169,3 @@ typename DoubleLinkedList<T>::Node* DoubleLinkedList<T>::Node::unshift(DoubleLin
     node->list = this->list;
     return node;
 }
-
-template class DoubleLinkedList<MapProcessing::Tuple>;

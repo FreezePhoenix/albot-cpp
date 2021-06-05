@@ -1,18 +1,15 @@
 #pragma once
-
+#pragma interface
 #ifndef ALBOT_WRITER_HPP_
 #define ALBOT_WRITER_HPP_
-
-#include "../Common.hpp"
 
 #include "Objectifier.hpp"
 
 class Writer {
     private:
-        Objectifier* objectifier;
-        std::unordered_map<std::pair<short, short>, int, pair_hash> points;
+        Objectifier& objectifier;
     public:
-        Writer(Objectifier* objectifier);
+        Writer(Objectifier& objectifier);
         void write();
 };
 

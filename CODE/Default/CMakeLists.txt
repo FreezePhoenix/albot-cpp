@@ -3,7 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.5)
 
-add_definitions(-std=c++17)
+add_definitions(-std=c++20)
 
 project ("albot-cpp")
 set(USE_TLS TRUE)

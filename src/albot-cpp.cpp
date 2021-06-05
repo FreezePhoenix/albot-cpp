@@ -18,8 +18,6 @@
 #include "HttpWrapper.hpp"
 #include "GameInfo.hpp"
 #include "Bot.hpp"
-#include "Common.hpp"
-#include "Utils/DoubleLinkedList.hpp"
 
 namespace ALBot {
 	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";
@@ -141,7 +139,7 @@ namespace ALBot {
 
 int main() {
 	pthread_t login_thread;
-		void *ret;
+		void *ret; 
 		pthread_create(&login_thread, NULL, ALBot::login, (void*) 0);
 		pthread_join(login_thread, &ret);
 }

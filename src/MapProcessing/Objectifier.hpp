@@ -3,7 +3,6 @@
 #ifndef ALBOT_OBJECTIFIER_HPP_
 #define ALBOT_OBJECTIFIER_HPP_
 
-#include "../Common.hpp"
 #include "MapProcessing.hpp"
 #include <set>
 #include <unordered_set>
@@ -24,7 +23,29 @@ class Objectifier {
             Object() {
                 this->min_x = this->max_x = this->min_y = this->max_y = NULL;
             };
-            Object* adopt(MapProcessing::Point& point) {
+            inline Object* adopt(Object& other) {
+                if(this->min_x == NULL) {
+                    this->min_x = other.min_x;
+                    this->min_y = other.min_y;
+                    this->max_x = other.max_x;
+                    this->max_y = other.max_y;
+                } else {
+                    if(this->min_x > other.min_x) {
+                        this->min_x = other.min_x;
+                    }
+                    if(this->max_x < other.max_x) {
+                        this->max_x = other.max_x;
+                    }
+                    if(this->min_y > other.min_y) {
+                        this->min_y = other.min_y;
+                    }
+                    if(this->max_y < other.max_y) {
+                        this->max_y = other.max_y;
+                    }
+                }
+                return this;
+            }
+            inline Object* adopt(MapProcessing::Point& point) {
                 if(this->min_x == NULL) {
                     this->min_x = this->max_x = point.x;
                     this->min_y = this->max_y = point.y;
@@ -42,9 +63,35 @@ class Objectifier {
                 }
                 return this;
             }
+            inline Object* adopt(MapProcessing::Line& line) {
+                if(this->min_x == NULL) {
+                    this->min_x = std::min(line.first.x, line.second.x);
+                    this->max_x = std::max(line.first.x, line.second.x);
+                    this->min_y = std::min(line.first.x, line.second.y);
+                    this->max_y = std::max(line.first.x, line.second.y);
+                } else {
+                    short min_x = std::min(line.first.x, line.second.x);
+                    short max_x = std::max(line.first.x, line.second.x);
+                    short min_y = std::min(line.first.y, line.second.y);
+                    short max_y = std::max(line.first.y, line.second.y);
+                    if(this->min_x > min_x) {
+                        this->min_x = min_x;
+                    }
+                    if(this->max_x < max_x) {
+                        this->max_x = max_x;
+                    }
+                    if(this->min_y > min_y) {
+                        this->min_y = min_y;
+                    }
+                    if(this->max_y < max_y) {
+                        this->max_y = max_y;
+                    }
+                }
+                return this;
+            }
         };
         std::unordered_map<MapProcessing::Line, std::vector<MapProcessing::Line>*, MapProcessing::LineHash> lines_to_object;
-        std::unordered_map<std::vector<MapProcessing::Line>*, Object*>* object_sizes;
+        std::unordered_map<std::vector<MapProcessing::Line>*, Object*> object_sizes;
         std::vector<MapProcessing::Point> points;
         std::vector<std::vector<MapProcessing::Line>*> objects;
         std::vector<MapProcessing::Line> lines;
