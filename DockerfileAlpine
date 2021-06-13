@@ -28,6 +28,8 @@ RUN apk update && apk upgrade && apk add \
     make \
     linux-headers \
     g++ \
+    zlib \
+    zlib-dev \
     gcc
 
 RUN apk del --force fmt fmt-dev
