@@ -6,21 +6,20 @@ cmake_minimum_required (VERSION 3.5)
 add_definitions(-std=c++20)
 
 project ("albot-cpp")
-set(USE_TLS TRUE)
+
 # Add source to this project's executable.
 get_filename_component(prjName "${CMAKE_SOURCE_DIR}" NAME_WLE)
 add_library ("${prjName}" SHARED
   "src/BotImpl.cpp"
-  "../../src/SocketWrapper.cpp"
 )
 
 target_compile_definitions("${prjName}" PUBLIC "CHARACTER_NAME=${CHARACTER_NAME}" "CHARACTER_CLASS=${CHARACTER_CLASS}")
 
 # TODO: Add tests and install targets if needed.
-add_subdirectory(../../IXWebSocket ../../IXWebSocket)
+
 target_include_directories("${prjName}" PUBLIC "../../src")
 target_link_directories("${prjName}" PUBLIC "../../")
-TARGET_LINK_LIBRARIES("${prjName}" ixwebsocket Bot HttpWrapper)
+TARGET_LINK_LIBRARIES("${prjName}" Bot HttpWrapper)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
   set_property(TARGET "${prjName}" PROPERTY COMPILE_OPTIONS "-pthread")

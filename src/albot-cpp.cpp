@@ -14,10 +14,11 @@
 #include <memory>
 #include <iomanip>
 #include <fstream>
-
 #include "HttpWrapper.hpp"
 #include "GameInfo.hpp"
+#include "MovementMath.hpp"
 #include "Bot.hpp"
+#include "HttpWrapper.hpp"
 
 namespace ALBot {
 	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";

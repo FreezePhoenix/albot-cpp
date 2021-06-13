@@ -23,7 +23,7 @@ class Objectifier {
             Object() {
                 this->min_x = this->max_x = this->min_y = this->max_y = NULL;
             };
-            inline Object* adopt(Object& other) {
+            inline Object& adopt(Object& other) {
                 if(this->min_x == NULL) {
                     this->min_x = other.min_x;
                     this->min_y = other.min_y;
@@ -43,9 +43,9 @@ class Objectifier {
                         this->max_y = other.max_y;
                     }
                 }
-                return this;
+                return *this;
             }
-            inline Object* adopt(MapProcessing::Point& point) {
+            inline Object& adopt(MapProcessing::Point& point) {
                 if(this->min_x == NULL) {
                     this->min_x = this->max_x = point.x;
                     this->min_y = this->max_y = point.y;
@@ -61,9 +61,9 @@ class Objectifier {
                         this->max_y = point.y;
                     }
                 }
-                return this;
+                return *this;
             }
-            inline Object* adopt(MapProcessing::Line& line) {
+            inline Object& adopt(MapProcessing::Line& line) {
                 if(this->min_x == NULL) {
                     this->min_x = std::min(line.first.x, line.second.x);
                     this->max_x = std::max(line.first.x, line.second.x);
@@ -87,16 +87,16 @@ class Objectifier {
                         this->max_y = max_y;
                     }
                 }
-                return this;
+                return *this;
             }
         };
-        std::unordered_map<MapProcessing::Line, std::vector<MapProcessing::Line>*, MapProcessing::LineHash> lines_to_object;
-        std::unordered_map<std::vector<MapProcessing::Line>*, Object*> object_sizes;
+        std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash> lines_to_object;
+        std::unordered_map<std::shared_ptr<std::vector<MapProcessing::Line>>, Object> object_sizes;
         std::vector<MapProcessing::Point> points;
-        std::vector<std::vector<MapProcessing::Line>*> objects;
+        std::vector<std::shared_ptr<std::vector<MapProcessing::Line>>> objects;
         std::vector<MapProcessing::Line> lines;
-        MapProcessing::MapInfo* info;
-        Objectifier(MapProcessing::MapInfo* info);
+        std::shared_ptr<MapProcessing::MapInfo> info;
+        Objectifier(std::shared_ptr<MapProcessing::MapInfo> info);
         void chain(const std::pair<short, short>& first, const std::pair<short, short>& second);
         void run();
 };

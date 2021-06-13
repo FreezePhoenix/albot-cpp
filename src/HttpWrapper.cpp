@@ -14,8 +14,6 @@
 #include "HttpWrapper.hpp"
 #include "JsonUtils.hpp"
 
-#pragma GCC optimize ("unroll-loops")
-
 HttpWrapper::GameData HttpWrapper::data = HttpWrapper::GameData();
 std::string HttpWrapper::password = "";
 std::string HttpWrapper::email = "";
@@ -64,26 +62,35 @@ bool HttpWrapper::get_game_version(std::string &version) {
 }
 
 void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
-    std::vector<pthread_t*> threads = std::vector<pthread_t*>();
-    std::vector<void *> results = std::vector<void *>();
     nlohmann::json &geo = data["geometry"];
+    int index = 0;
+    std::vector<std::string> maps = std::vector<std::string>();
+    for(nlohmann::detail::iter_impl<nlohmann::json> it = geo.begin(); it != geo.end(); it++) {
+        maps.push_back(it.key());
+    }
     int max = geo.size() - 1;
     std::cout << "Parsing maps... 0%" << std::endl;
     int current = 0;
     for(nlohmann::detail::iter_impl<nlohmann::json> it = geo.begin(); it != geo.end(); it++) {
         if(it.value()["x_lines"].is_array()) {
-            MapProcessing::MapInfo* info = MapProcessing::parse_map(it.value());
+            std::shared_ptr<MapProcessing::MapInfo> info = MapProcessing::parse_map(it.value());
             info->name = it.key();
+            nlohmann::json& spawns = data["maps"][it.key()]["spawns"];
+            info->spawns = std::vector<std::pair<double, double>>();
+            for(nlohmann::detail::iter_impl<nlohmann::json> spawn_it = spawns.begin(); spawn_it != spawns.end(); spawn_it++) {
+                if(spawn_it.value().is_array()) {
+                    info->spawns.push_back(std::pair<double, double>(spawn_it.value()[0].get<double>(), spawn_it.value()[1].get<double>()));
+                }
+            };
             MapProcessing::simplify_lines(info);
             MapProcessing::process(info);
-
             nlohmann::json x_lines(info->x_lines);
             nlohmann::json y_lines(info->y_lines);
             geo[info->name]["x_lines"] = x_lines;
             geo[info->name]["y_lines"] = y_lines;
             current++;
 
-            std::cout << "\x1b[A" << "Parsing maps... " << ((current * 100) / max) << "%" << std::endl;
+            // std::cout << "\x1b[A" << "Parsing maps... " << ((current * 100) / max) << "%" << std::endl;
         }
     }
     HttpWrapper::data = data;
@@ -103,8 +110,8 @@ bool HttpWrapper::get_game_data() {
                 string_stream << cached_file.rdbuf();
                 raw_data = string_stream.str();
                 HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(raw_data);
-                HttpWrapper::data = HttpWrapper::GameData(raw_data);
                 handleGameJson(data);
+                HttpWrapper::data = HttpWrapper::GameData(data);
                 return true;
             }
             cached_file.close();
@@ -119,6 +126,7 @@ bool HttpWrapper::get_game_data() {
             std::cout << "Data trimmed! Parsing..." << std::endl;
             HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(raw_data);
             HttpWrapper::handleGameJson(data);
+            HttpWrapper::data = HttpWrapper::GameData(data);
             raw_data = HttpWrapper::data.getData().dump();
             std::cout << "Data parsed! Writing cache..." << std::endl;
             std::ofstream cache_file("data.json");

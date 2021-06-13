@@ -4,7 +4,7 @@
 #include <iostream>
 
 namespace MapProcessing {
-    inline bool  overlaps(short a, short b, short c, short d) {
+    inline bool overlaps(short a, short b, short c, short d) {
         short start1 = std::min(a, b);
         short end1 = std::max(a, b);
         short start2 = std::min(c, d);
@@ -23,118 +23,112 @@ namespace MapProcessing {
         }
         return false;
     }
-
-    void process(MapInfo* info) {
+    void process(std::shared_ptr<MapInfo> info) {
         Objectifier objectifier(info);
         objectifier.run();
         Writer writer(objectifier);
         writer.write();
     }
-    MapInfo* parse_map(nlohmann::json& json) {
-        MapInfo* info = new MapInfo();
+    std::shared_ptr<MapInfo> parse_map(nlohmann::json& json) {
+        std::shared_ptr<MapInfo> info = std::shared_ptr<MapInfo>(new MapInfo());
         nlohmann::json x_lines = json["x_lines"];
         nlohmann::json y_lines = json["y_lines"];
         if(x_lines.is_array() && y_lines.is_array()) {
             for(const nlohmann::json& line : x_lines) {
-                if(line.is_array()) {
-                    std::vector<short> _line = line.get<std::vector<short>>();
-                    _line.resize(3);
-                    info->x_lines.push_back(_line);
-                }
+                info->x_lines.push_back(line.get<AxisLineSegment>());
             }
             for(const nlohmann::json& line : y_lines) {
-                if(line.is_array()) {
-                    std::vector<short> _line = line.get<std::vector<short>>();
-                    _line.resize(3);
-                    info->y_lines.push_back(_line);
-                }
+                info->y_lines.push_back(line.get<AxisLineSegment>());
             }
         }
         return info;
     }
-    MapInfo* simplify_lines(MapInfo* info) {
+    std::shared_ptr<MapInfo> simplify_lines(std::shared_ptr<MapInfo> info) {
         std::unordered_map<short, std::vector<std::pair<short, short>>> x_lines_temp = std::unordered_map<short, std::vector<std::pair<short, short>>>();
         std::vector<std::pair<short, short>> new_ys = std::vector<std::pair<short, short>>(); 
-        for(const std::vector<short>& _line : info->x_lines) {
-            std::pair<short, short> tup = std::pair<short, short>(_line[1], _line[2]);
-            if(x_lines_temp.find(_line[0]) != x_lines_temp.end()) {
-                x_lines_temp[_line[0]].push_back(tup);
+        for(const AxisLineSegment& _line : info->x_lines) {
+            std::pair<short, short> tup = std::pair<short, short>(_line.range_start, _line.range_end);
+            if(x_lines_temp.count(_line.axis)) {
+                x_lines_temp.at(_line.axis).push_back(tup);
             } else {
-                
-                x_lines_temp[_line[0]] = std::vector<std::pair<short, short>>();
-                x_lines_temp[_line[0]].push_back(tup);
+                x_lines_temp.emplace(_line.axis, std::vector<std::pair<short, short>>());
+                x_lines_temp.at(_line.axis).push_back(tup);
             }
         }
         info->x_lines.clear();
         for(const std::pair<short, std::vector<std::pair<short, short>>>& pair : x_lines_temp) {
             short x = pair.first;
-            std::vector<std::pair<short, short>> ys = pair.second;
+            const std::vector<std::pair<short, short>> ys = pair.second;
             for(int i = 0, size = ys.size(); i < size; i++) {
-                std::pair<short, short>& first = ys[i];
-                for(int j = 0; j < size; j++) {
-                    std::pair<short, short>& second = ys[j];
-                    if(first == second) {
-                        short a = first.first,
-                            b = first.second,
-                            c = second.first,
-                            d = second.second;
-                        if(overlaps(a, b, c, d)) {
-                            short new_start = MapProcessing::min(a, b, c, d);
-                            short new_end = MapProcessing::max(a, b, c, d);
-                            first.first = new_start;
-                            first.second = new_end;
-                            i = j;
-                        }
+                std::pair<short, short> first = ys.at(i);
+                for(int j = i + 1; j < size; j++) {
+                    const std::pair<short, short>& second = ys.at(j);
+                    short a = first.first,
+                        b = first.second,
+                        c = second.first,
+                        d = second.second;
+                    if(overlaps(a, b, c, d)) {
+                        short new_start = MapProcessing::min(a, b, c, d);
+                        short new_end = MapProcessing::max(a, b, c, d);
+                        first.first = new_start;
+                        first.second = new_end;
+                        i = j;
                     }
                 }
                 new_ys.push_back(first);
             }
             for(const std::pair<short, short>& tup : new_ys) {
-                info->x_lines.push_back(std::vector<short> { x, tup.first, tup.second });
+                info->x_lines.push_back(AxisLineSegment { x, tup.first, tup.second });
             }
             new_ys.clear();
         }
         std::unordered_map<short, std::vector<std::pair<short, short>>> y_lines_temp = std::unordered_map<short, std::vector<std::pair<short, short>>>();
         std::vector<std::pair<short, short>> new_xs = std::vector<std::pair<short, short>>();
-        for(const std::vector<short>& _line : info->y_lines) {
-            std::pair<short, short> tup = std::pair<short, short>(_line[1], _line[2]);
-            if(y_lines_temp.find(_line[0]) != y_lines_temp.end()) {
-                y_lines_temp[_line[0]].push_back(tup);
+        for(const AxisLineSegment& _line : info->y_lines) {
+            std::pair<short, short> tup = std::pair<short, short>(_line.range_start, _line.range_end);
+            if(y_lines_temp.count(_line.axis)) {
+                y_lines_temp.at(_line.axis).push_back(tup);
             } else {
-                y_lines_temp[_line[0]] = std::vector<std::pair<short, short>>();
-                y_lines_temp[_line[0]].push_back(tup);
+                y_lines_temp.emplace(_line.axis, std::vector<std::pair<short, short>>());
+                y_lines_temp.at(_line.axis).push_back(tup);
             }
         }
         info->y_lines.clear();
-        for(const std::pair<short, std::vector<std::pair<short, short>>>& line : y_lines_temp) {
-            short y = line.first;
-            std::vector<std::pair<short, short>> xs = line.second;
+        for(const std::pair<short, std::vector<std::pair<short, short>>>& pair : y_lines_temp) {
+            short y = pair.first;
+            const std::vector<std::pair<short, short>>& xs = pair.second;
             for(int i = 0, size = xs.size(); i < size; i++) {
-                std::pair<short, short> first = xs[i];
-                for(int j = 0; j < size; j++) {
-                    std::pair<short, short> second = xs[j];
-                    if(first != second) {
-                        short a = first.first,
-                            b = first.second,
-                            c = second.first,
-                            d = second.second;
-                        if(overlaps(a, b, c, d)) {
-                            short new_start = MapProcessing::min(a, b, c, d);
-                            short new_end = MapProcessing::max(a, b, c, d);
-                            first.first = new_start;
-                            first.second = new_end;
-                            i = j;
-                        }
+                std::pair<short, short> first = xs.at(i);
+                for(int j = i + 1; j < size; j++) {
+                    const std::pair<short, short>& second = xs.at(j);
+                    short a = first.first,
+                        b = first.second,
+                        c = second.first,
+                        d = second.second;
+                    if(overlaps(a, b, c, d)) {
+                        short new_start = MapProcessing::min(a, b, c, d);
+                        short new_end = MapProcessing::max(a, b, c, d);
+                        first.first = new_start;
+                        first.second = new_end;
+                        i = j;
                     }
                 }
                 new_xs.push_back(first);
             }
             for(const std::pair<short, short>& tup : new_xs) {
-                info->y_lines.push_back(std::vector<short> { y, tup.first, tup.second });
+
+                info->y_lines.push_back(AxisLineSegment { y, tup.first, tup.second });
             }
             new_xs.clear();
         }
         return info;
     }
-
+    void to_json(nlohmann::json& j, const AxisLineSegment& value) {
+        j = nlohmann::json::array({value.axis, value.range_start, value.range_end});
+    }
+    void from_json(const nlohmann::json& j, AxisLineSegment& value) {
+        j.at(0).get_to(value.axis);
+        j.at(1).get_to(value.range_start);
+        j.at(2).get_to(value.range_end);
+    }
 }

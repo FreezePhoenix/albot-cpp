@@ -10,36 +10,39 @@
 
 class HttpWrapper {
 	private:
-		class MutableGameData {
-			public:
-				nlohmann::json data;
-				MutableGameData() {}
-				MutableGameData(std::string& rawJson) : data(nlohmann::json::parse(rawJson)) {}
-				MutableGameData(const MutableGameData& old) : data(old.data) {}
-				
-				nlohmann::json& getData() { return data; }
-
-				nlohmann::json& operator[](const std::string& key) { return data[key]; }
-				nlohmann::json& at(const std::string& key) { return data[key]; }
-		};
 		static std::string password;
 		static std::string email;
-		static void handleGameJson(HttpWrapper::MutableGameData& json);
 	public:
+		class MutableGameData {
+			public:
+				nlohmann::json* data;
+				MutableGameData(std::string& rawJson) {
+					this->data = new nlohmann::json(nlohmann::json::parse(rawJson));
+				}
+				MutableGameData(const MutableGameData& old) : data(old.data) {}
+				
+				nlohmann::json& getData() { return *data; }
+
+				nlohmann::json& operator[](const std::string& key) { return data->operator[](key); }
+				nlohmann::json& at(const std::string& key) { return data->at(key); }
+		};
+		static void handleGameJson(HttpWrapper::MutableGameData& json);
 		class GameData {
 			private:
-				nlohmann::json data;
+				nlohmann::json* data;
 			public:
 				// This should never be used intentionally!
-				GameData() {}
-				GameData(std::string& rawJson) : data(nlohmann::json::parse(rawJson)) {}
+				GameData() : data(nullptr) {}
+				GameData(std::string& rawJson) {
+					this->data = new nlohmann::json(nlohmann::json::parse(rawJson));
+				}
 				GameData(const GameData& old) : data(old.data) {}
 				GameData(const MutableGameData& old) : data(old.data) {}
 				
-				const nlohmann::json& getData() const { return data; }
+				const nlohmann::json& getData() const { return *data; }
 
-				const nlohmann::json& operator[](const std::string& key) const { return data[key]; }
-				const nlohmann::json& at(const std::string& key) const { return data[key]; }
+				const nlohmann::json& operator[](const std::string& key) const { return data->operator[](key); }
+				const nlohmann::json& at(const std::string& key) const { return data->at(key); }
 		};
 		struct Character {
 				std::string name;

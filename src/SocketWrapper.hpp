@@ -8,6 +8,9 @@
 #include <ixwebsocket/IXWebSocket.h>
 #include <nlohmann/json.hpp>
 #include <vector>
+#include <mutex>
+#include <map>
+#include <memory>
 #include <chrono>
 #include "Bot.hpp"
 #include "HttpWrapper.hpp"

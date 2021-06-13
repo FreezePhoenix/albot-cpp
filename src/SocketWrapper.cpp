@@ -3,9 +3,6 @@
 #include <regex>
 #include <algorithm>
 
-#define WIDTH_HEIGHT_SCALE                                                                                             \
-    {"width", 1920}, {"height", 1080}, { "scale", 2 }
-
 template <typename T, typename K>
 inline T getOrElse(const nlohmann::json& n, K key,  T defaultValue) {
     if (!n.is_object()) {
@@ -49,7 +46,7 @@ void SocketWrapper::initializeSystem() {
     // Loading
 
     this->registerEventCallback("welcome", [this](const nlohmann::json&) {
-        this->emit("loaded", {{"success", 1}, WIDTH_HEIGHT_SCALE});
+        this->emit("loaded", {{"success", 1}, {"width",1920},{"height",1080},{"scale",2}});
     });
 
     this->registerEventCallback("start", [this](const nlohmann::json& event) {
@@ -230,7 +227,7 @@ void SocketWrapper::login(GameInfo* info) {
     emit("auth", {{"user", userId},
                   {"character", characterId},
                   {"auth", auth},
-                  WIDTH_HEIGHT_SCALE,
+                  {"width",1920},{"height",1080},{"scale",2},
                   {"no_html", true},
                   {"no_graphics", true} /*, {"passphrase", ""}*/});
 }
@@ -478,4 +475,3 @@ std::map<std::string, nlohmann::json>& SocketWrapper::getUpdateEntities() {
 }
 
 std::map<std::string, nlohmann::json>& SocketWrapper::getChests() { return chests; }
-#undef WIDTH_HEIGHT_SCALE

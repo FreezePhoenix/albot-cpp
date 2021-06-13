@@ -12,6 +12,10 @@
 #include "../../../src/GameInfo.hpp"
 #include "../../../src/Bot.hpp"
 
+#if CHARACTER_CLASS + 'a' == 'a'
+	#define CHARACTER_CLASS 0
+#endif
+
 #ifndef CHARACTER_NAME
 	#define CHARACTER_NAME	0
 #endif
@@ -29,6 +33,10 @@ class BotImpl: public Bot {
 		BotImpl(void *id): Bot(id), wrapper(std::to_string(info->character->id), this->info->server->url, *this) {
 			this->name = info->character->name;
 			this->id = info->character->id;
+		}
+		void onConnect() {
+			this->log("Connected!?!");
+			this->wrapper.emit("say", {{"message", "Hello Adventure Land, this is C++!"}});
 		}
 		void start() {
 			wrapper.connect();
