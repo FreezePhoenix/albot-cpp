@@ -17,7 +17,7 @@ add_library(MapProcessing STATIC
   "src/MapProcessing/Writer.cpp"
 )
 
-add_library(HttpWrapper OBJECT
+add_library(HttpWrapper SHARED
   "src/HttpWrapper.cpp"
 )
 
