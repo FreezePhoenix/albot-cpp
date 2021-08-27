@@ -30,10 +30,11 @@ add_library(alclient-cpp SHARED
   "src/alclient-cpp.cpp"
   "src/BotSkeleton.cpp"
 )
-
+add_subdirectory(./lib/spdlog ./lib/spdlog)
 add_subdirectory(./IXWebSocket ./IXWebSocket)
 add_subdirectory(./TriangleManipulator ./TriangleManipulator)
 set_property(TARGET HttpWrapper PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET spdlog PROPERTY COMPILE_OPTIONS "-fPIC")
 set_property(TARGET Bot PROPERTY COMPILE_OPTIONS "-fPIC")
 set_property(TARGET TriangleManipulator PROPERTY COMPILE_OPTIONS "-fPIC")
 set_property(TARGET albot-cpp PROPERTY COMPILE_OPTIONS "-fPIC")

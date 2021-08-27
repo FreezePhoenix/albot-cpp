@@ -1,4 +1,5 @@
 #include "alclient-cpp.hpp"
+#include "unistd.h"
 #include <iostream>
 
 void ALClient::login() {

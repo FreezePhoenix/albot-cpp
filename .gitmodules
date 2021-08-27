@@ -7,3 +7,6 @@
 [submodule "TriangleManipulator"]
 	path = TriangleManipulator
 	url = https://github.com/FreezePhoenix/TriangleManipulator
+[submodule "lib/spdlog"]
+	path = lib/spdlog
+	url = https://github.com/gabime/spdlog
