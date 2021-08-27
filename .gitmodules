@@ -1,11 +1,11 @@
 [submodule "IXWebSocket"]
-	path = IXWebSocket
+	path = lib/IXWebSocket
 	url = https://github.com/machinezone/IXWebSocket/
 [submodule "Poco"]
 	path = Poco
 	url = https://github.com/pocoproject/poco
 [submodule "TriangleManipulator"]
-	path = TriangleManipulator
+	path = lib/TriangleManipulator
 	url = https://github.com/FreezePhoenix/TriangleManipulator
 [submodule "lib/spdlog"]
 	path = lib/spdlog

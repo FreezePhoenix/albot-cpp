@@ -2,7 +2,7 @@
 # project specific logic here.
 #
 cmake_minimum_required (VERSION 3.5)
-add_definitions(-std=c++20 -w -g -O1 -Wall)
+add_definitions(-std=c++20 -w -g -O3 -Wall)
 project ("albot-cpp")
 set(USE_TLS TRUE)
 # Add source to this project's executable.
@@ -31,8 +31,8 @@ add_library(alclient-cpp SHARED
   "src/BotSkeleton.cpp"
 )
 add_subdirectory(./lib/spdlog ./lib/spdlog)
-add_subdirectory(./IXWebSocket ./IXWebSocket)
-add_subdirectory(./TriangleManipulator ./TriangleManipulator)
+add_subdirectory(./lib/TriangleManipulator ./lib/TriangleManipulator)
+add_subdirectory(./lib/IXWebSocket ./lib/IXWebSocket)
 set_property(TARGET HttpWrapper PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET spdlog PROPERTY COMPILE_OPTIONS "-fPIC")
 set_property(TARGET Bot PROPERTY COMPILE_OPTIONS "-fPIC")
@@ -43,9 +43,9 @@ set_property(TARGET HttpWrapper PROPERTY COMPILE_OPTIONS "-fPIC")
 # TODO: Add tests and install targets if needed.
 
 target_link_directories(albot-cpp PUBLIC "./")
-target_include_directories(Bot PUBLIC "./IXWebSocket")
-target_include_directories(MapProcessing PUBLIC "./TriangleManipulator/src")
-target_include_directories(HttpWrapper PUBLIC "./TriangleManipulator/src")
+target_include_directories(Bot PUBLIC "./lib/IXWebSocket")
+target_include_directories(MapProcessing PUBLIC "./lib/TriangleManipulator/src")
+target_include_directories(HttpWrapper PUBLIC "./lib/TriangleManipulator/src")
 
 TARGET_LINK_LIBRARIES(MapProcessing PUBLIC TriangleManipulator fmt)
 TARGET_LINK_LIBRARIES(HttpWrapper PUBLIC PocoFoundation PocoNet spdlog PocoNetSSL)

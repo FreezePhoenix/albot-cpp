@@ -18,8 +18,6 @@ FROM alpine:latest
 
 RUN apk update && apk upgrade && apk add \
     cmake \
-    spdlog-dev \
-    spdlog \
     openssl \
     openssl-dev \
     nlohmann-json \
