@@ -6,7 +6,10 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <ixwebsocket/IXWebSocket.h>
+
+#ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #include <nlohmann/json.hpp>
+#endif
 #include <vector>
 #include <mutex>
 #include <map>

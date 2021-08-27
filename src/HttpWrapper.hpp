@@ -4,7 +4,10 @@
 #define ALBOT_HTTPWRAPPER_HPP_
 
 #include <Poco/Net/HTTPCookie.h>
+
+#ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #include <nlohmann/json.hpp>
+#endif
 
 #include "Enums/ClassEnum.hpp"
 
@@ -19,7 +22,11 @@ class HttpWrapper {
 				MutableGameData(std::string& rawJson) {
 					this->data = new nlohmann::json(nlohmann::json::parse(rawJson));
 				}
-				MutableGameData(const MutableGameData& old) : data(old.data) {}
+				MutableGameData(std::istream& rawJson) {
+					this->data = new nlohmann::json(nlohmann::json::parse(rawJson));
+				}
+				MutableGameData(const MutableGameData& old) : data(old.data) {
+				}
 				
 				nlohmann::json& getData() { return *data; }
 
@@ -33,9 +40,6 @@ class HttpWrapper {
 			public:
 				// This should never be used intentionally!
 				GameData() : data(nullptr) {}
-				GameData(std::string& rawJson) {
-					this->data = new nlohmann::json(nlohmann::json::parse(rawJson));
-				}
 				GameData(const GameData& old) : data(old.data) {}
 				GameData(const MutableGameData& old) : data(old.data) {}
 				

@@ -63,7 +63,7 @@ class Objectifier {
                 }
                 return *this;
             }
-            inline Object& adopt(MapProcessing::Line& line) {
+            inline Object& adopt(const MapProcessing::Line& line) {
                 if(this->min_x == NULL) {
                     this->min_x = std::min(line.first.x, line.second.x);
                     this->max_x = std::max(line.first.x, line.second.x);

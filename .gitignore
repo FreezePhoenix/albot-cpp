@@ -49,3 +49,5 @@ Makefile
 **/Makefile
 **/*.ninja*
 **/.vscode
+**/.cmake
+**/Maps/**

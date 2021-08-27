@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include "Objectifier.hpp"
+#include "ShapeManipulator.hpp"
 
 
 Objectifier::Objectifier(std::shared_ptr<MapProcessing::MapInfo> info) {
@@ -19,143 +20,50 @@ MapProcessing::Line normalize(MapProcessing::Line& inp) {
     return MapProcessing::Line(std::min(inp.first.x, inp.second.x), std::max(inp.first.x, inp.second.x), std::min(inp.first.y, inp.second.y), std::max(inp.first.y, inp.second.y));
 }
 
-inline bool intersects(const MapProcessing::Line& line_one, const MapProcessing::Line& line_two) {
-    // // line_one = normalize(line_one);
-    // // line_two = normalize(line_two);
-    // if(line_one.first.x == line_one.second.x) {
-    //     // line_one is vertical.
-    //     if(line_two.first.x == line_two.second.x) {
-    //         // line_two is also vertical? This isn't looking that good...
-    //         if(line_two.first.x == line_one.first.x) {
-    //             // All on same X. Treat as range overlaping problem.
-    //             if(line_one.first.y <= line_two.second.y) {
-    //                 // line_one's bottom point is below line_two's top point
-    //                 if(line_one.second.y >= line_two.first.y) {
-    //                     // line_one's top point is above line_two's bottom point
-    //                     return true;
-    //                 } else {
-    //                     return false;
-    //                 }
-    //             } else {
-    //                 return false;
-    //             }
-    //         } else {
-    //             // Line segments are parallel but not on same X. Cannot cross.
-    //             return false;
-    //         }
-    //     } else {
-    //         // line_two is horizontal.
-    //         if(line_two.first.x <= line_one.first.x && line_two.second.x >= line_one.first.x) {
-    //             // line_two contains line_one's x...
-    //             if(line_one.first.y <= line_two.first.y && line_one.second.y >= line_two.first.y) {
-    //                 // And line_one contains line_two's y!
-    //                 return true;
-    //             } else {
-    //                 return false;
-    //             }
-    //         } else {
-    //             // No chance of anything working.
-    //             return false;
-    //         }
-    //     }
-    // } else {
-    //     // line_one is horizontal.
-    //     if(line_two.first.x == line_two.second.x) {
-    //         // line_two is vertical.
-    //         if(line_two.first.y <= line_one.first.y && line_two.second.y >= line_one.first.y) {
-    //             // line_two contains line_one's Y
-    //             if(line_one.first.x <= line_two.first.x && line_one.second.x >= line_two.first.x) {
-    //                 // And line_one contains line_two's X
-    //                 return true;
-    //             } else {
-    //                 return false;
-    //             }
-    //         } else {
-    //             return false;
-    //         }
-    //     } else {
-    //         if(line_one.first.y == line_two.first.y) {
-    //             // line_two is horizontal as well... treat as normal range overlap
-    //             if(line_one.first.x <= line_two.second.x) {
-    //                 // line_one's left point is below line_two's top point
-    //                 if(line_one.second.x >= line_two.first.x) {
-    //                     // line_one's 
-    //                     return true;
-    //                 } else {
-    //                     return false;
-    //                 }
-    //             } else {
-    //                 return false;
-    //             }
-    //         } else {
-    //             return false;
-    //         }
-    //     }
-    // }
-    // return false;
-    if(line_one.first.x == line_one.second.x) {
-        // line_one is vertical.
-        if(line_two.first.x == line_two.second.x) {
-            // line_two is also vertical? This isn't looking that good...
-            return line_two.first.x == line_one.first.x && line_one.first.y <= line_two.second.y && line_one.second.y >= line_two.first.y;
-        } else {
-            // line_two is horizontal.
-            return line_two.first.x <= line_one.first.x && line_two.second.x >= line_one.first.x && line_one.first.y <= line_two.first.y && line_one.second.y >= line_two.first.y;
-        }
-    } else {
-        // line_one is horizontal.
-        if(line_two.first.x == line_two.second.x) {
-            // line_two is vertical.
-            return line_two.first.y <= line_one.first.y && line_two.second.y >= line_one.first.y && line_one.first.x <= line_two.first.x && line_one.second.x >= line_two.first.x;
-        } else {
-            if(line_one.first.y == line_two.first.y) {
-                // line_two is horizontal as well... treat as normal range overlap
-                return line_one.first.x <= line_two.second.x && line_one.second.x >= line_two.first.x;
-            }
-        }
-    }
-    return false;
-}
+// inline bool intersects(const MapProcessing::Line& line_one, const MapProcessing::Line& line_two) {
+//     if(line_one.first.x == line_one.second.x) {
+//         // line_one is vertical.
+//         if(line_two.first.x == line_two.second.x) {
+//             // line_two is also vertical? This isn't looking that good...
+//             return line_two.first.x == line_one.first.x && line_one.first.y <= line_two.second.y && line_one.second.y >= line_two.first.y;
+//         } else {
+//             // line_two is horizontal.
+//             return line_two.first.x <= line_one.first.x && line_two.second.x >= line_one.first.x && line_one.first.y <= line_two.first.y && line_one.second.y >= line_two.first.y;
+//         }
+//     } else {
+//         // line_one is horizontal.
+//         if(line_two.first.x == line_two.second.x) {
+//             // line_two is vertical.
+//             return line_two.first.y <= line_one.first.y && line_two.second.y >= line_one.first.y && line_one.first.x <= line_two.first.x && line_one.second.x >= line_two.first.x;
+//         } else {
+//             if(line_one.first.y == line_two.first.y) {
+//                 // line_two is horizontal as well... treat as normal range overlap
+//                 return line_one.first.x <= line_two.second.x && line_one.second.x >= line_two.first.x;
+//             }
+//         }
+//     }
+//     return false;
+// }
 
 void Objectifier::run() {
-    std::unordered_set<unsigned int> checked_pairs = std::unordered_set<unsigned int>();
+    this->lines.reserve(this->info->x_lines.size() + this->info->y_lines.size());
     for(const MapProcessing::AxisLineSegment& line : this->info->x_lines) {
-        int x = line.axis;
-        int y1 = line.range_start;
-        int y2 = line.range_end;
-        MapProcessing::Point p1 = MapProcessing::Point(x, y1);
-        MapProcessing::Point p2 = MapProcessing::Point(x, y2);
-        this->points.push_back(p1);
-        this->points.push_back(p2);
-        this->lines.push_back(MapProcessing::Line(p1, p2));
+        this->lines.emplace_back(line.axis, line.range_start, line.axis, line.range_end);
     }
     for(const MapProcessing::AxisLineSegment& line : this->info->y_lines) {
-        int y = line.axis;
-        int x1 = line.range_start;
-        int x2 = line.range_end;
-        MapProcessing::Point p1 = MapProcessing::Point(x1, y);
-        MapProcessing::Point p2 = MapProcessing::Point(x2, y);
-        this->points.push_back(p1);
-        this->points.push_back(p2);
-        this->lines.push_back(MapProcessing::Line(p1, p2));
+        this->lines.emplace_back(line.range_start, line.axis, line.range_end, line.axis);
     }
-    for(int i = 0, size = this->lines.size(); i < size; i++) {
-        MapProcessing::Line& line_one = this->lines[i];
-        for(int j = i; j < size; j++) {
-            MapProcessing::Line& line_two = this->lines[j];
-            if(line_one == line_two) {
-                continue;
-            }
-            if(intersects(line_one, line_two)) {
-                std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash>::iterator find1 = this->lines_to_object.find(line_one);
-                std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash>::iterator find2 = this->lines_to_object.find(line_two);
+    ShapeManipulator::handle_intersections(lines, [this](const MapProcessing::Line& line_one, const MapProcessing::Line& line_two) {
+        const std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash>::iterator find1 = this->lines_to_object.find(line_one);
+        const std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash>::iterator find2 = this->lines_to_object.find(line_two);
+        const std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash>::iterator end = this->lines_to_object.end();
                 if(find1 != this->lines_to_object.end()) {
                     if(find2 != this->lines_to_object.end()) {
                         // They're both in the array? Huh.
                         std::shared_ptr<std::vector<MapProcessing::Line>> obj1 = find1->second;
                         std::shared_ptr<std::vector<MapProcessing::Line>> obj2 = find2->second;;
                         if(obj1 == obj2) {
-                            continue;
+                            return;
                         }
                         this->object_sizes.at(obj1).adopt(this->object_sizes.at(obj2));
                         for(std::vector<MapProcessing::Line>::iterator it3 = obj2->begin(); it3 != obj2->end(); it3++) {
@@ -165,6 +73,8 @@ void Objectifier::run() {
                         std::vector<std::shared_ptr<std::vector<MapProcessing::Line>>>::iterator find3 = std::find(this->objects.begin(), this->objects.end(), obj2);
                         if(find3 != this->objects.end()) {
                             this->objects.erase(find3);
+                        } else {
+                            std::cout << "UHH" << std::endl;
                         }
                         this->object_sizes.erase(obj2);
                     } else {
@@ -194,14 +104,25 @@ void Objectifier::run() {
                         this->object_sizes.emplace(obj, size);
                     }
                 }
-            }
-        }
-    }
-    for (const auto &i: this->objects) {
+    });
+    // for (int i = 0, size = this->lines.size(); i < size; i++) {
+    //     MapProcessing::Line& line_one = this->lines[i];
+    //     for(int j = i; j < size; j++) {
+    //         MapProcessing::Line& line_two = this->lines[j];
+    //         if(line_one == line_two) {
+    //             continue;
+    //         }
+    //         if(intersects(line_one, line_two)) {
+               
+    //         }
+    //     }
+    // }
+    // for (const auto &i: this->objects) {
+    // std::cout << this->objects.size() << std::endl;
         std::sort(this->objects.begin(), this->objects.end(), [this](const std::shared_ptr<std::vector<MapProcessing::Line>> first, std::shared_ptr<std::vector<MapProcessing::Line>> second) {
             Object& first_obj = this->object_sizes.at((std::shared_ptr<std::vector<MapProcessing::Line>>) first);
             Object& second_obj = this->object_sizes.at((std::shared_ptr<std::vector<MapProcessing::Line>>) second);
             return std::abs(((first_obj.max_x - first_obj.min_x) * (first_obj.max_y - first_obj.min_y))) > std::abs(((second_obj.max_x - second_obj.min_x) * (second_obj.max_y - second_obj.min_y)));
         });
-    }
+    // }
 };

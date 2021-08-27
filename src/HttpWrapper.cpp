@@ -73,6 +73,7 @@ void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
     int current = 0;
     for(nlohmann::detail::iter_impl<nlohmann::json> it = geo.begin(); it != geo.end(); it++) {
         if(it.value()["x_lines"].is_array()) {
+            // std::cout << it.value()["x_lines"][0][0] << std::endl;
             std::shared_ptr<MapProcessing::MapInfo> info = MapProcessing::parse_map(it.value());
             info->name = it.key();
             nlohmann::json& spawns = data["maps"][it.key()]["spawns"];
@@ -88,49 +89,46 @@ void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
             nlohmann::json y_lines(info->y_lines);
             geo[info->name]["x_lines"] = x_lines;
             geo[info->name]["y_lines"] = y_lines;
+            // std::cout << geo[info->name]["x_lines"][0][0] << std::endl;
             current++;
-
             // std::cout << "\x1b[A" << "Parsing maps... " << ((current * 100) / max) << "%" << std::endl;
         }
     }
-    HttpWrapper::data = data;
 }
 
 bool HttpWrapper::get_game_data() {
     std::string raw_data;
     std::string current_version = "",
         cached_version = "";
-    if(get_cached_game_version(cached_version) && get_game_version(current_version)) {
+    if ((get_cached_game_version(cached_version) && get_game_version(current_version))) {
         if(cached_version == current_version) {
             std::ifstream cached_file("data.json");
             if(cached_file.fail() || !cached_file.is_open()) {
                 std::cout << "Local cache invalid. Fetching." << std::endl;
+                cached_file.close();
             } else {
-                std::ostringstream string_stream;
-                string_stream << cached_file.rdbuf();
-                raw_data = string_stream.str();
-                HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(raw_data);
+                HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(cached_file);
                 handleGameJson(data);
-                HttpWrapper::data = HttpWrapper::GameData(data);
+                HttpWrapper::data = data;
+                cached_file.close();
                 return true;
             }
-            cached_file.close();
         } else {
             std::cout << "Cached game version does not match! Need: " << current_version << " Have: " << cached_version << " Fetching." << std::endl;
         }
         std::ofstream version_cache("game_version");
         version_cache.write(current_version.c_str(), current_version.length());
-        if(HttpWrapper::do_request("https://adventure.land/data.js", &raw_data)) {
+        version_cache.close();
+        if (HttpWrapper::do_request("https://adventure.land/data.js", &raw_data)) {
             std::cout << "Data fetched! Trimming..." << std::endl;
             raw_data = raw_data.substr(6, raw_data.length() - 8);
             std::cout << "Data trimmed! Parsing..." << std::endl;
             HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(raw_data);
             HttpWrapper::handleGameJson(data);
-            HttpWrapper::data = HttpWrapper::GameData(data);
-            raw_data = HttpWrapper::data.getData().dump();
+            HttpWrapper::data = data;
             std::cout << "Data parsed! Writing cache..." << std::endl;
             std::ofstream cache_file("data.json");
-            cache_file.write(raw_data.c_str(), raw_data.length());
+            cache_file << data.getData();
             cache_file.close();
             return true;
         } else {
@@ -148,9 +146,10 @@ bool HttpWrapper::get_config(nlohmann::json &config) {
     std::ifstream configfile("bot.json");
     std::string tmp;
     if (configfile.is_open()) {
-        Poco::StreamCopier::copyToString(configfile, tmp);
-        JsonUtils::strip_comments(&tmp);
-        config = nlohmann::json::parse(tmp.c_str());
+        // Poco::StreamCopier::copyToString(configfile, tmp);
+        // std::cout << tmp << std::endl;
+        // JsonUtils::strip_comments(&tmp);
+        configfile >> config;
         if (!config.is_object()) {
             std::cout << "Config file is empty! Aborting." << std::endl;
             return false;

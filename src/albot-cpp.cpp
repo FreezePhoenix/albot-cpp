@@ -6,19 +6,13 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
-
-#include <nlohmann/json.hpp>
 #include <pthread.h>
 #include <iostream>
 #include <dlfcn.h>
 #include <memory>
-#include <iomanip>
 #include <fstream>
-#include "HttpWrapper.hpp"
-#include "GameInfo.hpp"
 #include "MovementMath.hpp"
 #include "Bot.hpp"
-#include "HttpWrapper.hpp"
 
 namespace ALBot {
 	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";
@@ -82,11 +76,11 @@ namespace ALBot {
 		pthread_exit(0);
 	}
 	
-	void* login(void *id) {
+	void login() {
 		if (!HttpWrapper::login()) {
 			exit(1);
 		}
-		nlohmann::json config;
+		nlohmann::json config = nlohmann::json::object();
 		if (!HttpWrapper::get_config(config)) {
 			exit(1);
 		}
@@ -97,50 +91,44 @@ namespace ALBot {
 				exit(1);
 			} else {
 				std::cout << "Writing characters to file..." << std::endl;
-				nlohmann::json _chars;
-				config["characters"] = _chars;
+				nlohmann::json _chars = nlohmann::json::array();
 
 				for (int i = 0; i < HttpWrapper::chars.size(); i++) {
-					HttpWrapper::Character *struct_char = HttpWrapper::chars[i];
-					nlohmann::json _char;
-					_char["name"] = struct_char->name;
-					_char["id"] = struct_char->id;
-					_char["script"] = "Default";
-					_char["server"] = "US II";
-					_char["enabled"] = false;
-					_char["type"] = ClassEnum::getClassString(struct_char->klass);
-					_chars.push_back(_char);
+					// HttpWrapper::Character *struct_char = HttpWrapper::chars[i];
+					// nlohmann::json _char;
+					// _char["name"] = struct_char->name;
+					// _char["id"] = struct_char->id;
+					// _char["script"] = "Default";
+					// _char["server"] = "US II";
+					// _char["enabled"] = false;
+					// _char["type"] = ClassEnum::getClassString(struct_char->klass);
+					// _chars.push_back(_char);
 				}
 
 				config["characters"] = _chars;
 				config["fetch"] = false;
 
 				std::ofstream o("bot.out.json");
-				o << std::setw(4) << config << std::endl;
 				std::cout << "Characters written to file!" << std::endl;
 				exit(0);
 			}
 		}
+
+
 		std::cout << "Processing characters..." << std::endl;
 		if (!HttpWrapper::process_characters(config["characters"])) {
 			exit(1);
 		}
+
 		if (!HttpWrapper::get_servers()) {
 
 		}
+
 		HttpWrapper::get_game_data();
-		// std::cout << map["x_lines"].size() << std::endl;
-		std::cout << HttpWrapper::data["geometry"]["main"]["x_lines"].size() << std::endl;
-		std::cout << HttpWrapper::data["geometry"]["main"]["y_lines"].size() << std::endl;
 		clean_code();
-		std::shared_ptr<int> a;
-		start_character(0);
 	}
 }
 
 int main() {
-	pthread_t login_thread;
-		void *ret; 
-		pthread_create(&login_thread, NULL, ALBot::login, (void*) 0);
-		pthread_join(login_thread, &ret);
+	ALBot::login();
 }

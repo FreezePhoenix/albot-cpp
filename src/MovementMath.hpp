@@ -3,7 +3,9 @@
 #ifndef ALBOT_MOVEMENTMATH_HPP_
 #define ALBOT_MOVEMENTMATH_HPP_
 
+#ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #include <nlohmann/json.hpp>
+#endif
 
 class MovementMath {
 public:
