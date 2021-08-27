@@ -1,7 +1,7 @@
 #include "JsonUtils.hpp"
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
-#include <iostream>
+#include "fmt/os.h"
 
 namespace JsonUtils {
     void parse(rapidjson::Document* _json, std::string* str)  {
@@ -10,9 +10,9 @@ namespace JsonUtils {
     void strip_comments(std::string *str)  {
 		rapidjson::Document _json;
 		_json.Parse<rapidjson::kParseCommentsFlag | rapidjson::kParseTrailingCommasFlag>(str->c_str());
-		if(_json.HasParseError()) {
-			std::cout << _json.GetParseError() << std::endl;
-			std::cout << _json.GetErrorOffset() << std::endl;
+		if (_json.HasParseError()) {
+			fmt::print("{}", _json.GetParseError());
+			fmt::print("{}", _json.GetErrorOffset());
 		}
 		rapidjson::StringBuffer buffer;
 		rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);

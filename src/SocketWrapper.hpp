@@ -13,10 +13,8 @@
 #include <vector>
 #include <mutex>
 #include <map>
-#include <memory>
 #include <chrono>
 #include "Bot.hpp"
-#include "HttpWrapper.hpp"
 #include <functional>
 
 
