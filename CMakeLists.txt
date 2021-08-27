@@ -42,10 +42,10 @@ set_property(TARGET alclient-cpp PROPERTY COMPILE_OPTIONS "-fPIC")
 set_property(TARGET HttpWrapper PROPERTY COMPILE_OPTIONS "-fPIC")
 # TODO: Add tests and install targets if needed.
 
+include_directories("./lib/TriangleManipulator/src")
+include_directories("./lib/spdlog/include")
 target_link_directories(albot-cpp PUBLIC "./")
 target_include_directories(Bot PUBLIC "./lib/IXWebSocket")
-target_include_directories(MapProcessing PUBLIC "./lib/TriangleManipulator/src")
-target_include_directories(HttpWrapper PUBLIC "./lib/TriangleManipulator/src")
 
 TARGET_LINK_LIBRARIES(MapProcessing PUBLIC TriangleManipulator fmt)
 TARGET_LINK_LIBRARIES(HttpWrapper PUBLIC PocoFoundation PocoNet spdlog PocoNetSSL)
