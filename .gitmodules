@@ -7,6 +7,3 @@
 [submodule "TriangleManipulator"]
 	path = TriangleManipulator
 	url = https://github.com/FreezePhoenix/TriangleManipulator
-[submodule "fmt"]
-	path = fmt
-	url = https://github.com/fmtlib/fmt

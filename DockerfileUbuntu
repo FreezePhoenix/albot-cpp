@@ -13,8 +13,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libspdlog1 \
     make \
     gcc-10 \
-    g++-10 \
-    libfmt-dev
+    g++-10
 
 RUN mkdir -p /var/albot-cpp
 # Create a work space inside the container
