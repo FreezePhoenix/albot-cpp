@@ -8,11 +8,11 @@ RUN apk update && apk upgrade && apk add \
     g++ \
     gcc
 
-RUN mkdir -p /var/albot-cpp/Poco
+RUN mkdir -p /var/albot-cpp/lib/Poco
 WORKDIR /var/albot-cpp
-COPY ./Poco ./Poco
+COPY ./lib/Poco ./lib/Poco
 
-RUN cd Poco && cmake . && cmake --build . -j12
+RUN cd lib/Poco && cmake . && cmake --build . -j12
 
 FROM alpine:latest
 
@@ -37,8 +37,8 @@ RUN mkdir -p /var/albot-cpp
 WORKDIR /var/albot-cpp
 # Copy the content outside the container (except .dockerignore files) inside the container
 COPY . .
-COPY --from=intermediate /var/albot-cpp/Poco/ /var/albot-cpp/Poco
-RUN cd Poco && cmake --install .
+COPY --from=intermediate /var/albot-cpp/lib/Poco/ /var/albot-cpp/lib/Poco
+RUN cd lib/Poco && cmake --install .
 
 RUN cmake .
 RUN cmake --build . -j12
