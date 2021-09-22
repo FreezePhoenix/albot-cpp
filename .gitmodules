@@ -2,7 +2,7 @@
 	path = lib/IXWebSocket
 	url = https://github.com/machinezone/IXWebSocket/
 [submodule "Poco"]
-	path = Poco
+	path = lib/Poco
 	url = https://github.com/pocoproject/poco
 [submodule "TriangleManipulator"]
 	path = lib/TriangleManipulator
