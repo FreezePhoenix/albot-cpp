@@ -22,15 +22,16 @@ class HttpWrapper {
 		static int online_version;
 	public:
 		class MutableGameData {
-			public:
+			
+		public:
 				nlohmann::json* data;
 				MutableGameData(std::string& rawJson) {
 					this->data = new nlohmann::json();
-					nlohmann::detail::parser<nlohmann::basic_json<>>(nlohmann::detail::input_adapter(rawJson), (nlohmann::json::parser_callback_t) nullptr, true).parse(true, *this->data);
+					nlohmann::detail::parser(nlohmann::detail::input_adapter(std::forward<std::string&>(rawJson)), (nlohmann::json::parser_callback_t) nullptr, true, true).parse(true, *this->data);
 				}
 				MutableGameData(std::istream& rawJson) {
 					this->data = new nlohmann::json();
-					nlohmann::detail::parser<nlohmann::basic_json<>>(nlohmann::detail::input_adapter(rawJson), (nlohmann::json::parser_callback_t) nullptr, true).parse(true, *this->data);
+					nlohmann::detail::parser(nlohmann::detail::input_adapter(std::forward<std::istream&>(rawJson)), (nlohmann::json::parser_callback_t) nullptr, true).parse(true, *this->data);
 				}
 				MutableGameData(const MutableGameData& old) : data(old.data) {
 				}

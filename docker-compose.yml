@@ -43,4 +43,4 @@ services:
       - ./.env:/var/albot-cpp/.env
       - ./bot.out.json:/var/albot-cpp/bot.out.json
       - ./bot.json:/var/albot-cpp/bot.json
-      - ./game_version:/var/albot-cpp/game_version
+      - ./GAME_VERSION:/var/albot-cpp/GAME_VERSION
