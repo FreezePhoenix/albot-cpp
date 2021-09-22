@@ -20,6 +20,7 @@ add_executable (albot-cpp
   "src/JsonUtils.cpp"
 )
 
+
 add_library(MapProcessing STATIC
   "src/MapProcessing/MapProcessing.cpp"
   "src/MapProcessing/Objectifier.cpp"
