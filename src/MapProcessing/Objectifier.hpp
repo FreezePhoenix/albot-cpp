@@ -10,10 +10,10 @@
 class Objectifier {
     public:
         struct Object {
-            short min_x = NULL;
-            short max_x = NULL;
-            short min_y = NULL;
-            short max_y = NULL;
+            short min_x;
+            short max_x;
+            short min_y;
+            short max_y;
             Object(short minx, short maxx, short miny, short maxy) {
                 this->min_x = minx;
                 this->max_x = maxx;
@@ -21,10 +21,10 @@ class Objectifier {
                 this->max_y = maxy;
             };
             Object() {
-                this->min_x = this->max_x = this->min_y = this->max_y = NULL;
+                this->min_x = this->max_x = this->min_y = this->max_y = 0;
             };
             inline Object& adopt(Object& other) {
-                if(this->min_x == NULL) {
+                if(this->min_x == 0) {
                     this->min_x = other.min_x;
                     this->min_y = other.min_y;
                     this->max_x = other.max_x;
@@ -46,7 +46,7 @@ class Objectifier {
                 return *this;
             }
             inline Object& adopt(MapProcessing::Point& point) {
-                if(this->min_x == NULL) {
+                if(this->min_x == 0) {
                     this->min_x = this->max_x = point.x;
                     this->min_y = this->max_y = point.y;
                 } else {
@@ -64,7 +64,7 @@ class Objectifier {
                 return *this;
             }
             inline Object& adopt(const MapProcessing::Line& line) {
-                if(this->min_x == NULL) {
+                if(this->min_x == 0) {
                     this->min_x = std::min(line.first.x, line.second.x);
                     this->max_x = std::max(line.first.x, line.second.x);
                     this->min_y = std::min(line.first.x, line.second.y);

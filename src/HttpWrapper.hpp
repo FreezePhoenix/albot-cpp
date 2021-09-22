@@ -10,20 +10,23 @@
 #endif
 
 #include "Enums/ClassEnum.hpp"
+#include <spdlog/async.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 class HttpWrapper {
 	private:
+		static std::shared_ptr<spdlog::logger> mLogger;
 		static std::string password;
 		static std::string email;
+		static int online_version;
 	public:
 		class MutableGameData {
 			public:
 				nlohmann::json* data;
-				MutableGameData(std::string& rawJson) {
-					this->data = new nlohmann::json(nlohmann::json::parse(rawJson));
-				}
-				MutableGameData(std::istream& rawJson) {
-					this->data = new nlohmann::json(nlohmann::json::parse(rawJson));
+				MutableGameData(nlohmann::detail::input_adapter&& rawJson) {
+					this->data = new nlohmann::json();
+					nlohmann::detail::parser<nlohmann::basic_json<>>(rawJson, (nlohmann::json::parser_callback_t) nullptr, true).parse(true, *this->data);
 				}
 				MutableGameData(const MutableGameData& old) : data(old.data) {
 				}
@@ -50,7 +53,7 @@ class HttpWrapper {
 		};
 		struct Character {
 				std::string name;
-				long id;
+				size_t id;
 				bool enabled;
 				ClassEnum::CLASS klass;
 				std::string script;
@@ -65,19 +68,19 @@ class HttpWrapper {
 				std::string url;
 				std::string fullName;
 		};
-		typedef std::pair<std::string, int> nameNumberPair;
-		static std::vector<nameNumberPair*> NAME_NUMBER_PAIRS;
+		static std::string NAME_MACROS;
+		typedef std::pair<std::string, int> NameNumberPair;
 		static std::map<std::string, int> NAME_TO_NUMBER;
 		static HttpWrapper::GameData data;
 		static std::string session_cookie;
 		static std::string auth;
 		static Poco::Net::NameValueCollection cookie;
-		static std::vector<HttpWrapper::Character*> chars;
-		static std::vector<HttpWrapper::Server*> servers;
+		static std::vector<HttpWrapper::Character> characters;
+		static std::vector<HttpWrapper::Server> servers;
 		static std::string userID;
 		static nlohmann::json* config;
-		bool static get_cached_game_version(std::string &version);
-		bool static get_game_version(std::string &version);
+		bool static get_cached_game_version(int& version);
+		bool static get_game_version(int &version);
 		bool static get_game_data();
 		bool static get_config(nlohmann::json &config);
 		bool static do_post(std::string url, std::string args, std::string *str, std::vector<Poco::Net::HTTPCookie> *cookies = nullptr);
@@ -88,7 +91,8 @@ class HttpWrapper {
 		bool static process_characters(nlohmann::json &chars);
 		bool static get_servers();
 		bool static process_servers(nlohmann::json &servers);
-		bool static api_method(std::string method, std::string args, std::string *str);
+		bool static api_method(std::string method, std::string args, std::string* str);
 };
 
+void from_json(const nlohmann::json& j, HttpWrapper::Character& value);
 #endif /* ALBOT_HTTPWRAPPER_HPP_ */

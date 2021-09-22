@@ -29,8 +29,6 @@ namespace MapProcessing {
     typedef PointLocation::Line Line;
     typedef PointLocation::LineHash LineHash;
     typedef PointLocation::Triangle Triangle;
-
-    inline bool overlaps(short a, short b, short c, short d);
     // I really hate using templates but god do they look cool
     template<typename _Tp>
     inline const _Tp& min(const _Tp& a, const _Tp& b, const _Tp& c, const _Tp& d) {

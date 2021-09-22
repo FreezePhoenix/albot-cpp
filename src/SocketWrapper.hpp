@@ -3,8 +3,6 @@
 #ifndef ALBOT_SOCKETWRAPPER_HPP_
 #define ALBOT_SOCKETWRAPPER_HPP_
 
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
 #include <ixwebsocket/IXWebSocket.h>
 
 #ifndef INCLUDE_NLOHMANN_JSON_HPP_
@@ -44,7 +42,7 @@ class ReconnectInfo {
 
 class SocketWrapper {
 	private:
-		static auto inline const mLogger = spdlog::stdout_color_mt("SocketWrapper");
+		std::shared_ptr<spdlog::logger> mLogger;
 		static std::string inline const waitRegex = "wait_(\\d+)_seconds";
 
 		ix::WebSocket webSocket;

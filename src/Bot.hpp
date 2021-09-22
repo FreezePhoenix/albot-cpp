@@ -1,10 +1,6 @@
 #ifndef ALBOT_BOT_HPP_
 #define ALBOT_BOT_HPP_
 
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
-#include <cstdio>
-#include <cstdlib>
 #include "GameInfo.hpp"
 
 #define PROXY_GETTER(capName, type) type get##capName();
@@ -20,7 +16,7 @@ class Bot {
 		nlohmann::json party;
 		GameInfo *info;
 		std::string name;
-		std::string id;
+		size_t id;
 		void log(std::string str);
 		void join_server(std::string str);
 		void login();
@@ -32,8 +28,8 @@ class Bot {
 		virtual void onChat(const std::string& /* name */, const std::string& /* message */) {};
 		virtual void onConnect();
 		virtual ~Bot() {};
-		void start();
-		void stop();
+		virtual void start() {};
+		virtual void stop() {};
 		void updateJson(const nlohmann::json&);
 		std::string getUsername();
 		nlohmann::json& getRawJson();

@@ -18,12 +18,14 @@ SocketWrapper::SocketWrapper(std::string characterId, std::string fullUrl, Bot& 
     // In order to faciliate for websocket connection, a special URL needs to be used.
     // By adding this, the connection can be established as a websocket connection.
     // A real socket.io client likely uses this or something similar internally
-    fullUrl += "/socket.io/?EIO=3&transport=websocket";
+    this->mLogger = spdlog::stdout_color_mt<spdlog::async_factory>(player.info->character->name + ":SocketWrapper");
+    fullUrl += "/socket.io/?EIO=4&transport=websocket";
     if (fullUrl.find("wss://") == std::string::npos) {
         this->webSocket.setUrl("wss://" + fullUrl);
     } else {
         this->webSocket.setUrl(fullUrl);
     }
+    this->mLogger->info("{}", fullUrl);
     this->pingInterval = 4000;
     lastPing = std::chrono::high_resolution_clock::now();
 
@@ -62,7 +64,6 @@ void SocketWrapper::initializeSystem() {
     // Loading + gameplay
     this->registerEventCallback("entities", [this](const nlohmann::json& event) {
         std::string type = event["type"].get<std::string>();
-        // mLogger->info(event.dump());
         if (type == "all" && !hasReceivedFirstEntities) {
             login(this->player.info);
             hasReceivedFirstEntities = true;
@@ -78,7 +79,7 @@ void SocketWrapper::initializeSystem() {
                 player["base"] = {{"h", 8}, {"v", 7}, {"vn", 2}};
                 auto id = player["id"].get<std::string>();
                 if (id == "") {
-                    mLogger->error("Found empty ID? Dumping JSON: {}", event.dump());
+                    this->mLogger->error("Found empty ID? Dumping JSON: {}", event.dump());
                     return;
                 }
 
@@ -105,7 +106,7 @@ void SocketWrapper::initializeSystem() {
                 monster["mtype"] = monster["type"].get<std::string>();
                 monster["type"] = "monster";
                 if (id == "") {
-                    mLogger->error("Empty monster ID? Dumping json: {}", event.dump());
+                    this->mLogger->error("Empty monster ID? Dumping json: {}", event.dump());
                     return;
                 }
                 if (monster.find("hp") == monster.end()) {
@@ -188,8 +189,8 @@ void SocketWrapper::initializeSystem() {
      * Position correction.
      */
     this->registerEventCallback("correction", [this](const nlohmann::json& event) {
-        mLogger->warn("Location corrected!");
-        mLogger->warn("{}", event.dump());
+        this->mLogger->warn("Location corrected!");
+        this->mLogger->warn("{}", event.dump());
     });
     this->registerEventCallback("party_update", [this](const nlohmann::json& event) {
         this->player.log("Party updated.");
@@ -197,14 +198,18 @@ void SocketWrapper::initializeSystem() {
     });
 
     this->registerEventCallback("game_error", [this](const nlohmann::json& event) {
-        mLogger->error(event.dump());
+        this->mLogger->error(event.dump());
         if (event.is_string()) {
             auto evt = event.get<std::string>();
             std::regex rgx(this->waitRegex);
             std::smatch matches;
             if(std::regex_search(evt, matches, rgx)) {
                 int secs = std::stoi(matches[1]);
+                this->mLogger->info("Reconnecting in {} seconds", secs);
                 this->reconn.create(secs);
+                sleep(secs);
+                this->connect();
+                this->reconn.reconnecting();
             }
 
         }
@@ -213,10 +218,10 @@ void SocketWrapper::initializeSystem() {
     });
 
     this->registerEventCallback("disconnect", [this](const nlohmann::json& event) {
-        mLogger->error("Disconnected: {}", event.dump());
+        this->mLogger->error("Disconnected: {}", event.dump());
     });
     this->registerEventCallback("disconnect_reason", [this](const nlohmann::json& event) {
-        mLogger->error("Disconnection reason received: {}", event.dump());
+        this->mLogger->error("Disconnection reason received: {}", event.dump());
     });
 }
 
@@ -235,14 +240,15 @@ void SocketWrapper::login(GameInfo* info) {
 void SocketWrapper::emit(std::string event, const nlohmann::json& json) {
     if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
         std::string i = "42[\"" + event + "\"," + json.dump() + "]";
-        // mLogger->info("emitting \"{}\"", i);
+        // mLogger->info("< {}", i);
         this->webSocket.send(i);
     } else {
-        mLogger->error("{} attempting to call emit on a socket that hasn't opened yet.", this->characterId);
+        this->mLogger->error("{} attempting to call emit on a socket that hasn't opened yet.", this->characterId);
     }
 }
 
 void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
+    // this->mLogger->info("Received: '{}'", message->str);
     if (pingInterval != 0 && message->type != ix::WebSocketMessageType::Close) {
         auto now = std::chrono::high_resolution_clock::now();
         auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastPing).count();
@@ -258,22 +264,23 @@ void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
     // All the Socket.IO events also come through as messages
     if (message->type == ix::WebSocketMessageType::Message) {
         // Uncomment for data samples
-        // this->mLogger->info("Received: {}", message->str);
+        // this->mLogger->info("> {}", message->str);
 
         const std::string& messageStr = message->str;
         if (messageStr.length() == 0) {
-            mLogger->info("Received empty websocket message.");
+            this->mLogger->info("Received empty websocket message.");
             return;
         }
 
         if (messageStr.length() == 1) {
             int type = std::stoi(messageStr);
             if (type == 0)
-                mLogger->warn("Received empty connect message! Assuming 4000 milliseconds for the ping interval");
+                this->mLogger->warn("Received empty connect message! Assuming 4000 milliseconds for the ping interval");
             else if (type == 3) {
                 // pong
             } else if (type == 2) {
                 // ping
+                this->webSocket.send("3");
             }
 
             return;
@@ -284,11 +291,11 @@ void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
         int alternativeType = messageStr[1] - '0'; // message type
 
         if (likelyType < 0 || likelyType > 9) {
-            mLogger->error("Failed to parse message: \"{}\". Failed to find frame type", messageStr);
+            this->mLogger->error("Failed to parse message: \"{}\". Failed to find frame type", messageStr);
             return;
         }
         if (messageStr.length() == 2 && alternativeType >= 0 && alternativeType <= 9) {
-            mLogger->debug("Skipping code-only input: \"{}\"", messageStr);
+            this->mLogger->debug("Skipping code-only input: \"{}\"", messageStr);
             return;
         }
 
@@ -302,16 +309,16 @@ void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
             args = messageStr.substr(1, messageStr.length() - 1);
         else
             args = messageStr.substr(2, messageStr.length() - 2);
-
         switch (likelyType) {
         case 0: {
             dispatchEvent("connect", {});
+            this->webSocket.send("40");
             auto data = nlohmann::json::parse(args);
             pingInterval = data["pingInterval"].get<int>();
-            mLogger->info("Received connection data. Pinging required every {} ms", pingInterval);
+            this->mLogger->info("Received connection data. Pinging required every {} ms", pingInterval);
         } break;
         case 1:
-            mLogger->info("Disconnected: {}", message->str);
+            this->mLogger->info("Disconnected: {}", message->str);
             dispatchEvent("disconnect", {});
             break;
         case 2:
@@ -351,50 +358,50 @@ void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
                         } else {
                             auto data = json[1];
                             if (eventName == "error")
-                                mLogger->info("Error received as a message! Dumping JSON:\n{}", json.dump(4));
+                                this->mLogger->info("Error received as a message! Dumping JSON:\n{}", json.dump(4));
                             dispatchEvent(eventName, data);
                         }
                     }
                 }
             }
-            // type = 3 for ack (AFAIK, not used)
+            // type = 3 for ack (AFAIK, not used)F
             // type = 4 for errors (no idea how to handle, gotta revisit that when I have data)
             else if (type == 4) {
-                mLogger->error("Error received from server:\n{}", json.dump(4));
+                this->mLogger->error("Error received from server:\n{}", json.dump(4));
 
             }
             // type = 5 for binary event (AFAIK, not used)
             // type = 6 for binary ack (AFAIK, not used)
             else if (type == 3 || type == 5 || type == 6) {
-                mLogger->warn("Received an event of type {}. Please report this issue here: "
+                this->mLogger->warn("Received an event of type {}. Please report this issue here: "
                               "https://github.com/LunarWatcher/AdventureLandCpp/issues/1 - Full websocket message: {}",
                               type, messageStr);
             } else {
-                mLogger->warn("Unknown event received: {}", messageStr);
+                this->mLogger->warn("Unknown event received: {}", messageStr);
             }
 
         } break;
         case 5:
             dispatchEvent("upgrade", {});
-            mLogger->info("Upgrade received: {}", messageStr);
+            this->mLogger->info("Upgrade received: {}", messageStr);
             // upgrade
             break;
         case 6:
             dispatchEvent("noop", {});
-            mLogger->info("noop received: {}", messageStr);
+            this->mLogger->info("noop received: {}", messageStr);
             // noop
             break;
         }
 
     } else if (message->type == ix::WebSocketMessageType::Error) {
-        mLogger->error(message->errorInfo.reason);
+        this->mLogger->error(message->errorInfo.reason);
     } else if (message->type == ix::WebSocketMessageType::Open) {
-        mLogger->info("Connected");
+        this->mLogger->info("Connected");
     } else if (message->type == ix::WebSocketMessageType::Close) {
-        mLogger->info("Socket disconnected: {}", message->closeInfo.reason);
+        this->mLogger->info("Socket disconnected: {}", message->closeInfo.reason);
         hasReceivedFirstEntities = false;
         if (message->str != "")
-            mLogger->info("Also received a message: {}", message->str);
+            this->mLogger->info("Also received a message: {}", message->str);
     }
 }
 
@@ -453,6 +460,7 @@ void SocketWrapper::connect() {
 void SocketWrapper::reconnect() {
     // Utilizes the player method to properly stop the process
     this->player.stop();
+    sleep(2);
     this->player.start();
 }
 
@@ -463,7 +471,6 @@ void SocketWrapper::close() {
 }
 
 void SocketWrapper::sendPing() {
-    this->webSocket.send("2::"); // ping is event 2
 }
 
 std::map<std::string, nlohmann::json>& SocketWrapper::getEntities() {

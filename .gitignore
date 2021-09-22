@@ -43,9 +43,10 @@ Makefile
 **/data.json
 **/bot.out.json
 **/cmake_install.cmake
-**/game_version
+**/GAME_VERSION
 **/Makefile
 **/*.ninja*
 **/.vscode
 **/.cmake
 **/Maps
+CMakeSettings.json

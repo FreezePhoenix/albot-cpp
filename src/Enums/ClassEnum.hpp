@@ -3,50 +3,59 @@
 
 #include <string>
 
+#define CLASS_UNKOWN -1
+#define CLASS_WARRIOR 0
+#define CLASS_PRIEST 1
+#define CLASS_MAGE 2
+#define CLASS_ROGUE 3
+#define CLASS_PALADIN 4
+#define CLASS_RANGER 5
+#define CLASS_MERCHANT 6
+
 namespace ClassEnum {
     enum CLASS {
-        CLASS_UNKOWN = 0,
-        CLASS_WARRIOR,
-        CLASS_PRIEST,
-        CLASS_MAGE,
-        CLASS_ROGUE,
-        CLASS_PALADIN,
-        CLASS_RANGER,
-        CLASS_MERCHANT
+        UNKOWN      = CLASS_UNKOWN,
+        WARRIOR     = CLASS_WARRIOR,
+        PRIEST      = CLASS_PRIEST,
+        MAGE        = CLASS_MAGE,
+        ROGUE       = CLASS_ROGUE,
+        PALADIN     = CLASS_PALADIN,
+        RANGER      = CLASS_RANGER,
+        MERCHANT    = CLASS_MERCHANT
     };
     inline CLASS getClassEnum(std::string className) {
         if(className == "warrior") {
-            return CLASS_WARRIOR;
+            return WARRIOR;
         } else if(className == "priest") {
-            return CLASS_PRIEST;
+            return PRIEST;
         } else if(className == "mage") {
-            return CLASS_MAGE;
+            return MAGE;
         } else if(className == "rogue") {
-            return CLASS_ROGUE;
+            return ROGUE;
         } else if(className == "paladin") {
-            return CLASS_PALADIN;
+            return PALADIN;
         } else if(className == "ranger") {
-            return CLASS_RANGER;
+            return RANGER;
         } else if(className == "merchant") {
-            return CLASS_MERCHANT;
+            return MERCHANT;
         }
-        return CLASS_UNKOWN;
+        return UNKOWN;
     }
     inline std::string getClassString(CLASS classEnum) {
         switch(classEnum) {
-            case CLASS_WARRIOR:
+            case WARRIOR:
                 return "warrior";
-            case CLASS_PRIEST:
+            case PRIEST:
                 return "priest";
-            case CLASS_MAGE:
+            case MAGE:
                 return "mage";
-            case CLASS_ROGUE:
+            case ROGUE:
                 return "rogue";
-            case CLASS_PALADIN:
+            case PALADIN:
                 return "paladin";
-            case CLASS_RANGER:
+            case RANGER:
                 return "ranger";
-            case CLASS_MERCHANT:
+            case MERCHANT:
                 return "merchant";
             default:
                 return "unkown";

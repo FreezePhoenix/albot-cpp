@@ -57,8 +57,8 @@ void Objectifier::run() {
         const std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash>::iterator find1 = this->lines_to_object.find(line_one);
         const std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash>::iterator find2 = this->lines_to_object.find(line_two);
         const std::unordered_map<MapProcessing::Line, std::shared_ptr<std::vector<MapProcessing::Line>>, MapProcessing::LineHash>::iterator end = this->lines_to_object.end();
-                if(find1 != this->lines_to_object.end()) {
-                    if(find2 != this->lines_to_object.end()) {
+                if(find1 != end) {
+                    if(find2 != end) {
                         // They're both in the array? Huh.
                         std::shared_ptr<std::vector<MapProcessing::Line>> obj1 = find1->second;
                         std::shared_ptr<std::vector<MapProcessing::Line>> obj2 = find2->second;;
@@ -85,7 +85,7 @@ void Objectifier::run() {
                         this->lines_to_object.emplace(line_two, obj);
                     }
                 } else {
-                    if(find2 != this->lines_to_object.end()) {
+                    if(find2 != end) {
                         // Only it2 is in the list.
                         std::shared_ptr<std::vector<MapProcessing::Line>> obj = find2->second;
                         obj->push_back(line_one);
@@ -105,24 +105,9 @@ void Objectifier::run() {
                     }
                 }
     });
-    // for (int i = 0, size = this->lines.size(); i < size; i++) {
-    //     MapProcessing::Line& line_one = this->lines[i];
-    //     for(int j = i; j < size; j++) {
-    //         MapProcessing::Line& line_two = this->lines[j];
-    //         if(line_one == line_two) {
-    //             continue;
-    //         }
-    //         if(intersects(line_one, line_two)) {
-               
-    //         }
-    //     }
-    // }
-    // for (const auto &i: this->objects) {
-    // std::cout << this->objects.size() << std::endl;
-        std::sort(this->objects.begin(), this->objects.end(), [this](const std::shared_ptr<std::vector<MapProcessing::Line>> first, std::shared_ptr<std::vector<MapProcessing::Line>> second) {
-            Object& first_obj = this->object_sizes.at((std::shared_ptr<std::vector<MapProcessing::Line>>) first);
-            Object& second_obj = this->object_sizes.at((std::shared_ptr<std::vector<MapProcessing::Line>>) second);
-            return std::abs(((first_obj.max_x - first_obj.min_x) * (first_obj.max_y - first_obj.min_y))) > std::abs(((second_obj.max_x - second_obj.min_x) * (second_obj.max_y - second_obj.min_y)));
-        });
-    // }
+    std::sort(this->objects.begin(), this->objects.end(), [this](const std::shared_ptr<std::vector<MapProcessing::Line>> first, std::shared_ptr<std::vector<MapProcessing::Line>> second) {
+        Object& first_obj = this->object_sizes.at((std::shared_ptr<std::vector<MapProcessing::Line>>) first);
+        Object& second_obj = this->object_sizes.at((std::shared_ptr<std::vector<MapProcessing::Line>>) second);
+        return std::abs(((first_obj.max_x - first_obj.min_x) * (first_obj.max_y - first_obj.min_y))) > std::abs(((second_obj.max_x - second_obj.min_x) * (second_obj.max_y - second_obj.min_y)));
+    });
 };

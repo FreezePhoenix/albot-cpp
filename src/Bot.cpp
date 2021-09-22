@@ -9,7 +9,6 @@
 #include <condition_variable>
 #include "SocketWrapper.hpp"
 #include "HttpWrapper.hpp"
-#include "JsonUtils.hpp"
 #include "Bot.hpp"
 
 std::mutex _lock;
@@ -17,7 +16,7 @@ std::condition_variable_any _cond;
 
 Bot::Bot(void *id) {
 	this->info = (GameInfo*) id;
-	this->mLogger = spdlog::stdout_color_mt(this->info->character->name);
+	this->mLogger = spdlog::stdout_color_mt(this->info->character->name + ":Bot");
 }
 
 #define PROXY_GETTER_IMPL(cls, name, capName, type)                                                                    \
@@ -40,10 +39,6 @@ PROXY_GETTER_IMPL(Bot, "id", Id, std::string)
 nlohmann::json& Bot::getRawJson() {
 	return this->data;
 }
-
-void Bot::start() {}
-
-void Bot::stop() {}
 bool Bot::isMoving() { 
 	return data.value("moving", false);
 }
@@ -65,5 +60,5 @@ std::string Bot::getUsername() {
 }
 
 void Bot::log(std::string str) {
-	mLogger->info("[" + this->name + "]: " + str);
+	mLogger->info(str);
 }

@@ -1,8 +1,13 @@
 #include "TriangleManipulator.hpp"
 #include "ShapeManipulator.hpp"
 #include "MapProcessing.hpp"
-#include <iostream>
 #include "Writer.hpp"
+
+#include <spdlog/async.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
+static std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("Writer");
 
 Writer::Writer(Objectifier& objectifier): objectifier(objectifier) {
 }
@@ -22,14 +27,11 @@ void Writer::write() {
     std::shared_ptr<triangulateio> voutput = TriangleManipulator::create_instance();
     int num_holes = 0;
     std::shared_ptr<std::vector<double>> holes = std::shared_ptr<std::vector<double>>(new std::vector<double>());
-    
     ShapeManipulator::from_list(this->objectifier.objects, input);
-    std::cout << info->name << std::endl;
     if (input->numberofsegments < 3) {
-        std::cout << "Problem: " << info->name << std::endl << std::endl;
+        mLogger->warn("Problem: {}", info->name);
         return;
     }
-
     bool first = true;
     int index = 0;
     for (std::shared_ptr<std::vector<MapProcessing::Line>> obj : this->objectifier.objects) {
@@ -67,7 +69,7 @@ void Writer::write() {
     }
     input->numberofholes = num_holes;
     input->holelist = std::shared_ptr<double>(holes->data(), [](void*) {});
-    triangulate("pznvejDQq30", input, output, voutput);
+    triangulate("pznvejDQq30a1000", input, output, voutput);
     std::shared_ptr<triangulateio> temp = TriangleManipulator::create_instance();
     TriangleManipulator::filter_edges(voutput, temp, [](int p1, int p2, REAL norm1, REAL norm2) {
         return p2 != -1;
