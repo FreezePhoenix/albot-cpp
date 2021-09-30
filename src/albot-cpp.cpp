@@ -14,6 +14,7 @@
 #include "Bot.hpp"
 
 namespace ALBot {
+	std::vector<pthread_t> THREADS = std::vector<pthread_t>();
 	inline std::string NULL_PIPE_OUT = " > /dev/null";
 	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";
 	inline std::string NULL_PIPE_ERR = " 2> /dev/null";
@@ -37,7 +38,7 @@ namespace ALBot {
 		HttpWrapper::Character& character = HttpWrapper::characters[index];
 		build_code(character.script, character.name, character.klass);
 		pthread_t bot_thread;
-		GameInfo *info = new GameInfo;
+		GameInfo* info = new GameInfo;
 		int server_index = 0;
 		for(int i = 0; i < HttpWrapper::servers.size(); i++) {
 			HttpWrapper::Server& server = HttpWrapper::servers[i];
@@ -71,8 +72,8 @@ namespace ALBot {
 			pthread_exit((void*)1);
 		}
 		void *ret;
-		pthread_create(&bot_thread, NULL, init, (void*) info);
-		pthread_join(bot_thread, &ret);
+		pthread_create(&bot_thread, NULL, init, (void*)info);
+		THREADS.push_back(bot_thread);
 	}
 	
 	void login() {
@@ -124,8 +125,11 @@ namespace ALBot {
 		}
 		HttpWrapper::get_game_data();
 		clean_code();
-		std::cout << HttpWrapper::characters[0].name << std::endl;
-		start_character(0);
+		// std::cout << HttpWrapper::characters[0].name << std::endl;
+		// start_character(0);
+		for (size_t i = 0; i < THREADS.size(); i++) {
+			pthread_join(THREADS[i], nullptr);
+		}
 	}
 }
 

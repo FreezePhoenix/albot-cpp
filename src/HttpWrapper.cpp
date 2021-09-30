@@ -89,8 +89,8 @@ bool HttpWrapper::get_game_data() {
     std::string raw_data;
     int current_version = HttpWrapper::online_version;
     int cached_version = 0;
-    if (get_cached_game_version(cached_version)) {
-        if (cached_version == current_version) {
+    if (true || get_cached_game_version(cached_version)) {
+        if (true || cached_version == current_version) {
             std::ifstream cached_file("data.json");
             if (cached_file.fail() || !cached_file.is_open()) {
                 mLogger->warn("Local cache invalid. Fetching.");

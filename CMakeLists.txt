@@ -3,7 +3,7 @@
 #
 set(POSITION_INDEPENDENT_CODE ON)
 cmake_minimum_required (VERSION 3.5)
-add_definitions(-std=c++20 -O3 -Wall)
+add_definitions(-std=c++20 -O3 -Wall -g)
 
 set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)

@@ -52,7 +52,7 @@ void Writer::write() {
             triangulate("pzDQ", objecto, output, nullptr);
             output->numberofholes = 0;
             std::shared_ptr<std::vector<double>> new_holes = ShapeManipulator::find_points_inside(output);
-            TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", objecto);
+            // TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", objecto);
             num_holes += new_holes->size() / 2;
             holes->insert(holes->end(), new_holes->begin(), new_holes->end());
             // Little bit of manual cleanup.
@@ -62,7 +62,7 @@ void Writer::write() {
             std::shared_ptr<std::vector<double>> new_holes = ShapeManipulator::find_points_inside(*obj);
             // triangle_object->holelist = std::shared_ptr<double>(new_holes->data(), [](void*) {});
             // triangle_object->numberofholes = new_holes->size() / 2;
-            TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", triangle_object);
+            // TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", triangle_object);
             num_holes += new_holes->size() / 2;
             holes->insert(holes->end(), new_holes->cbegin(), new_holes->cend());
         }
@@ -77,7 +77,7 @@ void Writer::write() {
     TriangleManipulator::write_poly_file("Maps/" + info->name + ".poly", input);
     TriangleManipulator::write_edge_file("Maps/" + info->name + ".v.edge", temp);
     TriangleManipulator::write_node_file("Maps/" + info->name + ".v.node", voutput);
-    TriangleManipulator::write_node_file("Maps/" + info->name + ".node", input);
+    TriangleManipulator::write_node_file("Maps/" + info->name + ".node", output);
     TriangleManipulator::write_ele_file("Maps/" + info->name + ".ele", output);
     TriangleManipulator::write_neigh_file("Maps/" + info->name + ".neigh", output);
     TriangleManipulator::write_edge_file("Maps/" + info->name + ".edge", output);
