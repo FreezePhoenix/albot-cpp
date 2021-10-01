@@ -9,6 +9,10 @@
 
 class Objectifier {
     public:
+        /**
+         * @brief A structure to contain the bounding box of an object.
+         * 
+         */
         struct Object {
             short min_x;
             short max_x;
@@ -23,6 +27,12 @@ class Objectifier {
             Object() {
                 this->min_x = this->max_x = this->min_y = this->max_y = 0;
             };
+            /**
+             * @brief Grow the bounding box to include the other one.
+             * 
+             * @param other 
+             * @return Object& 
+             */
             inline Object& adopt(Object& other) {
                 if(this->min_x == 0) {
                     this->min_x = other.min_x;
@@ -45,6 +55,12 @@ class Objectifier {
                 }
                 return *this;
             }
+            /**
+             * @brief Grow the bounding box to include a point.
+             * 
+             * @param point 
+             * @return Object& 
+             */
             inline Object& adopt(MapProcessing::Point& point) {
                 if(this->min_x == 0) {
                     this->min_x = this->max_x = point.x;
@@ -63,6 +79,12 @@ class Objectifier {
                 }
                 return *this;
             }
+            /**
+             * @brief Grow the bounding box to include a line.
+             * 
+             * @param line 
+             * @return Object& 
+             */
             inline Object& adopt(const MapProcessing::Line& line) {
                 if(this->min_x == 0) {
                     this->min_x = std::min(line.first.x, line.second.x);
@@ -97,7 +119,11 @@ class Objectifier {
         std::vector<MapProcessing::Line> lines;
         std::shared_ptr<MapProcessing::MapInfo> info;
         Objectifier(std::shared_ptr<MapProcessing::MapInfo> info);
-        void chain(const std::pair<short, short>& first, const std::pair<short, short>& second);
+
+        /**
+         * @brief Run the objectifier on the given data.
+         * 
+         */
         void run();
 };
 
