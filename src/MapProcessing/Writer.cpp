@@ -9,18 +9,12 @@
 
 static std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("Writer");
 
-Writer::Writer(Objectifier& objectifier): objectifier(objectifier) {
-}
-
-std::string pad_right(std::string const& str, size_t s) {
-    if ( str.size() < s ) {
-        return str + std::string(s-str.size(), ' ');
-    } else {
-        return str;
-    };
-}
+Writer::Writer(Objectifier& objectifier): objectifier(objectifier) {}
 
 void Writer::write() {
+    // Really, this method is pretty stupidly complicated, and it changes *a lot*
+    // As such, I'm not going to document it. It's intirely internal, and should not be used by a user.
+    
     std::shared_ptr<MapProcessing::MapInfo> info = this->objectifier.info;
     std::shared_ptr<triangulateio> input = TriangleManipulator::create_instance();
     std::shared_ptr<triangulateio> output = TriangleManipulator::create_instance();
@@ -55,7 +49,6 @@ void Writer::write() {
             TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", objecto);
             num_holes += new_holes->size() / 2;
             holes->insert(holes->end(), new_holes->begin(), new_holes->end());
-            // Little bit of manual cleanup.
         } else {
             std::shared_ptr<triangulateio> triangle_object = TriangleManipulator::create_instance();
             ShapeManipulator::from_list(*obj, triangle_object);
@@ -81,5 +74,4 @@ void Writer::write() {
     TriangleManipulator::write_ele_file("Maps/" + info->name + ".ele", output);
     TriangleManipulator::write_neigh_file("Maps/" + info->name + ".neigh", output);
     TriangleManipulator::write_edge_file("Maps/" + info->name + ".edge", output);
-    // Little bit of manual cleanup.
 }
