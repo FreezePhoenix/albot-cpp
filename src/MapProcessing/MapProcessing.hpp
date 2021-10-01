@@ -11,24 +11,36 @@
 #include <any>
 
 namespace MapProcessing {
+    /**
+     * @brief A structure describing a line that is not bound to a specific axis.
+     */
     struct AxisLineSegment {
         short axis;
         short range_start;
         short range_end;
     };
+    
+    // Utility methods to turn JSON to/from AxisLineSegments
     void to_json(nlohmann::json& j, const AxisLineSegment& value);
     void from_json(const nlohmann::json& j, AxisLineSegment& value);
+    
+    /**
+     * @brief A structure containing the name of a map, and the x_lines as well as the y_lines for it, and the spawns.
+     */
     struct MapInfo {
         std::string name;
         std::vector<AxisLineSegment> x_lines;
         std::vector<AxisLineSegment> y_lines;
         std::vector<std::pair<double, double>> spawns; 
     };
+
+    // Typedefs for ease of use.
     typedef PointLocation::Point Point;
     typedef PointLocation::PointHash PointHash;
     typedef PointLocation::Line Line;
     typedef PointLocation::LineHash LineHash;
     typedef PointLocation::Triangle Triangle;
+    
     // I really hate using templates but god do they look cool
     template<typename _Tp>
     inline const _Tp& min(const _Tp& a, const _Tp& b, const _Tp& c, const _Tp& d) {
@@ -38,12 +50,27 @@ namespace MapProcessing {
     inline const _Tp& max(const _Tp& a, const _Tp& b, const _Tp& c, const _Tp& d) {
         return std::max<_Tp>(std::max<_Tp>(a, b), std::max<_Tp>(c, d));
     }
-    // Accepts the "G.maps[<map_name>].data" property."
-    // Read: Actually accepts "G.geometry[<map_name>]"
-    // Outputs a MapInfo, which contains all the lines in the map.
+    /**
+     * @brief Turns a map json into a MapInfo shared pointer. Accepts G.geometry[<map_name>]
+     * 
+     * @param json 
+     * @return std::shared_ptr<MapInfo> 
+     */
     std::shared_ptr<MapInfo> parse_map(nlohmann::json& json);
+    
+    /**
+     * @brief Creates an Objectifier and Writer for the MapInfo, and runs them on it.
+     * 
+     * @param json 
+     */
     void process(std::shared_ptr<MapInfo> json);
-    // Accepts a map info, and simplifies it, remove unnecessary lines.
+    
+    /**
+     * @brief Accepts a MapInfo, simplifies it by removing unecessary lines, and then returns it.
+     * 
+     * @param info 
+     * @return std::shared_ptr<MapInfo> 
+     */
     std::shared_ptr<MapInfo> simplify_lines(std::shared_ptr<MapInfo> info);
 }
 

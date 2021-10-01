@@ -52,7 +52,7 @@ void Writer::write() {
             triangulate("pzDQ", objecto, output, nullptr);
             output->numberofholes = 0;
             std::shared_ptr<std::vector<double>> new_holes = ShapeManipulator::find_points_inside(output);
-            // TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", objecto);
+            TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", objecto);
             num_holes += new_holes->size() / 2;
             holes->insert(holes->end(), new_holes->begin(), new_holes->end());
             // Little bit of manual cleanup.
@@ -60,16 +60,16 @@ void Writer::write() {
             std::shared_ptr<triangulateio> triangle_object = TriangleManipulator::create_instance();
             ShapeManipulator::from_list(*obj, triangle_object);
             std::shared_ptr<std::vector<double>> new_holes = ShapeManipulator::find_points_inside(*obj);
-            // triangle_object->holelist = std::shared_ptr<double>(new_holes->data(), [](void*) {});
-            // triangle_object->numberofholes = new_holes->size() / 2;
-            // TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", triangle_object);
+            triangle_object->holelist = std::shared_ptr<double>(new_holes->data(), [](void*) {});
+            triangle_object->numberofholes = new_holes->size() / 2;
+            TriangleManipulator::write_poly_file("Maps/" + info->name + ".object." + std::to_string(++index) + ".poly", triangle_object);
             num_holes += new_holes->size() / 2;
             holes->insert(holes->end(), new_holes->cbegin(), new_holes->cend());
         }
     }
     input->numberofholes = num_holes;
     input->holelist = std::shared_ptr<double>(holes->data(), [](void*) {});
-    triangulate("pznvejDQq30a1000", input, output, voutput);
+    triangulate("pznvejDQ", input, output, voutput);
     std::shared_ptr<triangulateio> temp = TriangleManipulator::create_instance();
     TriangleManipulator::filter_edges(voutput, temp, [](int p1, int p2, REAL norm1, REAL norm2) {
         return p2 != -1;
