@@ -13,3 +13,6 @@
 [submodule "lib/libuv"]
 	path = lib/libuv
 	url = https://github.com/libuv/libuv.git
+[submodule "lib/uvw"]
+	path = lib/uvw
+	url = https://github.com/skypjack/uvw
