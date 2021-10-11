@@ -13,7 +13,7 @@ class ALClient {
         static void get_characters();
         static void fetch_game_data();
         static void get_servers();
-        static BotSkeleton* start_character(GameInfo *info);
+        static BotSkeleton* start_character(CharacterGameInfo *info);
 };
 
 #endif /* ALCLIENT_CPP_HPP_ */

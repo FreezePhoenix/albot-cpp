@@ -110,7 +110,6 @@ void SocketWrapper::initializeSystem() {
                     return;
                 }
                 if (monster.find("hp") == monster.end()) {
-                    this->player.log("Eep!");
                 	monster["hp"] = this->player.info->G->getData()["monsters"][std::string(monster["mtype"])]["hp"];
                     if (monster.find("max_hp") == monster.end()) monster["max_hp"] = monster["hp"];
                 }
@@ -225,7 +224,7 @@ void SocketWrapper::initializeSystem() {
     });
 }
 
-void SocketWrapper::login(GameInfo* info) {
+void SocketWrapper::login(CharacterGameInfo* info) {
     std::string& auth = info->auth;
     std::string& userId = info->userId;
 

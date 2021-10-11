@@ -14,13 +14,14 @@ class Bot {
 		Bot(void *id);
 		nlohmann::json data;
 		nlohmann::json party;
-		GameInfo *info;
+		CharacterGameInfo *info;
 		std::string name;
 		size_t id;
 		void log(std::string str);
 		void join_server(std::string str);
 		void login();
 		bool isMoving();
+		bool isAlive();
 	    virtual void onPartyRequest(std::string /* name */) {};
 	    virtual void onPartyInvite(std::string /* name */) {};
 		virtual void onCm(const std::string& /* name */, const nlohmann::json& /* data */) {};
@@ -48,6 +49,7 @@ class Bot {
 		PROXY_GETTER(Speed, int)
 		PROXY_GETTER(Gold, long long)
 		PROXY_GETTER(Id, std::string)
+			
 };
 
 #endif /* ALBOT_BOT_HPP_ */

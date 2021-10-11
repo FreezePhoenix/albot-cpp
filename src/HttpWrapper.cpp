@@ -23,6 +23,7 @@ std::string HttpWrapper::auth = "";
 Poco::Net::NameValueCollection HttpWrapper::cookie = Poco::Net::NameValueCollection();
 std::map<std::string, int> HttpWrapper::NAME_TO_NUMBER = std::map<std::string, int>();
 std::vector<HttpWrapper::Character> HttpWrapper::characters = std::vector<HttpWrapper::Character>();
+std::vector<HttpWrapper::Service> HttpWrapper::services = std::vector<HttpWrapper::Service>();
 std::vector<HttpWrapper::Server> HttpWrapper::servers = std::vector<HttpWrapper::Server>();
 std::string HttpWrapper::userID = "";
 
@@ -143,8 +144,12 @@ bool HttpWrapper::get_config(nlohmann::json& config) {
             mLogger->error("Config file is empty! Aborting.");
             return false;
         }
-        if (config["run"].is_array()) {
-
+        if (config["services"].is_array()) {
+            mLogger->info("Services detected!");
+            process_services(config["services"]);
+        } else {
+            mLogger->warn("No services detected.");
+            config["services"] = nlohmann::json::array();
         }
         mLogger->info("Config reading success!");
         return true;
@@ -312,7 +317,30 @@ bool HttpWrapper::get_characters_and_servers() {
         return false;
     }
 }
-bool HttpWrapper::process_characters(nlohmann::json &char_jsons) {
+bool HttpWrapper::process_services(nlohmann::json& service_jsons) {
+    try {
+        mLogger->info("Processing services...");
+        if (service_jsons.is_array()) {
+            HttpWrapper::services.resize(service_jsons.size());
+            for (size_t i = 0; i < service_jsons.size(); i++) {
+                const nlohmann::json& service_json = service_jsons[i];
+                HttpWrapper::Service& service = HttpWrapper::services[i];
+                service.name = service_json.at("name").get<std::string>();
+                service.enabled = service_json.at("enabled").get<bool>();
+            }
+        } else {
+            mLogger->error("Services array was not an array! Aborting.");
+            return false;
+        }
+        mLogger->info("Services processed!");
+        return true;
+    }
+    catch (...) {
+        mLogger->error("Failed to process services. Aborting.");
+        throw;
+    }
+}
+bool HttpWrapper::process_characters(nlohmann::json& char_jsons) {
     try {
         mLogger->info("Processing characters...");
         if (char_jsons.is_array()) {
@@ -321,11 +349,27 @@ bool HttpWrapper::process_characters(nlohmann::json &char_jsons) {
                 const nlohmann::json& character_json = char_jsons[i];
                 HttpWrapper::Character& character = HttpWrapper::characters[i];
                 character.name = character_json.at("name").get<std::string>();
-                character.id = character_json.at("id").get<long>();
-                character.script = character_json.at("script").get<std::string>();
+                if (character_json.at("id").is_number()) {
+                    character.id = character_json.at("id").get<long>();
+                } else {
+                    character.id = std::stol(character_json.at("id").get<std::string>());
+                }
+                if (character_json.contains("script")) {
+                    character.script = character_json.at("script").get<std::string>();
+                } else {
+                    character.script = "Default";
+                }
                 character.klass = ClassEnum::getClassEnum(character_json.at("type").get<std::string>());
-                character.enabled = character_json.at("enabled").get<bool>();
-                character.server = character_json.at("server").get<std::string>();
+                if (character_json.contains("enabled")) {
+                    character.enabled = character_json.at("enabled").get<bool>();
+                } else {
+                    character.enabled = false;
+                }
+                if (character_json.contains("server")) {
+                    character.server = character_json.at("server").get<std::string>();
+                } else {
+                    character.server = "US I";
+                }
                 HttpWrapper::NAME_TO_NUMBER.emplace(character.name, i);
                 std::string UPPER_NAME = character.name;
                 std::transform(character.name.begin(), character.name.end(), UPPER_NAME.begin(), ::toupper);
@@ -338,7 +382,7 @@ bool HttpWrapper::process_characters(nlohmann::json &char_jsons) {
         mLogger->info("Characters processed!");
         return true;
     } catch (...) {
-        mLogger->info("Failed to process characters. Aborting.");
+        mLogger->error("Failed to process characters. Aborting.");
         throw;
     }
 }

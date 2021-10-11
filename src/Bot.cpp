@@ -15,7 +15,7 @@ std::mutex _lock;
 std::condition_variable_any _cond;
 
 Bot::Bot(void *id) {
-	this->info = (GameInfo*) id;
+	this->info = (CharacterGameInfo*) id;
 	this->mLogger = spdlog::stdout_color_mt(this->info->character->name + ":Bot");
 }
 
@@ -41,6 +41,9 @@ nlohmann::json& Bot::getRawJson() {
 }
 bool Bot::isMoving() { 
 	return data.value("moving", false);
+}
+bool Bot::isAlive() {
+	return data.value("rip", false) == false;
 }
 void Bot::setParty(const nlohmann::json& j) {
 	party.update(j);

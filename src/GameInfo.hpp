@@ -2,15 +2,33 @@
 #define ALBOT_GAMEINFO_HPP_
 
 #include "HttpWrapper.hpp"
+#include "Enums/MessageEnum.hpp"
 
-class GameInfo {
+struct Message {
+	std::string command;
+	std::string requester;
+	std::string target;
+	void* arguments;
+};
+
+class CharacterGameInfo {
 	public:
+		typedef void* (*HANDLER)(Message*);
+		HANDLER parent_handler = nullptr;
+		HANDLER child_handler = nullptr;
 		HttpWrapper::Server* server;
 		HttpWrapper::Character* character;
-		HttpWrapper* wrapper;
 		HttpWrapper::GameData *G;
 		std::string auth;
 		std::string userId;
+};
+
+class ServiceInfo {
+	public:
+		typedef void* (*HANDLER)(Message*);
+		HANDLER parent_handler = nullptr;
+		HANDLER child_handler = nullptr;
+		HttpWrapper::GameData *G;
 };
 
 

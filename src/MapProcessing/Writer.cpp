@@ -19,6 +19,7 @@ void Writer::write() {
     std::shared_ptr<triangulateio> input = TriangleManipulator::create_instance();
     std::shared_ptr<triangulateio> output = TriangleManipulator::create_instance();
     std::shared_ptr<triangulateio> voutput = TriangleManipulator::create_instance();
+    std::shared_ptr<triangulateio> trimmed_input = TriangleManipulator::create_instance();
     int num_holes = 0;
     std::shared_ptr<std::vector<double>> holes = std::shared_ptr<std::vector<double>>(new std::vector<double>());
     ShapeManipulator::from_list(this->objectifier.objects, input);

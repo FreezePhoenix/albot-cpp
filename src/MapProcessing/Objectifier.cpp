@@ -20,31 +20,6 @@ MapProcessing::Line normalize(MapProcessing::Line& inp) {
     return MapProcessing::Line(std::min(inp.first.x, inp.second.x), std::max(inp.first.x, inp.second.x), std::min(inp.first.y, inp.second.y), std::max(inp.first.y, inp.second.y));
 }
 
-// inline bool intersects(const MapProcessing::Line& line_one, const MapProcessing::Line& line_two) {
-//     if(line_one.first.x == line_one.second.x) {
-//         // line_one is vertical.
-//         if(line_two.first.x == line_two.second.x) {
-//             // line_two is also vertical? This isn't looking that good...
-//             return line_two.first.x == line_one.first.x && line_one.first.y <= line_two.second.y && line_one.second.y >= line_two.first.y;
-//         } else {
-//             // line_two is horizontal.
-//             return line_two.first.x <= line_one.first.x && line_two.second.x >= line_one.first.x && line_one.first.y <= line_two.first.y && line_one.second.y >= line_two.first.y;
-//         }
-//     } else {
-//         // line_one is horizontal.
-//         if(line_two.first.x == line_two.second.x) {
-//             // line_two is vertical.
-//             return line_two.first.y <= line_one.first.y && line_two.second.y >= line_one.first.y && line_one.first.x <= line_two.first.x && line_one.second.x >= line_two.first.x;
-//         } else {
-//             if(line_one.first.y == line_two.first.y) {
-//                 // line_two is horizontal as well... treat as normal range overlap
-//                 return line_one.first.x <= line_two.second.x && line_one.second.x >= line_two.first.x;
-//             }
-//         }
-//     }
-//     return false;
-// }
-
 void Objectifier::run() {
     // Immediately reserve enough memory for the lines.
     this->lines.reserve(this->info->x_lines.size() + this->info->y_lines.size());

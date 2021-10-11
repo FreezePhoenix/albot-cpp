@@ -50,3 +50,4 @@ Makefile
 **/.cmake
 **/Maps
 CMakeSettings.json
+**/compile_commands.json

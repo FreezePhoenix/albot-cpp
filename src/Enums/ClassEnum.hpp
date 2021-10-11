@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef ENUM_CLASS_HPP_
 #define ENUM_CLASS_HPP_
 

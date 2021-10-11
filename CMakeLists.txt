@@ -3,11 +3,12 @@
 #
 set(POSITION_INDEPENDENT_CODE ON)
 cmake_minimum_required (VERSION 3.5)
-add_definitions(-std=c++20 -O3 -Wall -g)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3 -Wall -g")
 
 set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
 
+add_subdirectory(lib/libuv)
 add_subdirectory(lib/spdlog lib/spdlog)
 set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(lib/TriangleManipulator lib/TriangleManipulator)
@@ -42,16 +43,15 @@ add_library(alclient-cpp STATIC
 )
 
 # TODO: Add tests and install targets if needed.
-
-include_directories("lib/spdlog/include" lib/IXWebSocket)
+include_directories(lib/spdlog/include lib/uvw/src lib/libuv/include lib/IXWebSocket include)
 target_link_directories(albot-cpp PUBLIC "./")
 target_include_directories(Bot PUBLIC "./lib/IXWebSocket")
 
 target_link_libraries(MapProcessing PUBLIC TriangleManipulator)
 target_link_libraries(HttpWrapper PUBLIC MapProcessing PocoFoundation PocoNet spdlog PocoNetSSL)
-target_link_libraries(albot-cpp PUBLIC ${CMAKE_DL_LIBS} spdlog HttpWrapper MapProcessing TriangleManipulator triangle fmt ixwebsocket)
+target_link_libraries(albot-cpp PUBLIC ${CMAKE_DL_LIBS} spdlog HttpWrapper MapProcessing TriangleManipulator triangle fmt ixwebsocket uv)
 target_link_libraries(alclient-cpp PUBLIC ${CMAKE_DL_LIBS} HttpWrapper spdlog Bot)
-target_link_libraries(Bot PUBLIC ixwebsocket)
+target_link_libraries(Bot PUBLIC ixwebsocket uv)
 
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
