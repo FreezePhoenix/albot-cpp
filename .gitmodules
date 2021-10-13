@@ -16,3 +16,6 @@
 [submodule "lib/uvw"]
 	path = lib/uvw
 	url = https://github.com/skypjack/uvw
+[submodule "SERVICES/Pathfinding"]
+	path = SERVICES/Pathfinding
+	url = https://github.com/FreezePhoenix/Pathfinding
