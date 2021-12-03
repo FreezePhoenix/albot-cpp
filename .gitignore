@@ -51,3 +51,4 @@ Makefile
 **/Maps
 CMakeSettings.json
 **/compile_commands.json
+profile.sh

@@ -3,12 +3,10 @@
 #ifndef ALBOT_MAPPROCESSING_HPP_
 #define ALBOT_MAPPROCESSING_HPP_
 
-#include <map>
-#include "PointLocation.hpp"
 #include <vector>
 #include <math.h>
 #include <nlohmann/json.hpp>
-#include <any>
+#include "TriangleManipulator/PointLocation.hpp"
 
 namespace MapProcessing {
     /**
@@ -36,7 +34,6 @@ namespace MapProcessing {
 
     // Typedefs for ease of use.
     typedef PointLocation::Point Point;
-    typedef PointLocation::PointHash PointHash;
     typedef PointLocation::Line Line;
     typedef PointLocation::LineHash LineHash;
     typedef PointLocation::Triangle Triangle;
@@ -57,13 +54,6 @@ namespace MapProcessing {
      * @return std::shared_ptr<MapInfo> 
      */
     std::shared_ptr<MapInfo> parse_map(nlohmann::json& json);
-    
-    /**
-     * @brief Creates an Objectifier and Writer for the MapInfo, and runs them on it.
-     * 
-     * @param json 
-     */
-    void process(std::shared_ptr<MapInfo> json);
     
     /**
      * @brief Accepts a MapInfo, simplifies it by removing unecessary lines, and then returns it.

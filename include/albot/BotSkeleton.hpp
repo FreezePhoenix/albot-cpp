@@ -1,9 +1,9 @@
 #ifndef ALBOT_BOTSKELETON_HPP_
 #define ALBOT_BOTSKELETON_HPP_
 
-#include "SocketWrapper.hpp"
-#include "Utils/LoopHelper.hpp"
-#include "Utils/Timer.hpp"
+#include "albot/SocketWrapper.hpp"
+#include "albot/Utils/LoopHelper.hpp"
+#include "albot/Utils/Timer.hpp"
 
 class BotSkeleton : public Bot {
 	protected:

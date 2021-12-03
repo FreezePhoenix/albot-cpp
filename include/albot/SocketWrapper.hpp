@@ -12,7 +12,7 @@
 #include <mutex>
 #include <map>
 #include <chrono>
-#include "Bot.hpp"
+#include "albot/Bot.hpp"
 #include <functional>
 
 
@@ -120,7 +120,7 @@ class SocketWrapper {
 
 		void onDisappear(const nlohmann::json &event);
 
-		void changeServer(HttpWrapper::Server *server);
+		void changeServer(Server *server);
 
 		std::map<std::string, nlohmann::json>& getEntities();
 		std::map<std::string, nlohmann::json>& getUpdateEntities();

@@ -1,31 +1,12 @@
-﻿//============================================================================
-// Name        : LinuxYay.cpp
-// Author      : 
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
-//============================================================================
+﻿#include "albot/albot-cpp.hpp"
 
-#include <dlfcn.h>
-#include <memory>
-#include <fstream>
-#include <future>
-#include "Bot.hpp"
-#include "Utils/LoopHelper.hpp"
-#include "uvw.hpp"
-
+std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("ALBotC++");
 namespace ALBot {
-	//  Private namespace
-	namespace {
-		static std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("ALBotC++");
-	}
-	std::map<std::string, ServiceInfo*> SERVICE_HANDLERS = std::map<std::string, ServiceInfo*>();
+	std::map<std::string, ServiceInfo<void*, void>*> SERVICE_HANDLERS = std::map<std::string, ServiceInfo<void*, void>*>();
 	std::map<std::string, CharacterGameInfo*> CHARACTER_HANDLERS = std::map<std::string, CharacterGameInfo*>();
 	std::vector<std::thread*> CHARACTER_THREADS = std::vector<std::thread*>();
 	std::vector<std::thread*> SERVICE_THREADS = std::vector<std::thread*>();
-	inline std::string NULL_PIPE_OUT = " > /dev/null";
-	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";
-	inline std::string NULL_PIPE_ERR = " 2> /dev/null";
+
 	void clean_code() {
 		system("rm CODE/*.so");
 		system("rm SERVICES/*.so");
@@ -34,11 +15,8 @@ namespace ALBot {
 	CharacterGameInfo::HANDLER get_character_handler(const std::string& name) {
 		return CHARACTER_HANDLERS.at(name)->child_handler;
 	}
-	ServiceInfo::HANDLER get_service_handler(const std::string& name) {
-		return SERVICE_HANDLERS.at(name)->child_handler;
-	}
 
-	void* ipc_handler(Message* message) {
+	void ipc_handler(Message* message) {
 		mLogger->info("RECEIVED {} FROM {}", message->command, message->requester);
 		if (message->command == "code_message") {
 			mLogger->info("CODE_MESSAGE TARGET: {}", message->target);
@@ -46,14 +24,9 @@ namespace ALBot {
 				get_character_handler(message->target)(message);
 			} else {
 				mLogger->warn("TARGET NOT FOUND. USING FALLBACK.");
-				get_character_handler(message->requester)(new Message { "code_message_fail", message->requester, message->target, message->arguments });
+				get_character_handler(message->requester)(new Message{ "code_message_fail", message->requester, message->target, message->arguments });
 			}
-		} else if (message->command == "service_request") {
-			auto result = std::async(std::launch::async, get_service_handler(message->target), message);
-			result.wait();
-			return result.get();
 		}
-		return nullptr;
 	}
 
 	void build_service_code(const std::string& name) {
@@ -75,7 +48,7 @@ namespace ALBot {
 		std::string CMAKE = "cmake -DNAME_DEFINITIONS=\"" + HttpWrapper::NAME_MACROS + "\" -DCHARACTER_NAME_STRING=" + char_name + " -DCHARACTER_NAME=" + std::to_string(HttpWrapper::NAME_TO_NUMBER[char_name]) + " -DCHARACTER_CLASS=" + std::to_string(klass) + " -S " + FOLDER + "/. -B " + FOLDER + "/." + NULL_PIPE_OUT;
 		std::string MAKE = "make --quiet -C " + FOLDER + "/. -j8" + NULL_PIPE_OUT;
 		std::string CP = "cp " + FOLDER + "/lib" + name + "_" + char_name + ".so CODE/" + char_name + ".so" + NULL_PIPE_OUT;
-		mLogger->info("Running CMake on: CODE/{}", name);
+		mLogger->info("Running CMake on: CODE/{} with character name {}", name, char_name);
 		system(CMAKE.c_str());
 		mLogger->info("Finished. Compiling...");
 		system(MAKE.c_str());
@@ -87,7 +60,7 @@ namespace ALBot {
 	void start_service(int index) {
 		HttpWrapper::Service& service = HttpWrapper::services[index];
 		build_service_code(service.name);
-		ServiceInfo* info = new ServiceInfo;
+		ServiceInfo<void*, void>* info = new ServiceInfo<void*, void>;
 		info->G = &HttpWrapper::data;
 		SERVICE_HANDLERS.emplace(service.name, info);
 		std::string file = fmt::format("SERVICES/{}.so", service.name);
@@ -96,24 +69,22 @@ namespace ALBot {
 			mLogger->error("Cannot open library: {}", dlerror());
 		}
 
-		typedef void* (*init_t)(void*);
+		typedef ServiceInfo<void*, void>::HANDLER(*init_t) (ServiceInfo<void*, void>*);
 		dlerror();
 		init_t init = (init_t)dlsym(handle, "init");
 
-		const char *dlsym_error = dlerror();
+		const char* dlsym_error = dlerror();
 
 		if (dlsym_error) {
 			mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
 			dlclose(handle);
 		}
-
-		auto result = std::async(std::launch::async, init, (void*) info);
-		result.wait();
-		info->child_handler = (ServiceInfo::HANDLER) result.get();
+		
+		info->child_handler = init(info);
 	}
 
 	void start_character(int index) {
-		HttpWrapper::Character& character = HttpWrapper::characters[index];
+		Character& character = HttpWrapper::characters[index];
 		build_character_code(character.script, character.name, character.klass);
 		CharacterGameInfo* info = new CharacterGameInfo;
 		int server_index = HttpWrapper::find_server(character.server);
@@ -125,28 +96,33 @@ namespace ALBot {
 		info->parent_handler = &ipc_handler;
 		CHARACTER_HANDLERS.emplace(character.name, info);
 		std::string file = "CODE/" + HttpWrapper::characters[index].name + ".so";
-		void *handle = dlopen(file.c_str(), RTLD_LAZY);
+		void* handle = dlopen(file.c_str(), RTLD_LAZY);
 		if (!handle) {
 			mLogger->error("Cannot open library: {}", dlerror());
 		}
 		// load the symbol
-		typedef void* (*init_t)(void*);
+		typedef void* (*init_t)(CharacterGameInfo*);
 		// reset errors
 		dlerror();
-		init_t init = (init_t) dlsym(handle, "init");
+		init_t init = (init_t)dlsym(handle, "init");
 
-		const char *dlsym_error = dlerror();
+		const char* dlsym_error = dlerror();
 
 		if (dlsym_error) {
+			fmt::print("Cannot load symbol 'init': {}\n", dlsym_error);
 			mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
+			mLogger->flush();
 			dlclose(handle);
 		}
-		std::thread* bot_thread = new std::thread(init, (void*)info);
+		std::thread* bot_thread = new std::thread(init, info);
 		CHARACTER_THREADS.push_back(bot_thread);
 	}
-	
+
+	std::map<std::string, ServiceInfo<void*, void>*>* get_service_handlers() {
+		return &ALBot::SERVICE_HANDLERS;
+	}
 	void login() {
-		
+
 		if (!HttpWrapper::login()) {
 			exit(1);
 		}
@@ -163,7 +139,7 @@ namespace ALBot {
 				nlohmann::json _chars = nlohmann::json::array();
 
 				for (size_t i = 0; i < HttpWrapper::characters.size(); i++) {
-					HttpWrapper::Character& struct_char = HttpWrapper::characters[i];
+					Character& struct_char = HttpWrapper::characters[i];
 					nlohmann::json _char;
 					_char["name"] = struct_char.name;
 					_char["id"] = struct_char.id;
@@ -184,7 +160,7 @@ namespace ALBot {
 				exit(0);
 			}
 		}
-		
+
 		if (!HttpWrapper::process_characters(config["characters"])) {
 			exit(1);
 		}
@@ -199,7 +175,7 @@ namespace ALBot {
 		int merchants_found = 0;
 		int fighters_found = 0;
 		for (size_t i = 0; i < HttpWrapper::characters.size(); i++) {
-			HttpWrapper::Character& character = HttpWrapper::characters[i];
+			Character& character = HttpWrapper::characters[i];
 			if (character.enabled) {
 				switch (character.klass) {
 					case ClassEnum::MERCHANT:

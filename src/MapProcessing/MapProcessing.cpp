@@ -1,16 +1,7 @@
-#include "MapProcessing.hpp"
-#include "Objectifier.hpp"
-#include "Writer.hpp"
+#include "albot/MapProcessing/MapProcessing.hpp"
 #include <iostream>
 
 namespace MapProcessing {
-    void process(std::shared_ptr<MapInfo> info) {
-        Objectifier objectifier(info);
-        objectifier.run();
-        Writer writer(objectifier);
-        writer.write();
-    }
-
     std::shared_ptr<MapInfo> parse_map(nlohmann::json& json) {
 
         // Create a new info smart pointer.
@@ -22,21 +13,34 @@ namespace MapProcessing {
 
         // If they're both arrays
         if (x_lines.is_array() && y_lines.is_array()) {
+            int min_x = json["min_x"].get<int>();
+            int min_y = json["min_y"].get<int>();
+            int max_x = json["max_x"].get<int>();
+            int max_y = json["max_y"].get<int>();
             // Reserve enough memory for the x_lines
-            info->x_lines.reserve(x_lines.size());
-            
+            info->x_lines.reserve(x_lines.size() + 2);
+            // info->x_lines.emplace_back(min_x, min_y, max_y);
+            // info->x_lines.emplace_back(max_x, min_y, max_y);
             // Iterate over all of the x_lines json
             for (const nlohmann::json& line : x_lines) {
                 // Push each x_line into the info's array for x_lines
-                info->x_lines.push_back(line.get<AxisLineSegment>());
+                 AxisLineSegment _line = line.get<AxisLineSegment>();
+                if (_line.range_end != _line.range_start) {
+                    info->x_lines.push_back(_line);
+                }
             }
+            
             // Reserve enough memory for the y_lines
-            info->y_lines.reserve(y_lines.size());
-
+            info->y_lines.reserve(y_lines.size() + 2);
+            // info->y_lines.emplace_back(min_y, min_x, max_x);
+            // info->y_lines.emplace_back(max_y, min_x, max_x);
             // Iterate over all of the y_lines json
             for (const nlohmann::json& line : y_lines) {
                 // Push each y_line into the info's array for y_lines
-                info->y_lines.push_back(line.get<AxisLineSegment>());
+                AxisLineSegment _line = line.get<AxisLineSegment>();
+                if (_line.range_end != _line.range_start) {
+                    info->y_lines.push_back(_line);
+                }
             }
         }
         return info;
@@ -48,29 +52,9 @@ namespace MapProcessing {
          */
         std::unordered_map<short, std::vector<std::pair<short, short>>> x_lines_temp = std::unordered_map<short, std::vector<std::pair<short, short>>>();
 
-        /**
-         * @brief An array to hold the new ranges of Y values
-         * 
-         */
-        std::vector<std::pair<short, short>> new_ys = std::vector<std::pair<short, short>>();
-
-        // Reserve enough memory.
-        new_ys.reserve(info->x_lines.size());
-
         // Iterate over all of the x_lines in the info.
         for (const AxisLineSegment& _line : info->x_lines) {
-            // Create a pair (a tuple with 2 elements) from the line's start and end values.
-            std::pair<short, short> tup = std::pair<short, short>(_line.range_start, _line.range_end);
-
-            // See if we have Y values associated with that X
-            if (x_lines_temp.count(_line.axis)) {
-                // If we do, just add it to the end of the list.
-                x_lines_temp.at(_line.axis).push_back(tup);
-            } else {
-                // If we don't, create it, and add to the end of the list.
-                x_lines_temp.emplace(_line.axis, std::vector<std::pair<short, short>>());
-                x_lines_temp.at(_line.axis).push_back(tup);
-            }
+            x_lines_temp[_line.axis].emplace_back(_line.range_start, _line.range_end);
         }
 
         // Clear the existing x_lines
@@ -82,89 +66,65 @@ namespace MapProcessing {
             short x = pair.first;
 
             // We need the array that is the list of Y ranges associated with that X
-            std::vector<std::pair<short, short>> ys = pair.second;
-
+            std::vector<std::pair<short, short>>& ys = pair.second;
+            std::sort(ys.begin(), ys.end(), [](const std::pair<short, short>& first, const std::pair<short, short>& second) {
+                return std::min(first.first, first.second) < std::min(second.first, second.second);
+            });
             // Iterate over the Y ranges, in a controlled manner.
-            for (int i = 0, size = ys.size(); i < size; i++) {
+            for (size_t i = 0, size = ys.size(); i < size; i++) {
                 // Get the first Y range.
                 std::pair<short, short>& first = ys.at(i);
-                
+                const short a = first.first;
+                short b = first.second;
                 // Iterate over them again, in a controlled manner.    
-                for (int j = i + 1; j < size; j++) {
+                for (size_t j = i + 1; j < size; j++) {
                     // Get the second Y range.
                     const std::pair<short, short>& second = ys.at(j);
-                    short a = first.first,
-                        b = first.second,
-                        c = second.first,
-                        d = second.second;
-
+                    const short c = second.first,
+                                d = second.second;
                     // If the two lines overlap
-                    if (PointLocation::overlaps(a, b, c, d)) {
+                    // Preconditions: a must be less than c; because we sorted it.
+                    // if b > c and c < d then they overlap.
+                    if (b > c && b < d) {
                         // Make the first line a new line encompassing both of them.
-                        short new_start = MapProcessing::min(a, b, c, d);
-                        short new_end = MapProcessing::max(a, b, c, d);
-                        first.first = new_start;
-                        first.second = new_end;
-
+                        b = d;
                         // And then skip to the second line's index.
                         i = j;
                     }
                 }
 
                 // Push the new Y range into the list.
-                new_ys.push_back(first);
+                info->x_lines.emplace_back(x, a, b);
             }
-
-            // Iterate over the new Y ranges
-            for (const std::pair<short, short>& tup : new_ys) {
-                // Insert them into the x_lines.
-                info->x_lines.emplace_back(x, tup.first, tup.second);
-            }
-
-            // Clear our temporary array.
-            new_ys.clear();
         }
 
         // Rinse, repeat for Y lines.
         std::unordered_map<short, std::vector<std::pair<short, short>>> y_lines_temp = std::unordered_map<short, std::vector<std::pair<short, short>>>();
-        std::vector<std::pair<short, short>> new_xs = std::vector<std::pair<short, short>>();
-        new_xs.reserve(info->y_lines.size());
         for (const AxisLineSegment& _line : info->y_lines) {
-            std::pair<short, short> tup = std::pair<short, short>(_line.range_start, _line.range_end);
-            if(y_lines_temp.count(_line.axis)) {
-                y_lines_temp.at(_line.axis).push_back(tup);
-            } else {
-                y_lines_temp.emplace(_line.axis, std::vector<std::pair<short, short>>());
-                y_lines_temp.at(_line.axis).push_back(tup);
-            }
+            y_lines_temp[_line.axis].emplace_back(_line.range_start, _line.range_end);
         }
         info->y_lines.clear();
         for(std::pair<const short, std::vector<std::pair<short, short>>>& pair : y_lines_temp) {
             short y = pair.first;
             std::vector<std::pair<short, short>>& xs = pair.second;
-            for(int i = 0, size = xs.size(); i < size; i++) {
-                std::pair<short, short>& first = xs.at(i);
-                for(int j = i + 1; j < size; j++) {
+            std::sort(xs.begin(), xs.end(), [](const std::pair<short, short>& first, const std::pair<short, short>& second) {
+                return std::min(first.first, first.second) < std::min(second.first, second.second);
+            });
+            for (size_t i = 0, size = xs.size(); i < size; i++) {
+                const std::pair<short, short>& first = xs.at(i);
+                const short a = first.first;
+                      short b = first.second;
+                for(size_t j = i + 1; j < size; j++) {
                     const std::pair<short, short>& second = xs.at(j);
-                    short a = first.first,
-                        b = first.second,
-                        c = second.first,
-                        d = second.second;
-                    if(PointLocation::overlaps(a, b, c, d)) {
-                        short new_start = MapProcessing::min(a, b, c, d);
-                        short new_end = MapProcessing::max(a, b, c, d);
-                        first.first = new_start;
-                        first.second = new_end;
+                    const short c = second.first,
+                                d = second.second;
+                    if (b > c && b < d) {
+                        b = d;
                         i = j;
                     }
                 }
-                new_xs.push_back(first);
+                info->y_lines.emplace_back(y, a, b);
             }
-            for(const std::pair<short, short>& tup : new_xs) {
-
-                info->y_lines.emplace_back(y, tup.first, tup.second);
-            }
-            new_xs.clear();
         }
         return info;
     }

@@ -7,9 +7,9 @@
 #include <string>
 #include <mutex>
 #include <condition_variable>
-#include "SocketWrapper.hpp"
-#include "HttpWrapper.hpp"
-#include "Bot.hpp"
+#include "albot/SocketWrapper.hpp"
+#include "albot/HttpWrapper.hpp"
+#include "albot/Bot.hpp"
 
 std::mutex _lock;
 std::condition_variable_any _cond;

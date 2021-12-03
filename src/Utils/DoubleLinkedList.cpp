@@ -1,5 +1,5 @@
-#include "DoubleLinkedList.hpp"
-#include "../MapProcessing/MapProcessing.hpp"
+#include "albot-cpp/Utils/DoubleLinkedList.hpp"
+#include "albot-cpp/MapProcessing/MapProcessing.hpp"
 template<typename T>
 DoubleLinkedList<T>::DoubleLinkedList() {
     this->head = nullptr;

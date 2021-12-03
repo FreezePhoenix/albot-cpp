@@ -9,10 +9,11 @@
 #include <nlohmann/json.hpp>
 #endif
 
-#include "Enums/ClassEnum.hpp"
 #include <spdlog/async.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#include "albot/GameInfo.hpp"
+#include "albot/ServiceInterface.hpp"
 
 class HttpWrapper {
 	private:
@@ -21,80 +22,20 @@ class HttpWrapper {
 		static std::string email;
 		static int online_version;
 	public:
-		class MutableGameData {
-			public:
-				nlohmann::json* data;
-				MutableGameData(std::string& rawJson) {
-					// Create a new JSON object.
-					this->data = new nlohmann::json();
-
-					// This mess is to avoid copying the JSON result, and instead constructing it in place.
-					nlohmann::detail::parser(nlohmann::detail::input_adapter(rawJson), (nlohmann::json::parser_callback_t) nullptr, true, true).parse(true, *this->data);
-				}
-				MutableGameData(std::istream& rawJson) {
-					// Create a new JSON object.
-					this->data = new nlohmann::json();
-					
-					// This mess is to avoid copying the JSON result, and instead constructing it in place.
-					nlohmann::detail::parser(nlohmann::detail::input_adapter(rawJson), (nlohmann::json::parser_callback_t) nullptr, true).parse(true, *this->data);
-				}
-				MutableGameData(const MutableGameData& old) : data(old.data) {
-				};
-				
-				nlohmann::json& getData() { return *data; }
-				nlohmann::json& operator[](const std::string& key) { return data->operator[](key); }
-				nlohmann::json& at(const std::string& key) { return data->at(key); }
-		};
-		class GameData {
-			private:
-				nlohmann::json* data;
-			public:
-				GameData() : data(nullptr) {}
-				GameData(const GameData& old) : data(old.data) {}
-				GameData(const MutableGameData& old) : data(old.data) {}
-
-				// Utility methods to access the JSON.
-				const nlohmann::json& getData() const {
-					return *data;
-				}
-				const nlohmann::json& operator[](const std::string& key) const {
-					return data->operator[](key);
-				}
-				const nlohmann::json& at(const std::string& key) const {
-					return data->at(key);
-				}
-		};
 		struct Service {
 			std::string name;
 			bool enabled;
 		};
-		struct Character {
-			std::string name;
-			size_t id;
-			bool enabled;
-			ClassEnum::CLASS klass;
-			std::string script;
-			std::string server;
-		};
-		struct Server {
-			std::string region;
-			int port;
-			bool pvp;
-			std::string ip;
-			std::string identifier;
-			std::string url;
-			std::string fullName;
-		};
 		static std::string NAME_MACROS;
 		typedef std::pair<std::string, int> NameNumberPair;
 		static std::map<std::string, int> NAME_TO_NUMBER;
-		static HttpWrapper::GameData data;
+		static GameData data;
 		static std::string session_cookie;
 		static std::string auth;
 		static Poco::Net::NameValueCollection cookie;
-		static std::vector<HttpWrapper::Character> characters;
+		static std::vector<Character> characters;
 		static std::vector<HttpWrapper::Service> services;
-		static std::vector<HttpWrapper::Server> servers;
+		static std::vector<Server> servers;
 		static std::string userID;
 		static nlohmann::json* config;
 		// All of the below methods return true if successful, or false otherwise.
@@ -162,11 +103,11 @@ class HttpWrapper {
 		bool static get_servers();
 		bool static process_servers(nlohmann::json &servers);
 		bool static api_method(std::string method, std::string args, std::string* str);
-		static void handleGameJson(HttpWrapper::MutableGameData& json);
+		static void handleGameJson(MutableGameData& json);
 
 		int static find_server(const std::string &server_name) {
 			for (size_t i = 0; i < HttpWrapper::servers.size(); i++) {
-				HttpWrapper::Server& server = HttpWrapper::servers[i];
+				Server& server = HttpWrapper::servers[i];
 				if (server.fullName == server_name) {
 					return i;
 				}
@@ -175,5 +116,5 @@ class HttpWrapper {
 		};
 };
 
-void from_json(const nlohmann::json& j, HttpWrapper::Character& value);
+void from_json(const nlohmann::json& j, Character& value);
 #endif /* ALBOT_HTTPWRAPPER_HPP_ */

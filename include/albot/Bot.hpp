@@ -1,7 +1,7 @@
 #ifndef ALBOT_BOT_HPP_
 #define ALBOT_BOT_HPP_
 
-#include "GameInfo.hpp"
+#include "albot/GameInfo.hpp"
 
 #define PROXY_GETTER(capName, type) type get##capName();
 

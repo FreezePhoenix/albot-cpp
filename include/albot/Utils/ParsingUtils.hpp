@@ -6,7 +6,6 @@
 #ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #include <nlohmann/json.hpp>
 #endif
-#include <iostream>
 
 template <typename T, typename K>
 inline T getOrElse(const nlohmann::json& n, K key,  T defaultValue) {

@@ -4,10 +4,10 @@
 #include <string>
 #include <mutex>
 
-#include "Utils/Timer.hpp"
-#include "BotSkeleton.hpp"
-#include "MovementMath.hpp"
-#include "Utils/ParsingUtils.hpp"
+#include "albot/Utils/Timer.hpp"
+#include "albot/BotSkeleton.hpp"
+#include "albot/MovementMath.hpp"
+#include "albot/Utils/ParsingUtils.hpp"
 
 BotSkeleton::BotSkeleton(CharacterGameInfo *id): Bot(id), wrapper(std::to_string(info->character->id), this->info->server->url, *this), loop() {
     this->name = info->character->name;

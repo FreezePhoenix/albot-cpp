@@ -3,9 +3,9 @@
 #ifndef ALCLIENT_CPP_HPP_
 #define ALCLIENT_CPP_HPP_
 
-#include "GameInfo.hpp"
-#include "HttpWrapper.hpp"
-#include "BotSkeleton.hpp"
+#include "albot/GameInfo.hpp"
+#include "albot/HttpWrapper.hpp"
+#include "albot/BotSkeleton.hpp"
 
 class ALClient {
     public:

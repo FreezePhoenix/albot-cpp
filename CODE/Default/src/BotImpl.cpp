@@ -2,13 +2,14 @@
 #include <string>
 #include <mutex>
 
-#include "../../src/SocketWrapper.hpp"
-#include "../../src/Utils/LoopHelper.hpp"
-#include "../../src/Utils/Timer.hpp"
-#include "../../src/MovementMath.hpp"
-#include "../../src/Utils/ParsingUtils.hpp"
+#include "albot/SocketWrapper.hpp"
+#include "albot/Utils/LoopHelper.hpp"
+#include "albot/Utils/Timer.hpp"
+#include "albot/MovementMath.hpp"
+#include "albot/Utils/ParsingUtils.hpp"
 
-#include "../../SERVICES/Default/src/Service.hpp"
+#include "albot/albot-cpp.hpp"
+#include "../../SERVICES/Pathfinding/include/Pathfinding/Service.hpp"
 
 #ifndef CHARACTER_NAME
 	#define CHARACTER_NAME	-1
@@ -17,10 +18,13 @@
 #ifndef CHARACTER_CLASS
 	#define CHARACTER_CLASS -1
 #endif
-
+// extern std::map<std::string, ServiceInfo<void*, void>*> ALBot::SERVICE_HANDLERS;
 const Types::TimePoint epoch;
 
-void* invoke_service(std::string name, void* arguments);
+template<typename RESULT, typename ARGUMENTS>
+RESULT invoke_service(const std::string& name, ARGUMENTS* arguments) {
+	return ALBot::invoke_service<ARGUMENTS, RESULT>(name, arguments);
+}
 
 class BotImpl : public Bot {
 	public:
@@ -45,7 +49,6 @@ class BotImpl : public Bot {
 			}, 1000.0);
 		};
 		void processInternals() {
-			mLogger->info("LOOP?");
 			if (last == epoch) last = Types::Clock::now();
 
 			std::map<std::string, nlohmann::json> updateEntities;
@@ -143,14 +146,12 @@ class BotImpl : public Bot {
 		}
 		void onConnect() {
 			this->log("Connected!?!");
+			// Say hello!
 			this->wrapper->emit("say", { {"message", "Hello Adventure Land, this is C++!"} });
 			this->startUVThread();
 		}
 		void start() {
 			wrapper->connect();
-			nlohmann::json a = nlohmann::json("nullptr");
-			long c = (long)invoke_service("Default", new AddArguments { 1, 2 });
-			mLogger->info("SERVICE TOLD ME {}", c);
 		}
 		void stop() {
 			wrapper->close();
@@ -159,18 +160,12 @@ class BotImpl : public Bot {
 
 BotImpl* BotInstance;
 
-void* invoke_service(std::string name, void* arguments) {
-	Message* message = new Message{ "service_request", BotInstance->name, name, arguments };
-	return BotInstance->info->parent_handler(message);
-}
-
-void* ipc_handler(Message* message) {
+void ipc_handler(Message* message) {
 	if (message->command == "code_message") {
 		BotInstance->onCm(message->requester, *((nlohmann::json*)message->arguments));
 	} else if (message->command == "code_message_fail") {
 		BotInstance->mLogger->error("Sad face :c");
 	}
-	return nullptr;
 }
 
 extern "C" void* init(void* id) {
@@ -179,7 +174,12 @@ extern "C" void* init(void* id) {
 	BotInstance = new BotImpl(info);
 	BotInstance->log("Class: " + ClassEnum::getClassStringInt(CHARACTER_CLASS));
 	BotInstance->log("Logging in... ");
-	BotInstance->start();
+	// BotInstance->start();
+	std::shared_ptr<PathfindArguments::PathResult> path = ALBot::get_service_handler<PathfindArguments, std::shared_ptr<PathfindArguments::PathResult>>("Pathfinding")(new PathfindArguments{ PathfindArguments::Point{0, 0}, PathfindArguments::Point{-968, -163 } });
+	for (PathfindArguments::Point point : path->path) {
+		BotInstance->log(std::to_string(point.x) + "," + std::to_string(point.y));
+	}
+	BotInstance->log("Length: " + std::to_string(path->path.size()));
 	std::this_thread::sleep_for(std::chrono::seconds(5));
 	return BotInstance;
 }

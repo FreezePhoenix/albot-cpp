@@ -4,7 +4,7 @@
 #define ALBOT_DOUBLE_LINKED_LIST_HPP_
 
 #include <memory>
-#include "../MapProcessing/MapProcessing.hpp"
+#include "albot-cpp/MapProcessing/MapProcessing.hpp"
 
 #define NodePointer typename DoubleLinkedList<T>::Node*
 

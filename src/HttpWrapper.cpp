@@ -9,12 +9,12 @@
 #include <regex>
 #include <fmt/os.h>
 
-#include "MapProcessing/MapProcessing.hpp"
-#include "HttpWrapper.hpp"
+#include "albot/MapProcessing/MapProcessing.hpp"
+#include "albot/HttpWrapper.hpp"
 
 std::string HttpWrapper::NAME_MACROS = "";
 std::shared_ptr<spdlog::logger> HttpWrapper::mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("HttpWrapper");
-HttpWrapper::GameData HttpWrapper::data = HttpWrapper::GameData();
+GameData HttpWrapper::data = GameData();
 int HttpWrapper::online_version = 0;
 std::string HttpWrapper::password = "";
 std::string HttpWrapper::email = "";
@@ -22,9 +22,9 @@ std::string HttpWrapper::session_cookie = "";
 std::string HttpWrapper::auth = "";
 Poco::Net::NameValueCollection HttpWrapper::cookie = Poco::Net::NameValueCollection();
 std::map<std::string, int> HttpWrapper::NAME_TO_NUMBER = std::map<std::string, int>();
-std::vector<HttpWrapper::Character> HttpWrapper::characters = std::vector<HttpWrapper::Character>();
+std::vector<Character> HttpWrapper::characters = std::vector<Character>();
 std::vector<HttpWrapper::Service> HttpWrapper::services = std::vector<HttpWrapper::Service>();
-std::vector<HttpWrapper::Server> HttpWrapper::servers = std::vector<HttpWrapper::Server>();
+std::vector<Server> HttpWrapper::servers = std::vector<Server>();
 std::string HttpWrapper::userID = "";
 
 bool HttpWrapper::get_cached_game_version(int& version) {
@@ -60,8 +60,10 @@ bool HttpWrapper::get_game_version(int &version) {
     }
 }
 
-void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
+void HttpWrapper::handleGameJson(MutableGameData& data) {
     nlohmann::json &geo = data["geometry"];
+    double initial = 0;
+    double final = 0;
     for (nlohmann::detail::iter_impl<nlohmann::json> it = geo.begin(); it != geo.end(); it++) {
         if (it.value()["placements"].is_array()) {
             geo[it.key()].erase("placements");
@@ -77,12 +79,14 @@ void HttpWrapper::handleGameJson(HttpWrapper::MutableGameData& data) {
                     info->spawns.push_back(std::pair<double, double>(spawn_it.value()[0].get<double>(), spawn_it.value()[1].get<double>()));
                 }
             };
+            initial += info->x_lines.size() + info->y_lines.size();
             MapProcessing::simplify_lines(info);
-            MapProcessing::process(info);
+            final += info->x_lines.size() + info->y_lines.size();
             geo[info->name]["x_lines"] = info->x_lines;
             geo[info->name]["y_lines"] = info->y_lines;
         }
     }
+    mLogger->info("Simplified Maps. Reduced line count by {}% ({} -> {})", std::trunc((initial - final) / initial * 10000) / 100, initial, final);
 }
 
 bool HttpWrapper::get_game_data() {
@@ -90,18 +94,15 @@ bool HttpWrapper::get_game_data() {
     std::string raw_data;
     int current_version = HttpWrapper::online_version;
     int cached_version = 0;
-    if (true || get_cached_game_version(cached_version)) {
-        if (true || cached_version == current_version) {
+    if (get_cached_game_version(cached_version)) {
+        if (cached_version == current_version) {
             std::ifstream cached_file("data.json");
             if (cached_file.fail() || !cached_file.is_open()) {
                 mLogger->warn("Local cache invalid. Fetching.");
                 cached_file.close();
             } else {
                 mLogger->info("Cache version {} is valid.", cached_version);
-                HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(cached_file);
-                // In case something changed, just re-process the data.
-                handleGameJson(data);
-                HttpWrapper::data = data;
+                HttpWrapper::data = cached_file;
                 cached_file.close();
                 return true;
             }
@@ -115,7 +116,7 @@ bool HttpWrapper::get_game_data() {
             mLogger->info("Data fetched! Trimming...");
             raw_data = raw_data.substr(6, raw_data.length() - 8);
             mLogger->info("Data trimmed! Parsing...");
-            HttpWrapper::MutableGameData data = HttpWrapper::MutableGameData(raw_data);
+            MutableGameData data = MutableGameData(raw_data);
             HttpWrapper::handleGameJson(data);
             HttpWrapper::data = data;
             mLogger->info("Data parsed! Writing cache...");
@@ -347,7 +348,7 @@ bool HttpWrapper::process_characters(nlohmann::json& char_jsons) {
             HttpWrapper::characters.resize(char_jsons.size());
             for (unsigned int i = 0; i < char_jsons.size(); i++) {
                 const nlohmann::json& character_json = char_jsons[i];
-                HttpWrapper::Character& character = HttpWrapper::characters[i];
+                Character& character = HttpWrapper::characters[i];
                 character.name = character_json.at("name").get<std::string>();
                 if (character_json.at("id").is_number()) {
                     character.id = character_json.at("id").get<long>();
@@ -412,7 +413,7 @@ bool HttpWrapper::process_servers(nlohmann::json &servers_json) {
             HttpWrapper::servers.resize(servers_json.size());
             for (size_t i = 0; i < servers_json.size(); i++) {
                 const nlohmann::json& server_json = servers_json[i];
-                HttpWrapper::Server& server = HttpWrapper::servers[i];
+                Server& server = HttpWrapper::servers[i];
                 server.identifier = server_json.at("name").get<std::string>();
                 server.region = server_json.at("region").get<std::string>();
                 server.port = server_json.at("port").get<int>();
@@ -431,7 +432,7 @@ bool HttpWrapper::process_servers(nlohmann::json &servers_json) {
         throw;
     }
 }
-void from_json(const nlohmann::json& j, HttpWrapper::Character& value) {
+void from_json(const nlohmann::json& j, Character& value) {
     if (j.contains("name")) {
         value.name = j.at("name").get<std::string>();
     } else {

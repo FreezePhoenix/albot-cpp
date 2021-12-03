@@ -8,29 +8,40 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3 -Wall -g")
 set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
 
-add_subdirectory(lib/libuv)
-add_subdirectory(lib/spdlog lib/spdlog)
+add_subdirectory(lib/libuv EXCLUDE_FROM_ALL)
+add_subdirectory(lib/spdlog lib/spdlog EXCLUDE_FROM_ALL)
+add_subdirectory(lib/IXWebSocket lib/IXWebSocket EXCLUDE_FROM_ALL)
+add_library(spdlog_HEADERS ALIAS spdlog_header_only)
 set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
-add_subdirectory(lib/TriangleManipulator lib/TriangleManipulator)
+add_subdirectory(lib/TriangleManipulator lib/TriangleManipulator EXCLUDE_FROM_ALL)
 
 project ("albot-cpp")
-add_subdirectory(lib/IXWebSocket lib/IXWebSocket)
 # Add source to this project's executable.
+
+add_library(IXWebSocket_HEADERS INTERFACE)
+target_include_directories(IXWebSocket_HEADERS INTERFACE lib/IXWebSocket)
+
+add_library(albot_HEADERS INTERFACE)
+target_include_directories(albot_HEADERS INTERFACE include)
+
 add_executable (albot-cpp
 	"src/albot-cpp.cpp"
   "src/JsonUtils.cpp"
 )
 
+add_library(MapProcessing_HEADERS INTERFACE)
+target_link_libraries(MapProcessing_HEADERS INTERFACE TriangleManipulator_HEADERS)
 
 add_library(MapProcessing STATIC
   "src/MapProcessing/MapProcessing.cpp"
-  "src/MapProcessing/Objectifier.cpp"
-  "src/MapProcessing/Writer.cpp"
 )
 
 add_library(HttpWrapper STATIC
   "src/HttpWrapper.cpp"
 )
+
+add_library(Bot_HEADERS INTERFACE)
+target_link_libraries(Bot_HEADERS INTERFACE IXWebSocket_HEADERS)
 
 add_library(Bot SHARED 
   "src/Bot.cpp"
@@ -43,19 +54,19 @@ add_library(alclient-cpp STATIC
 )
 
 # TODO: Add tests and install targets if needed.
-include_directories(lib/spdlog/include lib/uvw/src lib/libuv/include lib/IXWebSocket include)
+include_directories(lib/IXWebSocket include lib lib/uvw/src)
 target_link_directories(albot-cpp PUBLIC "./")
 target_include_directories(Bot PUBLIC "./lib/IXWebSocket")
 
-target_link_libraries(MapProcessing PUBLIC TriangleManipulator)
-target_link_libraries(HttpWrapper PUBLIC MapProcessing PocoFoundation PocoNet spdlog PocoNetSSL)
-target_link_libraries(albot-cpp PUBLIC ${CMAKE_DL_LIBS} spdlog HttpWrapper MapProcessing TriangleManipulator triangle fmt ixwebsocket uv)
-target_link_libraries(alclient-cpp PUBLIC ${CMAKE_DL_LIBS} HttpWrapper spdlog Bot)
-target_link_libraries(Bot PUBLIC ixwebsocket uv)
-
+target_link_libraries(MapProcessing PUBLIC MapProcessing_HEADERS)
+target_link_libraries(HttpWrapper PUBLIC MapProcessing_HEADERS spdlog_HEADERS PocoFoundation PocoNet PocoNetSSL)
+target_link_libraries(albot-cpp PUBLIC ${CMAKE_DL_LIBS} albot_HEADERS HttpWrapper MapProcessing TriangleManipulator ixwebsocket uv spdlog fmt Bot)
+target_link_libraries(alclient-cpp PUBLIC ${CMAKE_DL_LIBS} albot_HEADERS HttpWrapper spdlog_HEADERS Bot uvw uv)
+target_link_libraries(Bot PUBLIC albot_HEADERS Bot_HEADERS spdlog_HEADERS)
+set_property(TARGET albot-cpp PROPERTY LINK_OPTIONS "-Wl,--export-dynamic")
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
-  set_property(TARGET albot-cpp PROPERTY COMPILE_OPTIONS "-pthread")
+  set_property(TARGET albot-cpp PROPERTY COMPILE_OPTIONS "-pthread -Wl,--export-dynamic")
   set_property(TARGET HttpWrapper PROPERTY COMPILE_OPTIONS "-pthread")
   set_property(TARGET Bot PROPERTY COMPILE_OPTIONS "-pthread")
   set_property(TARGET albot-cpp PROPERTY INTERFACE_COMPILE_OPTIONS "-pthread")

@@ -5,12 +5,12 @@
 #include <string>
 #include <mutex>
 
-#include "../../src/SocketWrapper.hpp"
-#include "../../src/Bot.hpp"
-#include "../../src/Utils/LoopHelper.hpp"
-#include "../../src/Utils/Timer.hpp"
-#include "../../src/MovementMath.hpp"
-#include "../../src/Utils/ParsingUtils.hpp"
+#include "albot/SocketWrapper.hpp"
+#include "albot/Bot.hpp"
+#include "albot/Utils/LoopHelper.hpp"
+#include "albot/Utils/Timer.hpp"
+#include "albot/MovementMath.hpp"
+#include "albot/Utils/ParsingUtils.hpp"
 
 #ifndef CHARACTER_NAME
 	#define CHARACTER_NAME	-1
