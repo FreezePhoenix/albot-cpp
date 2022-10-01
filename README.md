@@ -59,7 +59,7 @@ A: ALBot-CPP is designed to be very lightweight, and we only define the bare min
 
 ## Thanks for using it!
 
-If you do use this, I would be glad to know, I'm `Aria / Freeze#4333` on discord, if you have any suggestions or changes that you would like to be made, just let me know!
+If you do use this, I would be glad to know, I'm `AriaHarper / FreezePhoenix#4333` on discord, if you have any suggestions or changes that you would like to be made, just let me know!
 
 ## Credits
 
