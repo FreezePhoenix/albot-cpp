@@ -2,7 +2,7 @@
 
 std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("ALBotC++");
 namespace ALBot {
-	std::map<std::string, ServiceInfo<void*, void>*> SERVICE_HANDLERS = std::map<std::string, ServiceInfo<void*, void>*>();
+	std::map<std::string, ServiceInfo<void, void>*> SERVICE_HANDLERS = std::map<std::string, ServiceInfo<void, void>*>();
 	std::map<std::string, CharacterGameInfo*> CHARACTER_HANDLERS = std::map<std::string, CharacterGameInfo*>();
 	std::vector<std::thread*> CHARACTER_THREADS = std::vector<std::thread*>();
 	std::vector<std::thread*> SERVICE_THREADS = std::vector<std::thread*>();
@@ -60,7 +60,7 @@ namespace ALBot {
 	void start_service(int index) {
 		HttpWrapper::Service& service = HttpWrapper::services[index];
 		build_service_code(service.name);
-		ServiceInfo<void*, void>* info = new ServiceInfo<void*, void>;
+		ServiceInfo<void, void>* info = new ServiceInfo<void, void>;
 		info->G = &HttpWrapper::data;
 		SERVICE_HANDLERS.emplace(service.name, info);
 		std::string file = fmt::format("SERVICES/{}.so", service.name);
@@ -69,7 +69,7 @@ namespace ALBot {
 			mLogger->error("Cannot open library: {}", dlerror());
 		}
 
-		typedef ServiceInfo<void*, void>::HANDLER(*init_t) (ServiceInfo<void*, void>*);
+		typedef ServiceInfo<void, void>::HANDLER(*init_t) (ServiceInfo<void, void>*);
 		dlerror();
 		init_t init = (init_t)dlsym(handle, "init");
 
@@ -118,7 +118,7 @@ namespace ALBot {
 		CHARACTER_THREADS.push_back(bot_thread);
 	}
 
-	std::map<std::string, ServiceInfo<void*, void>*>* get_service_handlers() {
+	std::map<std::string, ServiceInfo<void, void>*>* get_service_handlers() {
 		return &ALBot::SERVICE_HANDLERS;
 	}
 	void login() {

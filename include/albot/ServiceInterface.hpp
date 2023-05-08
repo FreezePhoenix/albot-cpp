@@ -95,7 +95,7 @@ struct Server {
 template<typename ARGUMENTS, typename RETURN = void>
 class ServiceInfo {
 	public:
-		typedef RETURN (*HANDLER)(ARGUMENTS*);
+		typedef RETURN* (*HANDLER)(ARGUMENTS*);
 		HANDLER child_handler = nullptr;
 		GameData *G;
 };

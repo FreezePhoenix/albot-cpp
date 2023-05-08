@@ -175,7 +175,7 @@ extern "C" void* init(void* id) {
 	BotInstance->log("Class: " + ClassEnum::getClassStringInt(CHARACTER_CLASS));
 	BotInstance->log("Logging in... ");
 	// BotInstance->start();
-	std::shared_ptr<PathfindArguments::PathResult> path = ALBot::get_service_handler<PathfindArguments, std::shared_ptr<PathfindArguments::PathResult>>("Pathfinding")(new PathfindArguments{ PathfindArguments::Point{0, 0}, PathfindArguments::Point{-968, -163 } });
+	auto path = ALBot::invoke_service<PathfindArguments, PathfindArguments::PathResult>("Pathfinding", PathfindArguments{ PathfindArguments::Point{0, 0}, PathfindArguments::Point{-968, -163 }, "main", "main" });
 	for (PathfindArguments::Point point : path->path) {
 		BotInstance->log(std::to_string(point.x) + "," + std::to_string(point.y));
 	}
