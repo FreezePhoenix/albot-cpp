@@ -36,8 +36,8 @@ namespace ALBot {
 	}
 
 	template<typename ARGUMENTS, typename RESULT = void>
-	RESULT invoke_service(const std::string& name, const ARGUMENTS& message) {
-		std::future<RESULT*> result = std::async(std::launch::async, get_service_handler<ARGUMENTS, RESULT>(name), &message);
+	RESULT* invoke_service(const std::string& name, const ARGUMENTS& message) {
+		std::future<RESULT*> result = std::async<typename ServiceInfo<ARGUMENTS, RESULT>::HANDLER, const ARGUMENTS*>(get_service_handler<ARGUMENTS, RESULT>(name), &message);
 		result.wait();
 		return result.get();
 	}
