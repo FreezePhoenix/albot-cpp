@@ -97,7 +97,13 @@ class ServiceInfo {
 	public:
 		typedef RETURN* (*HANDLER)(const ARGUMENTS*);
 		HANDLER child_handler = nullptr;
-		GameData *G;
+		GameData* G;
+		void (*destructor)() = nullptr;
+		~ServiceInfo() {
+			if (destructor != nullptr) {
+				destructor();
+			}
+		}
 };
 
 

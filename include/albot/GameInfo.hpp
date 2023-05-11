@@ -19,6 +19,12 @@ struct CharacterGameInfo {
 	typedef void (*HANDLER)(Message*);
 	HANDLER parent_handler = nullptr;
 	HANDLER child_handler = nullptr;
+	void (*destructor)() = nullptr;
+	~CharacterGameInfo() {
+		if (destructor != nullptr) {
+			destructor();
+		}
+	}
 	Server* server;
 	Character* character;
 	GameData *G;

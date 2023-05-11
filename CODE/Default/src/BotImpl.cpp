@@ -168,9 +168,13 @@ void ipc_handler(Message* message) {
 	}
 }
 
-extern "C" void* init(void* id) {
-	CharacterGameInfo* info = (CharacterGameInfo*)id;
+void cleanup() {
+	delete BotInstance;
+}
+
+extern "C" void* init(CharacterGameInfo* info) {
 	info->child_handler = &ipc_handler;
+	info->destructor = cleanup;
 	BotInstance = new BotImpl(info);
 	BotInstance->log("Class: " + ClassEnum::getClassStringInt(CHARACTER_CLASS));
 	BotInstance->log("Logging in... ");

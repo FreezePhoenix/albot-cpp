@@ -18,8 +18,8 @@
 #include "albot/GameInfo.hpp"
 
 namespace ALBot {
-	extern std::map<std::string, ServiceInfo<void, void>*> SERVICE_HANDLERS;
-	extern std::map<std::string, CharacterGameInfo*> CHARACTER_HANDLERS;
+	extern std::map<std::string, ServiceInfo<void, void>> SERVICE_HANDLERS;
+	extern std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS;
 	extern std::vector<std::thread*> CHARACTER_THREADS;
 	extern std::vector<std::thread*> SERVICE_THREADS;
 	inline std::string NULL_PIPE_OUT = " > /dev/null";
@@ -32,8 +32,9 @@ namespace ALBot {
 	
 	template<typename ARGUMENTS, typename RESULT = void>
 	ServiceInfo<ARGUMENTS, RESULT>::HANDLER get_service_handler(const std::string& name) {
-		return (typename ServiceInfo<ARGUMENTS, RESULT>::HANDLER) SERVICE_HANDLERS[name]->child_handler;
+		return (typename ServiceInfo<ARGUMENTS, RESULT>::HANDLER) SERVICE_HANDLERS[name].child_handler;
 	}
+
 
 	template<typename ARGUMENTS, typename RESULT = void>
 	RESULT* invoke_service(const std::string& name, const ARGUMENTS& message) {

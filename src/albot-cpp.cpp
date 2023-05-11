@@ -2,8 +2,8 @@
 
 std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("ALBotC++");
 namespace ALBot {
-	std::map<std::string, ServiceInfo<void, void>*> SERVICE_HANDLERS = std::map<std::string, ServiceInfo<void, void>*>();
-	std::map<std::string, CharacterGameInfo*> CHARACTER_HANDLERS = std::map<std::string, CharacterGameInfo*>();
+	std::map<std::string, ServiceInfo<void, void>> SERVICE_HANDLERS = std::map<std::string, ServiceInfo<void, void>>();
+	std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS = std::map<std::string, CharacterGameInfo>();
 	std::vector<std::thread*> CHARACTER_THREADS = std::vector<std::thread*>();
 	std::vector<std::thread*> SERVICE_THREADS = std::vector<std::thread*>();
 
@@ -13,7 +13,7 @@ namespace ALBot {
 	}
 
 	CharacterGameInfo::HANDLER get_character_handler(const std::string& name) {
-		return CHARACTER_HANDLERS.at(name)->child_handler;
+		return CHARACTER_HANDLERS.at(name).child_handler;
 	}
 
 	void ipc_handler(Message* message) {
@@ -59,10 +59,9 @@ namespace ALBot {
 
 	void start_service(int index) {
 		HttpWrapper::Service& service = HttpWrapper::services[index];
+		
+		ServiceInfo<void, void>& info = SERVICE_HANDLERS[service.name];
 		build_service_code(service.name);
-		ServiceInfo<void, void>* info = new ServiceInfo<void, void>;
-		info->G = &HttpWrapper::data;
-		SERVICE_HANDLERS.emplace(service.name, info);
 		std::string file = fmt::format("SERVICES/{}.so", service.name);
 		void* handle = dlopen(file.c_str(), RTLD_LAZY);
 		if (!handle) {
@@ -80,21 +79,24 @@ namespace ALBot {
 			dlclose(handle);
 		}
 		
-		info->child_handler = init(info);
+		info.G = &HttpWrapper::data;
+		info.child_handler = init(&info);
+		if (info.destructor == nullptr) {
+			mLogger->warn("Service {} did not register a destructor! This will cause a memory leak when it exits!", service.name);
+		}
 	}
 
 	void start_character(int index) {
 		Character& character = HttpWrapper::characters[index];
 		build_character_code(character.script, character.name, character.klass);
-		CharacterGameInfo* info = new CharacterGameInfo;
+		CharacterGameInfo& info = CHARACTER_HANDLERS[character.name];
 		int server_index = HttpWrapper::find_server(character.server);
-		info->server = HttpWrapper::servers.data() + server_index;
-		info->character = HttpWrapper::characters.data() + index;
-		info->auth = HttpWrapper::auth;
-		info->userId = HttpWrapper::userID;
-		info->G = &HttpWrapper::data;
-		info->parent_handler = &ipc_handler;
-		CHARACTER_HANDLERS.emplace(character.name, info);
+		info.server = HttpWrapper::servers.data() + server_index;
+		info.character = HttpWrapper::characters.data() + index;
+		info.auth = HttpWrapper::auth;
+		info.userId = HttpWrapper::userID;
+		info.G = &HttpWrapper::data;
+		info.parent_handler = &ipc_handler;
 		std::string file = "CODE/" + HttpWrapper::characters[index].name + ".so";
 		void* handle = dlopen(file.c_str(), RTLD_LAZY);
 		if (!handle) {
@@ -114,11 +116,15 @@ namespace ALBot {
 			mLogger->flush();
 			dlclose(handle);
 		}
-		std::thread* bot_thread = new std::thread(init, info);
+		std::thread* bot_thread = new std::thread(init, &info);
+		
+		if (info.destructor == nullptr) {
+			mLogger->warn("Character {} did not register a destructor! This will cause a memory leak when it exits!", character.name);
+		}
 		CHARACTER_THREADS.push_back(bot_thread);
 	}
 
-	std::map<std::string, ServiceInfo<void, void>*>* get_service_handlers() {
+	std::map<std::string, ServiceInfo<void, void>>* get_service_handlers() {
 		return &ALBot::SERVICE_HANDLERS;
 	}
 	void login() {
@@ -201,6 +207,9 @@ namespace ALBot {
 			if (service.enabled) {
 				start_service(i);
 			}
+		}
+		for (size_t i = 0; i < SERVICE_THREADS.size(); i++) {
+			SERVICE_THREADS[i]->join();
 		}
 		for (size_t character : to_run) {
 			start_character(character);
