@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef ALBOT_SERVICE_INTERFACE_HPP_
 #define ALBOT_SERVICE_INTERFACE_HPP_
 
@@ -10,50 +12,42 @@
 #include <string>
 
 class MutableGameData {
+	private:
+		std::shared_ptr<nlohmann::json> data;
 	public:
-		nlohmann::json* data;
-		MutableGameData(std::string& rawJson) {
+		MutableGameData(std::string& rawJson) : data(new nlohmann::json()) {
 			// Create a new JSON object.
-			this->data = new nlohmann::json();
-
-			// This mess is to avoid copying the JSON result, and instead constructing it in place.
-			nlohmann::detail::parser(nlohmann::detail::input_adapter(rawJson), (nlohmann::json::parser_callback_t) nullptr, true, true).parse(true, *this->data);
+			nlohmann::json::parse(rawJson, nullptr, true, true).swap(*this->data);
 		}
-		MutableGameData(std::istream& rawJson) {
+		MutableGameData(std::istream& rawJson) : data(new nlohmann::json()) {
 			// Create a new JSON object.
-			this->data = new nlohmann::json();
-			
-			// This mess is to avoid copying the JSON result, and instead constructing it in place.
-			nlohmann::detail::parser(nlohmann::detail::input_adapter(rawJson), (nlohmann::json::parser_callback_t) nullptr, true).parse(true, *this->data);
+			nlohmann::json::parse(rawJson, nullptr, true, true).swap(*this->data);
 		}
 		MutableGameData(const MutableGameData& old) : data(old.data) {
 		};
 		
 		nlohmann::json& getData() { return *data; }
 		nlohmann::json& operator[](const std::string& key) { return data->operator[](key); }
-		nlohmann::json& at(const std::string& key) { return data->at(key); }
+		nlohmann::json& at(const std::string& key) {
+			return data->at(key);
+		}
+
+		friend class GameData;
 };
 class GameData {
+	private:
+		std::shared_ptr<nlohmann::json> data;
 	public:
 		bool was_cached = false;
-		nlohmann::json* data;
-		GameData() : data(nullptr) {
+		GameData() : data(new nlohmann::json()) {
 		}
-		GameData(std::string& rawJson) {
+		GameData(std::string& rawJson) : data(new nlohmann::json()) {
 			was_cached = false;
-			// Create a new JSON object.
-			this->data = new nlohmann::json();
-
-			// This mess is to avoid copying the JSON result, and instead constructing it in place.
-			nlohmann::detail::parser(nlohmann::detail::input_adapter(rawJson), (nlohmann::json::parser_callback_t) nullptr, true, true).parse(true, *this->data);
+			nlohmann::json::parse(rawJson, nullptr, true, true).swap(*this->data);
 		}
-		GameData(std::istream& rawJson) {
+		GameData(std::istream& rawJson): data(new nlohmann::json()) {
 			was_cached = true;
-			// Create a new JSON object.
-			this->data = new nlohmann::json();
-			
-			// This mess is to avoid copying the JSON result, and instead constructing it in place.
-			nlohmann::detail::parser(nlohmann::detail::input_adapter(rawJson), (nlohmann::json::parser_callback_t) nullptr, true).parse(true, *this->data);
+			nlohmann::json::parse(rawJson, nullptr, true, true).swap(*this->data);
 		}
 		GameData(const GameData& old) : data(old.data) {
 			was_cached = true;
@@ -95,7 +89,21 @@ struct Server {
 template<typename ARGUMENTS, typename RETURN = void>
 class ServiceInfo {
 	public:
-		typedef RETURN* (*HANDLER)(const ARGUMENTS*);
+		typedef RETURN (*HANDLER)(const ARGUMENTS&);
+		HANDLER child_handler = nullptr;
+		GameData* G;
+		void (*destructor)() = nullptr;
+		~ServiceInfo() {
+			if (destructor != nullptr) {
+				destructor();
+			}
+		}
+};
+
+template<typename RETURN>
+class ServiceInfo<void, RETURN> {
+	public:
+		typedef RETURN (*HANDLER)();
 		HANDLER child_handler = nullptr;
 		GameData* G;
 		void (*destructor)() = nullptr;

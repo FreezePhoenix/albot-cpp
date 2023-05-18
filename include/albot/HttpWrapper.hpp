@@ -98,16 +98,16 @@ class HttpWrapper {
 		bool static login();
 		bool static get_characters();
 		bool static get_characters_and_servers();
-		bool static process_services(nlohmann::json& services);
-		bool static process_characters(nlohmann::json& chars);
+		bool static process_services(const nlohmann::json& services);
+		bool static process_characters(const nlohmann::json& chars);
 		bool static get_servers();
-		bool static process_servers(nlohmann::json &servers);
-		bool static api_method(std::string method, std::string args, std::string* str);
-		static void handleGameJson(MutableGameData& json);
+		bool static process_servers(const nlohmann::json &servers);
+		bool static api_method(const std::string& method, const std::string& args, std::string* str);
+		void static handleGameJson(MutableGameData& json);
 
 		int static find_server(const std::string &server_name) {
 			for (size_t i = 0; i < HttpWrapper::servers.size(); i++) {
-				Server& server = HttpWrapper::servers[i];
+				const Server& server = HttpWrapper::servers[i];
 				if (server.fullName == server_name) {
 					return i;
 				}
@@ -117,4 +117,5 @@ class HttpWrapper {
 };
 
 void from_json(const nlohmann::json& j, Character& value);
+void from_json(const nlohmann::json& j, Server& value);
 #endif /* ALBOT_HTTPWRAPPER_HPP_ */

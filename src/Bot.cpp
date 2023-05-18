@@ -14,9 +14,8 @@
 std::mutex _lock;
 std::condition_variable_any _cond;
 
-Bot::Bot(void *id) {
-	this->info = (CharacterGameInfo*) id;
-	this->mLogger = spdlog::stdout_color_mt(this->info->character->name + ":Bot");
+Bot::Bot(const CharacterGameInfo& id): info(id) {
+	this->mLogger = spdlog::stdout_color_mt(this->info.character->name + ":Bot");
 }
 
 #define PROXY_GETTER_IMPL(cls, name, capName, type)                                                                    \

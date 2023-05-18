@@ -4,7 +4,6 @@
 #define ALBOT_MAPPROCESSING_HPP_
 
 #include <vector>
-#include <math.h>
 #include <nlohmann/json.hpp>
 #include "TriangleManipulator/PointLocation.hpp"
 
@@ -53,7 +52,7 @@ namespace MapProcessing {
      * @param json 
      * @return std::shared_ptr<MapInfo> 
      */
-    std::shared_ptr<MapInfo> parse_map(nlohmann::json& json);
+    std::shared_ptr<MapInfo> parse_map(const nlohmann::json& json);
     
     /**
      * @brief Accepts a MapInfo, simplifies it by removing unecessary lines, and then returns it.

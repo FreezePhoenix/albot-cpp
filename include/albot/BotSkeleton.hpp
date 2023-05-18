@@ -12,7 +12,7 @@ class BotSkeleton : public Bot {
 		void processInternals();
 	public:
 		SocketWrapper wrapper;
-		BotSkeleton(CharacterGameInfo *id);
+		BotSkeleton(const CharacterGameInfo& id);
 		void start();
 		void stop();
 		bool running = true;

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <pthread.h>
 #include <regex>
+#include <ranges>
 #include <fmt/os.h>
 
 #include "albot/MapProcessing/MapProcessing.hpp"
@@ -46,8 +47,7 @@ bool HttpWrapper::get_game_version(int &version) {
     if(HttpWrapper::do_request("https://adventure.land/", &raw_data)) {
         std::regex version_regex = std::regex("data\\.js\\?v=([0-9]+)\"", std::regex::extended);
         std::smatch sm;
-        std::regex_search(raw_data, sm, version_regex);
-        if(sm.size() > 0) {
+        if(std::regex_search(raw_data, sm, version_regex)) {
             version = std::stoi(sm[1]);
             return true;
         } else {
@@ -64,26 +64,24 @@ void HttpWrapper::handleGameJson(MutableGameData& data) {
     nlohmann::json &geo = data["geometry"];
     double initial = 0;
     double final = 0;
-    for (nlohmann::detail::iter_impl<nlohmann::json> it = geo.begin(); it != geo.end(); it++) {
-        if (it.value()["placements"].is_array()) {
-            geo[it.key()].erase("placements");
+    for (auto& [key, value] : geo.items()) {
+        if (value.contains("placements")) {
+            value.erase("placements");
         }
-        if (it.value()["x_lines"].is_array()) {
-            std::shared_ptr<MapProcessing::MapInfo> info = MapProcessing::parse_map(it.value());
-            info->name = it.key();
-            nlohmann::json& spawns = data["maps"][it.key()]["spawns"];
+        if (value["x_lines"].is_array()) {
+            std::shared_ptr<MapProcessing::MapInfo> info = MapProcessing::parse_map(value);
+            info->name = key;
+            nlohmann::json& spawns = data["maps"][key]["spawns"];
             info->spawns = std::vector<std::pair<double, double>>();
             info->spawns.reserve(spawns.size());
-            for (nlohmann::detail::iter_impl<nlohmann::json> spawn_it = spawns.begin(); spawn_it != spawns.end(); spawn_it++) {
-                if(spawn_it.value().is_array()) {
-                    info->spawns.push_back(std::pair<double, double>(spawn_it.value()[0].get<double>(), spawn_it.value()[1].get<double>()));
-                }
-            };
+            for (const nlohmann::json& entry : spawns) {
+                info->spawns.emplace_back(entry[0].get<double>(), entry[1].get<double>());
+            }
             initial += info->x_lines.size() + info->y_lines.size();
             MapProcessing::simplify_lines(info);
             final += info->x_lines.size() + info->y_lines.size();
-            geo[info->name]["x_lines"] = info->x_lines;
-            geo[info->name]["y_lines"] = info->y_lines;
+            value["x_lines"] = info->x_lines;
+            value["y_lines"] = info->y_lines;
         }
     }
     mLogger->info("Simplified Maps. Reduced line count by {}% ({} -> {})", std::trunc((initial - final) / initial * 10000) / 100, initial, final);
@@ -138,7 +136,6 @@ bool HttpWrapper::get_game_data() {
 bool HttpWrapper::get_config(nlohmann::json& config) {
     mLogger->info("Reading config...");
     std::ifstream configfile("bot.json");
-    std::string tmp;
     if (configfile.is_open()) {
         configfile >> config;
         if (!config.is_object()) {
@@ -165,39 +162,30 @@ bool HttpWrapper::do_post(std::string url, std::string args, std::string *str, s
     if (path.empty()) {
         path = "/";
     }
+    
     Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
 
     Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_POST, path, Poco::Net::HTTPMessage::HTTP_1_1);
     Poco::Net::HTTPResponse response;
 
-    request.setContentLength(args.length());
+    request.setContentLength(args.size());
     if (!session_cookie.empty()) {
         request.setCookies(HttpWrapper::cookie);
     }
     session.sendRequest(request) << args;
 
     std::istream &rs = session.receiveResponse(response);
-    if (response.getStatus() == Poco::Net::HTTPResponse::HTTP_OK) {
-        mLogger->info("POST {} (200 OK)", url);
-        if (str != nullptr) {
-            Poco::StreamCopier::copyToString(rs, *str);
-            mLogger->info("Storing {} bytes from response.", str->length());
-        }
-        if (cookies != nullptr) {
-            response.getCookies(*cookies);
-        }
-        return true;
-    } else {
-        mLogger->info("POST {} ({} {})", url, response.getStatus(), response.getReason());
-        if (str != nullptr) {
-            Poco::StreamCopier::copyToString(rs, *str);
-            mLogger->info("Storing {} bytes from response.", str->length());
-        }
-        return false;
+    
+    mLogger->info("POST {} ({} {})", url, response.getStatus(), response.getReason());
+    if (str != nullptr) {
+        mLogger->info("Storing {} bytes from response.", Poco::StreamCopier::copyToString(rs, *str));
     }
+    if (cookies != nullptr) {
+        response.getCookies(*cookies);
+    }
+    return response.getStatus() == Poco::Net::HTTPResponse::HTTP_OK;
 }
 bool HttpWrapper::do_request(std::string url, std::string* str) {
-    Poco::Net::HTTPResponse response;
     Poco::URI uri(url);
     std::string path(uri.getPathAndQuery());
     if (path.empty()) {
@@ -206,26 +194,17 @@ bool HttpWrapper::do_request(std::string url, std::string* str) {
     Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
 
     Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, path, Poco::Net::HTTPMessage::HTTP_1_1);
+    Poco::Net::HTTPResponse response;
     if (!session_cookie.empty()) {
         request.setCookies(HttpWrapper::cookie);
     }
     session.sendRequest(request);
-    std::istream &rs = session.receiveResponse(response);
-    if (response.getStatus() == Poco::Net::HTTPResponse::HTTP_OK) {
-        mLogger->info("GET {} (200 OK)", url);
-        if (str != nullptr) {
-            Poco::StreamCopier::copyToString(rs, *str);
-            mLogger->info("Storing {} bytes from response.", str->length());
-        }
-        return true;
-    } else {
-        mLogger->info("GET {} ({} {})", url, response.getStatus(), response.getReason());
-        if (str != nullptr) {
-            Poco::StreamCopier::copyToString(rs, *str);
-            mLogger->info("Storing {} bytes from response.", str->length());
-        }
-        return false;
+    std::istream& rs = session.receiveResponse(response);
+    mLogger->info("GET {} ({} {})", url, response.getStatus(), response.getReason());
+    if (str != nullptr) {
+        mLogger->info("Storing {} bytes from response.", Poco::StreamCopier::copyToString(rs, *str));
     }
+    return response.getStatus() == Poco::Net::HTTPResponse::HTTP_OK;
 }
 bool HttpWrapper::login() {
     mLogger->info("Attempting to log in...");
@@ -234,17 +213,16 @@ bool HttpWrapper::login() {
         if (envfile.is_open()) {
             // Read the email and password from a .env file...
             std::getline(envfile, HttpWrapper::email);
-            size_t pos = 0;
-            pos = HttpWrapper::email.find('=');
-            HttpWrapper::email = HttpWrapper::email.substr(pos + 1);
+            size_t emailPos = HttpWrapper::email.find("email=");
+            HttpWrapper::email = HttpWrapper::email.substr(emailPos + 6);
             std::getline(envfile, HttpWrapper::password);
-            pos = HttpWrapper::password.find('=');
-            HttpWrapper::password = HttpWrapper::password.substr(pos + 1);
+            size_t passwordPos = HttpWrapper::password.find("password=");
+            HttpWrapper::password = HttpWrapper::password.substr(passwordPos + 9);
             // Attempt to connect to the server. Since we don't need to copy the output,
             // We pass a nullptr for the output. TODO: Get support for HTTP HEADERS verb.
             if (HttpWrapper::get_game_version(HttpWrapper::online_version)) {
                 mLogger->info("Successfully connected to server!");
-                std::string args("arguments={\"email\":\"" + email + "\",\"password\":\"" + password + "\",\"only_login\":true}&method=signup_or_login");
+                std::string args = fmt::format("arguments={{\"email\":\"{}\",\"password\":\"{}\",\"only_login\":true}}&method=signup_or_login", email, password);
                 std::vector<Poco::Net::HTTPCookie> cookies;
                 // Again, we don't *really* care about the output the server sends us...
                 // We just want the cookies.
@@ -254,8 +232,7 @@ bool HttpWrapper::login() {
                         if (_cookie.getName() == "auth") {
                             HttpWrapper::session_cookie = _cookie.getValue();
                             HttpWrapper::cookie.set("auth", session_cookie);
-                            size_t pos = 0;
-                            pos = session_cookie.find('-');
+                            size_t pos = session_cookie.find('-');
                             HttpWrapper::userID = HttpWrapper::session_cookie.substr(0, pos);
                             HttpWrapper::auth = HttpWrapper::session_cookie.substr(pos + 1, HttpWrapper::session_cookie.length());
                             mLogger->info("Logged in!");
@@ -318,16 +295,13 @@ bool HttpWrapper::get_characters_and_servers() {
         return false;
     }
 }
-bool HttpWrapper::process_services(nlohmann::json& service_jsons) {
+bool HttpWrapper::process_services(const nlohmann::json& service_jsons) {
     try {
         mLogger->info("Processing services...");
         if (service_jsons.is_array()) {
-            HttpWrapper::services.resize(service_jsons.size());
-            for (size_t i = 0; i < service_jsons.size(); i++) {
-                const nlohmann::json& service_json = service_jsons[i];
-                HttpWrapper::Service& service = HttpWrapper::services[i];
-                service.name = service_json.at("name").get<std::string>();
-                service.enabled = service_json.at("enabled").get<bool>();
+            HttpWrapper::services.reserve(service_jsons.size());
+            for (const nlohmann::json& service_json : service_jsons) {
+                HttpWrapper::services.emplace_back(service_json["name"].get<std::string>(), service_json["enabled"].get<bool>());   
             }
         } else {
             mLogger->error("Services array was not an array! Aborting.");
@@ -341,40 +315,18 @@ bool HttpWrapper::process_services(nlohmann::json& service_jsons) {
         throw;
     }
 }
-bool HttpWrapper::process_characters(nlohmann::json& char_jsons) {
+bool HttpWrapper::process_characters(const nlohmann::json& char_jsons) {
     try {
         mLogger->info("Processing characters...");
         if (char_jsons.is_array()) {
-            HttpWrapper::characters.resize(char_jsons.size());
-            for (unsigned int i = 0; i < char_jsons.size(); i++) {
-                const nlohmann::json& character_json = char_jsons[i];
-                Character& character = HttpWrapper::characters[i];
-                character.name = character_json.at("name").get<std::string>();
-                if (character_json.at("id").is_number()) {
-                    character.id = character_json.at("id").get<long>();
-                } else {
-                    character.id = std::stol(character_json.at("id").get<std::string>());
-                }
-                if (character_json.contains("script")) {
-                    character.script = character_json.at("script").get<std::string>();
-                } else {
-                    character.script = "Default";
-                }
-                character.klass = ClassEnum::getClassEnum(character_json.at("type").get<std::string>());
-                if (character_json.contains("enabled")) {
-                    character.enabled = character_json.at("enabled").get<bool>();
-                } else {
-                    character.enabled = false;
-                }
-                if (character_json.contains("server")) {
-                    character.server = character_json.at("server").get<std::string>();
-                } else {
-                    character.server = "US I";
-                }
+            HttpWrapper::NAME_MACROS.reserve(18 * char_jsons.size() + 1);
+            HttpWrapper::characters.reserve(char_jsons.size());
+            for (size_t i = 0; i < char_jsons.size(); i++) {
+                Character& character = HttpWrapper::characters.emplace_back(char_jsons[i]);
                 HttpWrapper::NAME_TO_NUMBER.emplace(character.name, i);
-                std::string UPPER_NAME = character.name;
-                std::transform(character.name.begin(), character.name.end(), UPPER_NAME.begin(), ::toupper);
-                HttpWrapper::NAME_MACROS += fmt::format("-D{}={} ", UPPER_NAME, i);
+                std::string macro_section = fmt::format("-D{}={} ", character.name, i);
+                std::transform(character.name.begin(), character.name.end(), macro_section.begin() + 2, ::toupper);
+                HttpWrapper::NAME_MACROS += macro_section;
             }
         } else {
             mLogger->error("Characters array was not an array! Aborting.");
@@ -394,12 +346,10 @@ bool HttpWrapper::get_servers() {
         nlohmann::json servers = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
         if (servers.is_array()) {
-            // document.GetArray()
-            servers = servers[0]["servers"].get<nlohmann::basic_json<>>();
-            return HttpWrapper::process_servers(servers);
+            return HttpWrapper::process_servers(servers[0]["servers"]);
         } else {
-            mLogger->warn("Server did not send us an array... trying root object instead.");
-            return HttpWrapper::process_servers(servers);
+            mLogger->warn("Server did not send us an array response! Aborting.");
+            return false;
         }
         return true;
     } else {
@@ -407,19 +357,13 @@ bool HttpWrapper::get_servers() {
         return false;
     }
 }
-bool HttpWrapper::process_servers(nlohmann::json &servers_json) {
+
+bool HttpWrapper::process_servers(const nlohmann::json& servers_json) {
     try {
         if (servers_json.is_array()) {
-            HttpWrapper::servers.resize(servers_json.size());
+            HttpWrapper::servers.reserve(servers_json.size());
             for (size_t i = 0; i < servers_json.size(); i++) {
-                const nlohmann::json& server_json = servers_json[i];
-                Server& server = HttpWrapper::servers[i];
-                server.identifier = server_json.at("name").get<std::string>();
-                server.region = server_json.at("region").get<std::string>();
-                server.port = server_json.at("port").get<int>();
-                server.ip = server_json.at("addr").get<std::string>();
-                server.url = fmt::format("{}:{}", server.ip, server.port);
-                server.fullName = fmt::format("{} {}", server.region, server.identifier);
+                HttpWrapper::servers.emplace_back(servers_json[i]);
             }
         } else {
             mLogger->error("Servers array was not an array! Aborting.");
@@ -432,46 +376,29 @@ bool HttpWrapper::process_servers(nlohmann::json &servers_json) {
         throw;
     }
 }
-void from_json(const nlohmann::json& j, Character& value) {
-    if (j.contains("name")) {
-        value.name = j.at("name").get<std::string>();
+
+void from_json(const nlohmann::json& character_json, Character& character) {
+    character.name = character_json.at("name").get<std::string>();
+    if (character_json.at("id").is_number()) {
+        character.id = character_json["id"].get<long>();
     } else {
-        fmt::print("Character missing name.\n");
-        exit(0);
+        character.id = std::stol(character_json["id"].get<std::string>());
     }
-    if (j.contains("id")) {
-		value.id = j.at("id").get<long>();
-	} else {
-		fmt::print("Character missing ID.\n");
-        exit(0);
-	}
-	if (j.contains("script")) {
-		value.script = j.at("script").get<std::string>();
-	} else {
-		fmt::print("Character missing script.\n");
-        exit(0);
-	}
-	if (j.contains("type")) {
-		value.klass = ClassEnum::getClassEnum(j.at("type").get<std::string>());
-	} else {
-		fmt::print("Character missing class type.\n");
-        exit(0);
-	}
-	if (j.contains("enabled")) {
-		value.enabled = j.at("enabled").get<bool>();
-	} else {
-		fmt::print("Character missing enabled state.\n");
-        exit(0);
-	}
-	if (j.contains("server")) {
-		value.server = j.at("server").get<std::string>();
-    } else {
-        fmt::print("Character missing server.\n");
-        exit(0);
-    }
+    character.script = character_json.value("script", "Default");
+    character.enabled = character_json.value("enabled", false);
+    character.server = character_json.value("server", "US I");
+    character.klass = ClassEnum::getClassEnum(character_json.value("type", "unkown"));
 }
 
-bool HttpWrapper::api_method(std::string method, std::string args, std::string* str) {
-    std::string args_string = "arguments=" + args + "&method=" + method;
-    return HttpWrapper::do_post("https://adventure.land/api/" + method, args_string, str);
+void from_json(const nlohmann::json& server_json, Server& server) {
+    server.identifier = server_json.at("name").get<std::string>();
+    server.region = server_json.at("region").get<std::string>();
+    server.port = server_json.at("port").get<int>();
+    server.ip = server_json.at("addr").get<std::string>();
+    server.url = fmt::format("{}:{}", server.ip, server.port);
+    server.fullName = fmt::format("{} {}", server.region, server.identifier);
+}
+
+bool HttpWrapper::api_method(const std::string& method, const std::string& args, std::string* str) {
+    return HttpWrapper::do_post(fmt::format("https://adventure.land/api/{}", method), fmt::format("arguments={}&method={}", args, method), str);
 }

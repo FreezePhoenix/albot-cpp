@@ -72,7 +72,7 @@ class SocketWrapper {
 		void dispatchEvent(std::string eventName, const nlohmann::json &event);
 		void messageReceiver(const ix::WebSocketMessagePtr &message);
 		void initializeSystem();
-		void login(CharacterGameInfo* info);
+		void login(const CharacterGameInfo& info);
 
 		/**
 		 * Cleans up input to avoid type bugs introduced by the backend.

@@ -11,10 +11,10 @@ class Bot {
 	protected:
 		std::shared_ptr<spdlog::logger> mLogger;
 	public:
-		Bot(void *id);
+		Bot(const CharacterGameInfo& id);
 		nlohmann::json data;
 		nlohmann::json party;
-		CharacterGameInfo *info;
+		const CharacterGameInfo& info;
 		std::string name;
 		size_t id;
 		void log(std::string str);

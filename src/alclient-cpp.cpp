@@ -26,7 +26,7 @@ void ALClient::get_servers() {
     }
 }
 
-BotSkeleton* ALClient::start_character(CharacterGameInfo* info) {
+BotSkeleton* ALClient::start_character(const CharacterGameInfo& info) {
     BotSkeleton* bot = new BotSkeleton(info);
     bot->start();
     sleep(5000);

@@ -18,7 +18,7 @@ SocketWrapper::SocketWrapper(std::string characterId, std::string fullUrl, Bot& 
     // In order to faciliate for websocket connection, a special URL needs to be used.
     // By adding this, the connection can be established as a websocket connection.
     // A real socket.io client likely uses this or something similar internally
-    this->mLogger = spdlog::stdout_color_mt<spdlog::async_factory>(player.info->character->name + ":SocketWrapper");
+    this->mLogger = spdlog::stdout_color_mt<spdlog::async_factory>(player.info.character->name + ":SocketWrapper");
     fullUrl += "/socket.io/?EIO=4&transport=websocket";
     if (fullUrl.find("wss://") == std::string::npos) {
         this->webSocket.setUrl("wss://" + fullUrl);
@@ -110,7 +110,7 @@ void SocketWrapper::initializeSystem() {
                     return;
                 }
                 if (monster.find("hp") == monster.end()) {
-                	monster["hp"] = this->player.info->G->getData()["monsters"][std::string(monster["mtype"])]["hp"];
+                	monster["hp"] = this->player.info.G->getData()["monsters"][std::string(monster["mtype"])]["hp"];
                     if (monster.find("max_hp") == monster.end()) monster["max_hp"] = monster["hp"];
                 }
                 if (this->updatedEntities.find(id) == updatedEntities.end())
@@ -224,9 +224,9 @@ void SocketWrapper::initializeSystem() {
     });
 }
 
-void SocketWrapper::login(CharacterGameInfo* info) {
-    std::string& auth = info->auth;
-    std::string& userId = info->userId;
+void SocketWrapper::login(const CharacterGameInfo& info) {
+    const std::string& auth = info.auth;
+    const std::string& userId = info.userId;
 
     emit("auth", {{"user", userId},
                   {"character", characterId},

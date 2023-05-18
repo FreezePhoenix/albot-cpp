@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef ALBOT_GAMEINFO_HPP_
 #define ALBOT_GAMEINFO_HPP_
 
@@ -6,6 +8,7 @@
 #endif
 
 #include "albot/HttpWrapper.hpp"
+#include <future>
 #include "albot/ServiceInterface.hpp"
 
 struct Message {

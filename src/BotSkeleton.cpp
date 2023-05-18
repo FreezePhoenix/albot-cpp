@@ -9,9 +9,9 @@
 #include "albot/MovementMath.hpp"
 #include "albot/Utils/ParsingUtils.hpp"
 
-BotSkeleton::BotSkeleton(CharacterGameInfo *id): Bot(id), wrapper(std::to_string(info->character->id), this->info->server->url, *this), loop() {
-    this->name = info->character->name;
-    this->id = info->character->id;
+BotSkeleton::BotSkeleton(const CharacterGameInfo& id): Bot(id), wrapper(std::to_string(info.character->id), this->info.server->url, *this), loop() {
+    this->name = info.character->name;
+    this->id = info.character->id;
     loop.setInterval([this](const uvw::TimerEvent&, uvw::TimerHandle&) {
         this->processInternals();
     }, 1000.0 / 60.0); 
@@ -78,7 +78,7 @@ void BotSkeleton::processInternals() {
 
             if (entity.find("speed") == entity.end() && entity["type"] == "monster") {
                 std::string type = entity["mtype"];
-                entity["speed"] = this->info->G->getData()["monsters"][type]["speed"].get<double>();
+                entity["speed"] = this->info.G->getData()["monsters"][type]["speed"].get<double>();
             }
             if (!getOrElse(entity, "rip", false) && !getOrElse(entity, "dead", false) &&
                 getOrElse(entity, "moving", false)) {

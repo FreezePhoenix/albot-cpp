@@ -4,8 +4,8 @@ std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_
 namespace ALBot {
 	std::map<std::string, ServiceInfo<void, void>> SERVICE_HANDLERS = std::map<std::string, ServiceInfo<void, void>>();
 	std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS = std::map<std::string, CharacterGameInfo>();
-	std::vector<std::thread*> CHARACTER_THREADS = std::vector<std::thread*>();
-	std::vector<std::thread*> SERVICE_THREADS = std::vector<std::thread*>();
+	std::vector<std::thread> CHARACTER_THREADS = std::vector<std::thread>();
+	std::vector<std::thread> SERVICE_THREADS = std::vector<std::thread>();
 
 	void clean_code() {
 		system("rm CODE/*.so");
@@ -80,6 +80,7 @@ namespace ALBot {
 		}
 		
 		info.G = &HttpWrapper::data;
+		
 		info.child_handler = init(&info);
 		if (info.destructor == nullptr) {
 			mLogger->warn("Service {} did not register a destructor! This will cause a memory leak when it exits!", service.name);
@@ -103,7 +104,7 @@ namespace ALBot {
 			mLogger->error("Cannot open library: {}", dlerror());
 		}
 		// load the symbol
-		typedef void* (*init_t)(CharacterGameInfo*);
+		typedef void (*init_t)(CharacterGameInfo&);
 		// reset errors
 		dlerror();
 		init_t init = (init_t)dlsym(handle, "init");
@@ -116,12 +117,10 @@ namespace ALBot {
 			mLogger->flush();
 			dlclose(handle);
 		}
-		std::thread* bot_thread = new std::thread(init, &info);
-		
 		if (info.destructor == nullptr) {
 			mLogger->warn("Character {} did not register a destructor! This will cause a memory leak when it exits!", character.name);
 		}
-		CHARACTER_THREADS.push_back(bot_thread);
+		CHARACTER_THREADS.emplace_back(init, std::ref(info));
 	}
 
 	std::map<std::string, ServiceInfo<void, void>>* get_service_handlers() {
@@ -209,13 +208,13 @@ namespace ALBot {
 			}
 		}
 		for (size_t i = 0; i < SERVICE_THREADS.size(); i++) {
-			SERVICE_THREADS[i]->join();
+			SERVICE_THREADS[i].join();
 		}
 		for (size_t character : to_run) {
 			start_character(character);
 		}
 		for (size_t i = 0; i < CHARACTER_THREADS.size(); i++) {
-			CHARACTER_THREADS[i]->join();
+			CHARACTER_THREADS[i].join();
 		}
 		if (merchants_found == 0 && fighters_found == 0) {
 			mLogger->warn("No characters started.");

@@ -1,37 +1,32 @@
 #include "albot/MapProcessing/MapProcessing.hpp"
-#include <iostream>
 
 namespace MapProcessing {
-    std::shared_ptr<MapInfo> parse_map(nlohmann::json& json) {
+    std::shared_ptr<MapInfo> parse_map(const nlohmann::json& json) {
 
         // Create a new info smart pointer.
         std::shared_ptr<MapInfo> info = std::shared_ptr<MapInfo>(new MapInfo());
 
         // Grab references to the x_lines and y_lines json.
-        nlohmann::json& x_lines = json["x_lines"];
-        nlohmann::json& y_lines = json["y_lines"];
+        const nlohmann::json& x_lines = json["x_lines"];
+        const nlohmann::json& y_lines = json["y_lines"];
 
         // If they're both arrays
         if (x_lines.is_array() && y_lines.is_array()) {
-            int min_x = json["min_x"].get<int>();
-            int min_y = json["min_y"].get<int>();
-            int max_x = json["max_x"].get<int>();
-            int max_y = json["max_y"].get<int>();
             // Reserve enough memory for the x_lines
-            info->x_lines.reserve(x_lines.size() + 2);
+            info->x_lines.reserve(x_lines.size());
             // info->x_lines.emplace_back(min_x, min_y, max_y);
             // info->x_lines.emplace_back(max_x, min_y, max_y);
             // Iterate over all of the x_lines json
             for (const nlohmann::json& line : x_lines) {
                 // Push each x_line into the info's array for x_lines
-                 AxisLineSegment _line = line.get<AxisLineSegment>();
+                AxisLineSegment _line = line.get<AxisLineSegment>();
                 if (_line.range_end != _line.range_start) {
-                    info->x_lines.push_back(_line);
+                    info->x_lines.emplace_back(_line);
                 }
             }
             
             // Reserve enough memory for the y_lines
-            info->y_lines.reserve(y_lines.size() + 2);
+            info->y_lines.reserve(y_lines.size());
             // info->y_lines.emplace_back(min_y, min_x, max_x);
             // info->y_lines.emplace_back(max_y, min_x, max_x);
             // Iterate over all of the y_lines json
@@ -39,7 +34,7 @@ namespace MapProcessing {
                 // Push each y_line into the info's array for y_lines
                 AxisLineSegment _line = line.get<AxisLineSegment>();
                 if (_line.range_end != _line.range_start) {
-                    info->y_lines.push_back(_line);
+                    info->y_lines.emplace_back(_line);
                 }
             }
         }
@@ -73,13 +68,13 @@ namespace MapProcessing {
             // Iterate over the Y ranges, in a controlled manner.
             for (size_t i = 0, size = ys.size(); i < size; i++) {
                 // Get the first Y range.
-                std::pair<short, short>& first = ys.at(i);
+                std::pair<short, short>& first = ys[i];
                 const short a = first.first;
                 short b = first.second;
                 // Iterate over them again, in a controlled manner.    
                 for (size_t j = i + 1; j < size; j++) {
                     // Get the second Y range.
-                    const std::pair<short, short>& second = ys.at(j);
+                    const std::pair<short, short>& second = ys[j];
                     const short c = second.first,
                                 d = second.second;
                     // If the two lines overlap
@@ -111,11 +106,11 @@ namespace MapProcessing {
                 return std::min(first.first, first.second) < std::min(second.first, second.second);
             });
             for (size_t i = 0, size = xs.size(); i < size; i++) {
-                const std::pair<short, short>& first = xs.at(i);
+                const std::pair<short, short>& first = xs[i];
                 const short a = first.first;
                       short b = first.second;
                 for(size_t j = i + 1; j < size; j++) {
-                    const std::pair<short, short>& second = xs.at(j);
+                    const std::pair<short, short>& second = xs[j];
                     const short c = second.first,
                                 d = second.second;
                     if (b > c && b < d) {
@@ -132,8 +127,8 @@ namespace MapProcessing {
         j = nlohmann::json::array({value.axis, value.range_start, value.range_end});
     }
     void from_json(const nlohmann::json& j, AxisLineSegment& value) {
-        j.at(0).get_to<short>(value.axis);
-        j.at(1).get_to<short>(value.range_start);
-        j.at(2).get_to<short>(value.range_end);
+        j[0].get_to<short>(value.axis);
+        j[1].get_to<short>(value.range_start);
+        j[2].get_to<short>(value.range_end);
     }
 }

@@ -28,17 +28,18 @@ RESULT invoke_service(const std::string& name, ARGUMENTS* arguments) {
 
 class BotImpl : public Bot {
 	public:
+		std::promise<std::thread*> loop_thread = std::promise<std::thread*>();
 		LoopHelper loop;
 		Types::TimePoint last;
 		std::shared_ptr<SocketWrapper> wrapper;
 		bool running = true;
 		std::thread uvThread;
 		std::shared_ptr<spdlog::logger> mLogger;
-		BotImpl(void* id) : Bot(id), loop() {
-			this->wrapper = std::shared_ptr<SocketWrapper>(new SocketWrapper(std::to_string(info->character->id), this->info->server->url, *this));
-			this->mLogger = spdlog::stdout_color_mt(this->info->character->name + ":BotImpl");
-			this->name = info->character->name;
-			this->id = info->character->id;
+		BotImpl(const CharacterGameInfo& id) : Bot(id), loop() {
+			this->wrapper = std::shared_ptr<SocketWrapper>(new SocketWrapper(std::to_string(info.character->id), this->info.server->url, *this));
+			this->mLogger = spdlog::stdout_color_mt(this->info.character->name + ":BotImpl");
+			this->name = info.character->name;
+			this->id = info.character->id;
 			loop.setInterval([this](const uvw::TimerEvent&, uvw::TimerHandle&) {
 				this->processInternals();
 			}, 1000.0 / 60.0);
@@ -47,6 +48,10 @@ class BotImpl : public Bot {
 					mLogger->info("{} has {} hp", id, entity.at("hp").get<int>());
 				}
 			}, 1000.0);
+			loop.setTimeout([this](const uvw::TimerEvent&, uvw::TimerHandle&) {
+				this->stop();
+				this->running = false;
+			}, 5000);
 		};
 		void processInternals() {
 			if (last == epoch) last = Types::Clock::now();
@@ -107,7 +112,7 @@ class BotImpl : public Bot {
 
 					if (entity.find("speed") == entity.end() && entity["type"] == "monster") {
 						std::string type = entity["mtype"];
-						entity["speed"] = this->info->G->getData()["monsters"][type]["speed"].get<double>();
+						entity["speed"] = this->info.G->getData()["monsters"][type]["speed"].get<double>();
 					}
 					if (!getOrElse(entity, "rip", false) && !getOrElse(entity, "dead", false) &&
 						getOrElse(entity, "moving", false)) {
@@ -149,6 +154,7 @@ class BotImpl : public Bot {
 			// Say hello!
 			this->wrapper->emit("say", { {"message", "Hello Adventure Land, this is C++!"} });
 			this->startUVThread();
+			loop_thread.set_value(&uvThread);
 		}
 		void start() {
 			wrapper->connect();
@@ -169,21 +175,16 @@ void ipc_handler(Message* message) {
 }
 
 void cleanup() {
+	BotInstance->log("DESTRUCTING");
 	delete BotInstance;
 }
 
-extern "C" void* init(CharacterGameInfo* info) {
-	info->child_handler = &ipc_handler;
-	info->destructor = cleanup;
+extern "C" void init(CharacterGameInfo& info) {
+	info.child_handler = &ipc_handler;
+	info.destructor = cleanup;
 	BotInstance = new BotImpl(info);
 	BotInstance->log("Class: " + ClassEnum::getClassStringInt(CHARACTER_CLASS));
 	BotInstance->log("Logging in... ");
-	// BotInstance->start();
-	auto path = ALBot::invoke_service<PathfindArguments, PathfindArguments::PathResult>("Pathfinding", PathfindArguments{ PathfindArguments::Point{0, 0}, PathfindArguments::Point{-968, -163 }, "main", "main" });
-	for (PathfindArguments::Point point : path->path) {
-		BotInstance->log(std::to_string(point.x) + "," + std::to_string(point.y));
-	}
-	BotInstance->log("Length: " + std::to_string(path->path.size()));
-	std::this_thread::sleep_for(std::chrono::seconds(5));
-	return BotInstance;
+	BotInstance->start();
+	BotInstance->loop_thread.get_future().get()->join();
 }
