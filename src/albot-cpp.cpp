@@ -127,16 +127,21 @@ namespace ALBot {
 		return &ALBot::SERVICE_HANDLERS;
 	}
 	void login() {
-
-		if (!HttpWrapper::login()) {
-			exit(1);
-		}
+		bool servicesOnly = false;
 		nlohmann::json config = nlohmann::json::object();
 		if (!HttpWrapper::get_config(config)) {
 			exit(1);
 		}
+		if (config["servicesOnly"].get<bool>()) {
+			mLogger->info("Running in services only mode! No connection to the internet will be made, game data will not be updated.");
+			servicesOnly = true;
+		}
+		if (!servicesOnly && !HttpWrapper::login()) {
+			exit(1);
+		}
 
-		if (!config["fetch"].is_null() && config["fetch"].get<bool>()) {
+
+		if (!servicesOnly && !config["fetch"].is_null() && config["fetch"].get<bool>()) {
 			if (!HttpWrapper::get_characters()) {
 				exit(1);
 			} else {
@@ -166,11 +171,11 @@ namespace ALBot {
 			}
 		}
 
-		if (!HttpWrapper::process_characters(config["characters"])) {
+		if (!servicesOnly && !HttpWrapper::process_characters(config["characters"])) {
 			exit(1);
 		}
 
-		if (!HttpWrapper::get_servers()) {
+		if (!servicesOnly && !HttpWrapper::get_servers()) {
 
 		}
 		HttpWrapper::get_game_data();
@@ -209,6 +214,9 @@ namespace ALBot {
 		}
 		for (size_t i = 0; i < SERVICE_THREADS.size(); i++) {
 			SERVICE_THREADS[i].join();
+		}
+		if (servicesOnly) {
+			return;
 		}
 		for (size_t character : to_run) {
 			start_character(character);

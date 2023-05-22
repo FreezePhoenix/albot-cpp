@@ -14,6 +14,7 @@
 #include "albot/HttpWrapper.hpp"
 
 std::string HttpWrapper::NAME_MACROS = "";
+nlohmann::json* HttpWrapper::config = nullptr;
 std::shared_ptr<spdlog::logger> HttpWrapper::mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("HttpWrapper");
 GameData HttpWrapper::data = GameData();
 int HttpWrapper::online_version = 0;
@@ -93,7 +94,7 @@ bool HttpWrapper::get_game_data() {
     int current_version = HttpWrapper::online_version;
     int cached_version = 0;
     if (get_cached_game_version(cached_version)) {
-        if (cached_version == current_version) {
+        if (cached_version == current_version || config->at("servicesOnly").get<bool>()) {
             std::ifstream cached_file("data.json");
             if (cached_file.fail() || !cached_file.is_open()) {
                 mLogger->warn("Local cache invalid. Fetching.");
@@ -149,6 +150,7 @@ bool HttpWrapper::get_config(nlohmann::json& config) {
             mLogger->warn("No services detected.");
             config["services"] = nlohmann::json::array();
         }
+        HttpWrapper::config = &config;
         mLogger->info("Config reading success!");
         return true;
     } else {
