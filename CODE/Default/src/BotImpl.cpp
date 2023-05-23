@@ -152,7 +152,7 @@ class BotImpl : public Bot {
 		void onConnect() {
 			this->log("Connected!?!");
 			// Say hello!
-			this->wrapper->emit("say", { {"message", "Hello Adventure Land, this is C++!"} });
+			// this->wrapper->emit("say", { {"message", "UwU drippy"} });
 			this->startUVThread();
 			loop_thread.set_value(&uvThread);
 		}
@@ -183,7 +183,7 @@ extern "C" void init(CharacterGameInfo& info) {
 	info.child_handler = &ipc_handler;
 	info.destructor = cleanup;
 	BotInstance = new BotImpl(info);
-	auto path = ALBot::invoke_service<PathfindArguments, PathfindArguments::PathResult*>("Pathfinding", PathfindArguments{ PathfindArguments::Point{0, 0}, PathfindArguments::Point{-968, -163 }, "main", "main" });
+	auto path = ALBot::invoke_service<PathfindArguments, PathfindArguments::PathResult*>("Pathfinding", PathfindArguments{ PathfindArguments::Point{ 778,-506}, PathfindArguments::Point{ -700,906 }, "main", "main" });
 	std::cout << path->path.size() << std::endl;
 	for (PathfindArguments::Point point : path->path) {
 		BotInstance->log(std::to_string(point.x) + "," + std::to_string(point.y));
