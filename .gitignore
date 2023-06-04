@@ -30,7 +30,7 @@
 *.app
 albot-cpp
 Makefile
-
+**/callgrind.out.*
 # secrets
 **/.env
 **/out

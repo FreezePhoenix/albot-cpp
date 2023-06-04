@@ -63,6 +63,9 @@ class GameData {
 		const nlohmann::json& operator[](const std::string& key) const {
 			return data->operator[](key);
 		}
+		bool contains(const std::string& key) const {
+			return data->contains(key);
+		}
 		const nlohmann::json& at(const std::string& key) const {
 			return data->at(key);
 		}
