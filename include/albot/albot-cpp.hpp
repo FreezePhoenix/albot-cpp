@@ -18,6 +18,7 @@
 #include "albot/GameInfo.hpp"
 
 namespace ALBot {
+	extern std::vector<void*> DLHANDLES;
 	extern std::map<std::string, ServiceInfo<void, void>> SERVICE_HANDLERS;
 	extern std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS;
 	extern std::vector<std::thread> CHARACTER_THREADS;
@@ -38,7 +39,7 @@ namespace ALBot {
 
 	template<typename ARGUMENTS, typename RESULT>
 	RESULT invoke_service(const std::string& name, const ARGUMENTS& message) {
-		std::future<RESULT> result = std::async<typename ServiceInfo<ARGUMENTS, RESULT>::HANDLER, const ARGUMENTS&>(get_service_handler<ARGUMENTS, RESULT>(name), message);
+		auto result = std::async<typename ServiceInfo<ARGUMENTS, RESULT>::HANDLER, const ARGUMENTS&>(get_service_handler<ARGUMENTS, RESULT>(name), message);
 		result.wait();
 		return result.get();
 	}

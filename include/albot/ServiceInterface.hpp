@@ -10,6 +10,7 @@
 
 #include "albot/Enums/ClassEnum.hpp"
 #include <string>
+#include <variant>
 
 class MutableGameData {
 	private:
@@ -106,7 +107,21 @@ class ServiceInfo {
 template<typename RETURN>
 class ServiceInfo<void, RETURN> {
 	public:
-		typedef RETURN (*HANDLER)();
+		typedef RETURN (*HANDLER)(void);
+		HANDLER child_handler = nullptr;
+		GameData* G;
+		void (*destructor)() = nullptr;
+		~ServiceInfo() {
+			if (destructor != nullptr) {
+				destructor();
+			}
+		}
+};
+
+template<>
+class ServiceInfo<void, void> {
+	public:
+		typedef void (*HANDLER)(void);
 		HANDLER child_handler = nullptr;
 		GameData* G;
 		void (*destructor)() = nullptr;

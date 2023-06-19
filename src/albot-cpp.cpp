@@ -2,6 +2,7 @@
 
 std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("ALBotC++");
 namespace ALBot {
+	std::vector<void*> DLHANDLES = std::vector<void*>();
 	std::map<std::string, ServiceInfo<void, void>> SERVICE_HANDLERS = std::map<std::string, ServiceInfo<void, void>>();
 	std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS = std::map<std::string, CharacterGameInfo>();
 	std::vector<std::thread> CHARACTER_THREADS = std::vector<std::thread>();
@@ -66,24 +67,27 @@ namespace ALBot {
 		void* handle = dlopen(file.c_str(), RTLD_LAZY);
 		if (!handle) {
 			mLogger->error("Cannot open library: {}", dlerror());
-		}
+		} else {
 
-		typedef ServiceInfo<void, void>::HANDLER(*init_t) (ServiceInfo<void, void>*);
-		dlerror();
-		init_t init = (init_t)dlsym(handle, "init");
+			typedef ServiceInfo<void, void>::HANDLER(*init_t) (ServiceInfo<void, void>*);
+			dlerror();
+			init_t init = (init_t)dlsym(handle, "init");
 
-		const char* dlsym_error = dlerror();
+			const char* dlsym_error = dlerror();
 
-		if (dlsym_error) {
-			mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
-			dlclose(handle);
-		}
-		
-		info.G = &HttpWrapper::data;
-		
-		info.child_handler = init(&info);
-		if (info.destructor == nullptr) {
-			mLogger->warn("Service {} did not register a destructor! This will cause a memory leak when it exits!", service.name);
+			if (dlsym_error) {
+				mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
+				dlclose(handle);
+			}
+
+			info.G = &HttpWrapper::data;
+
+			info.child_handler = init(&info);
+			if (info.destructor == nullptr) {
+				mLogger->warn("Service {} did not register a destructor! This will cause a memory leak when it exits!", service.name);
+			}
+			
+			DLHANDLES.push_back(handle);
 		}
 	}
 
@@ -102,25 +106,27 @@ namespace ALBot {
 		void* handle = dlopen(file.c_str(), RTLD_LAZY);
 		if (!handle) {
 			mLogger->error("Cannot open library: {}", dlerror());
-		}
-		// load the symbol
-		typedef void (*init_t)(CharacterGameInfo&);
-		// reset errors
-		dlerror();
-		init_t init = (init_t)dlsym(handle, "init");
+		} else {
+			// load the symbol
+			typedef void (*init_t)(CharacterGameInfo&);
+			// reset errors
+			dlerror();
+			init_t init = (init_t)dlsym(handle, "init");
 
-		const char* dlsym_error = dlerror();
+			const char* dlsym_error = dlerror();
 
-		if (dlsym_error) {
-			fmt::print("Cannot load symbol 'init': {}\n", dlsym_error);
-			mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
-			mLogger->flush();
-			dlclose(handle);
+			if (dlsym_error) {
+				fmt::print("Cannot load symbol 'init': {}\n", dlsym_error);
+				mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
+				mLogger->flush();
+				dlclose(handle);
+			}
+			if (info.destructor == nullptr) {
+				mLogger->warn("Character {} did not register a destructor! This will cause a memory leak when it exits!", character.name);
+			}
+			DLHANDLES.push_back(handle);
+			CHARACTER_THREADS.emplace_back(init, std::ref(info));
 		}
-		if (info.destructor == nullptr) {
-			mLogger->warn("Character {} did not register a destructor! This will cause a memory leak when it exits!", character.name);
-		}
-		CHARACTER_THREADS.emplace_back(init, std::ref(info));
 	}
 
 	std::map<std::string, ServiceInfo<void, void>>* get_service_handlers() {
@@ -226,6 +232,9 @@ namespace ALBot {
 		}
 		if (merchants_found == 0 && fighters_found == 0) {
 			mLogger->warn("No characters started.");
+		}
+		for (size_t i = 0; i < DLHANDLES.size(); i++) {
+			dlclose(DLHANDLES[i]);
 		}
 	}
 }

@@ -183,9 +183,8 @@ extern "C" void init(CharacterGameInfo& info) {
 	info.child_handler = &ipc_handler;
 	info.destructor = cleanup;
 	BotInstance = new BotImpl(info);
-	auto path = ALBot::invoke_service<PathfindArguments, PathfindArguments::PathResult*>("Pathfinding", PathfindArguments{ PathfindArguments::Point{ 778,-506}, PathfindArguments::Point{ -700,906 }, "main", "main" });
-	std::cout << path->path.size() << std::endl;
-	for (PathfindArguments::Point point : path->path) {
+	auto path = ALBot::invoke_service<PathfindArguments, PathfindArguments::MapPathResult>("Pathfinding", PathfindArguments{ PathfindArguments::Point{ 778,-506}, PathfindArguments::Point{ -700,906 }, "main", "main" });
+	for (PathfindArguments::Point point : path.path) {
 		BotInstance->log(std::to_string(point.x) + "," + std::to_string(point.y));
 	}
 	BotInstance->log("Class: " + ClassEnum::getClassStringInt(CHARACTER_CLASS));

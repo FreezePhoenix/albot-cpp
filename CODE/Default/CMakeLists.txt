@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NAME_DEFINITIONS}")
 set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
 
-
+add_subdirectory(../../lib/TriangleManipulator ./build/TriangleManipulator EXCLUDE_FROM_ALL)
 add_subdirectory(../../lib/spdlog ./build/spdlog EXCLUDE_FROM_ALL)
 
 if(NOT DEFINED CHARACTER_NAME_STRING)
@@ -23,7 +23,7 @@ add_library(spdlog_HEADERS ALIAS spdlog_header_only)
 get_filename_component(prjName "${CMAKE_SOURCE_DIR}_${CHARACTER_NAME_STRING}" NAME_WLE)
 
 add_library(${prjName}_HEADERS INTERFACE)
-target_include_directories(${prjName}_HEADERS INTERFACE . ../../include ../../ ../../lib/uvw/src ../../lib/libuv/include)
+target_include_directories(${prjName}_HEADERS INTERFACE . ../../include ../../ ../../lib/uvw/src ../../lib/libuv/include ../../lib/TriangleManipulator/include)
 
 add_library ("${prjName}" SHARED
   "src/BotImpl.cpp"
@@ -32,7 +32,7 @@ add_library ("${prjName}" SHARED
 target_compile_definitions("${prjName}" PUBLIC "CHARACTER_NAME=${CHARACTER_NAME}" "CHARACTER_CLASS=0${CHARACTER_CLASS}")
 # TODO: Add tests and install targets if needed.
 target_link_directories(${prjName} PUBLIC ../../ ../../lib/IXWebSocket ../../lib/libuv)
-target_link_libraries(${prjName} PUBLIC ${prjName}_HEADERS spdlog_HEADERS Bot ixwebsocket uv)
+target_link_libraries(${prjName} PUBLIC ${prjName}_HEADERS spdlog_HEADERS Bot ixwebsocket uv TriangleManipulator_HEADERS)
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
   set_property(TARGET "${prjName}" PROPERTY COMPILE_OPTIONS "-pthread")
