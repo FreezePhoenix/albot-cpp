@@ -1,9 +1,10 @@
 ﻿#include "albot/albot-cpp.hpp"
+#include "albot/HttpWrapper.hpp"
 
-std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("ALBotC++");
+std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt("ALBotC++");
 namespace ALBot {
 	std::vector<void*> DLHANDLES = std::vector<void*>();
-	std::map<std::string, ServiceInfo<void, void>> SERVICE_HANDLERS = std::map<std::string, ServiceInfo<void, void>>();
+	std::map<std::string, ServiceInfo> SERVICE_HANDLERS = std::map<std::string, ServiceInfo>();
 	std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS = std::map<std::string, CharacterGameInfo>();
 	std::vector<std::thread> CHARACTER_THREADS = std::vector<std::thread>();
 	std::vector<std::thread> SERVICE_THREADS = std::vector<std::thread>();
@@ -32,8 +33,8 @@ namespace ALBot {
 
 	void build_service_code(const std::string& name) {
 		std::string FOLDER = fmt::format("SERVICES/{}", name);
-		std::string CMAKE = fmt::format("cmake -DSERVICE_NAME_STRING={} -S {}/. -B {}/. {}", name, FOLDER, FOLDER, NULL_PIPE_OUT);
-		std::string MAKE = fmt::format("make --quiet -C {}/. -j8 {}", FOLDER, NULL_PIPE_OUT);
+		std::string CMAKE = fmt::format("cmake -DSERVICE_NAME_STRING={} -S {}/. -B {}/.", name, FOLDER, FOLDER);
+		std::string MAKE = fmt::format("make --quiet -C {}/. -j8", FOLDER);
 		std::string CP = fmt::format("cp {}/lib{}.so SERVICES/{}.so {}", FOLDER, name, name, NULL_PIPE_OUT);
 		mLogger->info("Running CMake on: SERVICES/{}", name);
 		system(CMAKE.c_str());
@@ -44,24 +45,47 @@ namespace ALBot {
 		mLogger->info("Finished.");
 	}
 
-	void build_character_code(const std::string& name, const std::string& char_name, ClassEnum::CLASS klass) {
+	void build_code(const std::string& name, const std::vector<std::string> names, const std::vector<ClassEnum::CLASS>& classes) {
 		std::string FOLDER = "CODE/" + name;
-		std::string CMAKE = "cmake -DNAME_DEFINITIONS=\"" + HttpWrapper::NAME_MACROS + "\" -DCHARACTER_NAME_STRING=" + char_name + " -DCHARACTER_NAME=" + std::to_string(HttpWrapper::NAME_TO_NUMBER[char_name]) + " -DCHARACTER_CLASS=" + std::to_string(klass) + " -S " + FOLDER + "/. -B " + FOLDER + "/." + NULL_PIPE_OUT;
-		std::string MAKE = "make --quiet -C " + FOLDER + "/. -j8" + NULL_PIPE_OUT;
-		std::string CP = "cp " + FOLDER + "/lib" + name + "_" + char_name + ".so CODE/" + char_name + ".so" + NULL_PIPE_OUT;
-		mLogger->info("Running CMake on: CODE/{} with character name {}", name, char_name);
+		std::string pretty_names = "";
+		std::string char_names = "";
+		std::string char_name_ints = "";
+		for (size_t i = 0; i < names.size(); i++) {
+			pretty_names += names[i];
+			char_names += names[i];
+			char_name_ints += std::to_string(HttpWrapper::NAME_TO_NUMBER[names[i]]);
+			if (i < names.size() - 1) {
+				pretty_names += ", ";
+				char_names += "\\;";
+				char_name_ints += "\\;";
+				
+			}
+		}
+		std::string char_klasses = "";
+		for (size_t i = 0; i < classes.size(); i++) {
+			char_klasses += std::to_string(classes[i]);
+			if (i < classes.size() - 1) {
+				char_klasses += "\\;";
+			}
+		}
+		std::string CMAKE = fmt::format("cmake -DCMAKE_BUILD_TYPE=Debug -DNAME_DEFINITIONS=\"{}\" -DCHARACTER_NAME_STRING={} -DCHARACTER_NAME={} -DCHARACTER_CLASS={} -S {}/. -B {}/.", HttpWrapper::NAME_MACROS, char_names, char_name_ints, char_klasses, FOLDER, FOLDER);
+		std::string MAKE = fmt::format("make --quiet -C {}/. -j8", FOLDER);
+		mLogger->info("Running CMake on: CODE/{} with character names {}", name, pretty_names);
 		system(CMAKE.c_str());
 		mLogger->info("Finished. Compiling...");
 		system(MAKE.c_str());
 		mLogger->info("Finished. Copying...");
-		system(CP.c_str());
+		for (const std::string& char_name : names) {
+			std::string CP = fmt::format("cp {}/lib{}_{}.so CODE/{}.so {}", FOLDER, name, char_name, char_name, NULL_PIPE_OUT);
+			system(CP.c_str());
+		}
 		mLogger->info("Finished.");
 	}
 
 	void start_service(int index) {
 		HttpWrapper::Service& service = HttpWrapper::services[index];
 		
-		ServiceInfo<void, void>& info = SERVICE_HANDLERS[service.name];
+		ServiceInfo& info = SERVICE_HANDLERS[service.name];
 		build_service_code(service.name);
 		std::string file = fmt::format("SERVICES/{}.so", service.name);
 		void* handle = dlopen(file.c_str(), RTLD_LAZY);
@@ -69,7 +93,7 @@ namespace ALBot {
 			mLogger->error("Cannot open library: {}", dlerror());
 		} else {
 
-			typedef ServiceInfo<void, void>::HANDLER(*init_t) (ServiceInfo<void, void>*);
+			typedef void(*init_t)(ServiceInfo&);
 			dlerror();
 			init_t init = (init_t)dlsym(handle, "init");
 
@@ -81,19 +105,20 @@ namespace ALBot {
 			}
 
 			info.G = &HttpWrapper::data;
-
-			info.child_handler = init(&info);
-			if (info.destructor == nullptr) {
+			init(info);
+			if (!info.has_destructor()) {
 				mLogger->warn("Service {} did not register a destructor! This will cause a memory leak when it exits!", service.name);
 			}
-			
+			if (!info.has_handler()) {
+				mLogger->warn("Service {} did not register a handler! This prevents other processes from communicating with it!", service.name);
+			}
+
 			DLHANDLES.push_back(handle);
 		}
 	}
 
 	void start_character(int index) {
 		Character& character = HttpWrapper::characters[index];
-		build_character_code(character.script, character.name, character.klass);
 		CharacterGameInfo& info = CHARACTER_HANDLERS[character.name];
 		int server_index = HttpWrapper::find_server(character.server);
 		info.server = HttpWrapper::servers.data() + server_index;
@@ -120,16 +145,26 @@ namespace ALBot {
 				mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
 				mLogger->flush();
 				dlclose(handle);
+				return;
+			}
+			CHARACTER_THREADS.emplace_back(init, std::ref(info));
+			DLHANDLES.push_back(handle);
+			{
+				std::unique_lock lk(info.m);
+				info.cv.wait(lk, [&]() {
+					return info.STATUS == CharacterGameInfo::INITIALIZED;
+				});
 			}
 			if (info.destructor == nullptr) {
 				mLogger->warn("Character {} did not register a destructor! This will cause a memory leak when it exits!", character.name);
 			}
-			DLHANDLES.push_back(handle);
-			CHARACTER_THREADS.emplace_back(init, std::ref(info));
+			if (info.child_handler == nullptr) {
+				mLogger->warn("Character {} did not register a handler! This prevents other processes from communicating with it!", character.name);
+			}
 		}
 	}
 
-	std::map<std::string, ServiceInfo<void, void>>* get_service_handlers() {
+	std::map<std::string, ServiceInfo>* get_service_handlers() {
 		return &ALBot::SERVICE_HANDLERS;
 	}
 	void login() {
@@ -222,10 +257,25 @@ namespace ALBot {
 			SERVICE_THREADS[i].join();
 		}
 		if (servicesOnly) {
+			SERVICE_HANDLERS.clear();
 			return;
 		}
-		for (size_t character : to_run) {
-			start_character(character);
+
+		std::map<std::string, std::pair<std::vector<std::string>,std::vector<ClassEnum::CLASS>>> script_to_characters;
+
+		for (size_t character_id : to_run) {
+			Character& character = HttpWrapper::characters[character_id];
+			auto& entry = script_to_characters[character.script];
+			entry.first.push_back(character.name);
+			entry.second.push_back(character.klass);
+		}
+
+		for (const auto& entry : script_to_characters) {
+			build_code(entry.first, entry.second.first, entry.second.second);
+		}
+		
+		for (size_t character_id : to_run) {
+			start_character(character_id);
 		}
 		for (size_t i = 0; i < CHARACTER_THREADS.size(); i++) {
 			CHARACTER_THREADS[i].join();
@@ -233,6 +283,8 @@ namespace ALBot {
 		if (merchants_found == 0 && fighters_found == 0) {
 			mLogger->warn("No characters started.");
 		}
+		CHARACTER_HANDLERS.clear();
+		SERVICE_HANDLERS.clear();
 		for (size_t i = 0; i < DLHANDLES.size(); i++) {
 			dlclose(DLHANDLES[i]);
 		}

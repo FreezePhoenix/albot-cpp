@@ -12,7 +12,7 @@
 BotSkeleton::BotSkeleton(const CharacterGameInfo& id): Bot(id), wrapper(std::to_string(info.character->id), this->info.server->url, *this), loop() {
     this->name = info.character->name;
     this->id = info.character->id;
-    loop.setInterval([this](const uvw::TimerEvent&, uvw::TimerHandle&) {
+    loop.setInterval([this]() {
         this->processInternals();
     }, 1000.0 / 60.0); 
 }
@@ -23,7 +23,7 @@ void BotSkeleton::processInternals() {
     if (last == epoch) last = Types::Clock::now();
 
     std::map<std::string, nlohmann::json> updateEntities;
-
+    nlohmann::json updatedPlayer;
     {
         // The intermediate map is used to reduce the amount of data races.
         // Now, it's only between the socket, and this function. This specific
@@ -37,7 +37,9 @@ void BotSkeleton::processInternals() {
         // no loops will be accessing the entities map. 
         // Thread safety first, kids!
         std::lock_guard<std::mutex> lock(this->wrapper.getEntityGuard());
-        updateEntities = wrapper.getUpdateEntities();   
+        updateEntities = wrapper.getUpdateEntities();
+        updatedPlayer = updatedData;
+        updatedData.clear();
         wrapper.getUpdateEntities().clear();
     }
 
@@ -49,6 +51,7 @@ void BotSkeleton::processInternals() {
             entities[id].update(data);
         } else entities[id] = data;
     }
+    data.update(updatedPlayer);
 
     auto now = Types::Clock::now();
 
@@ -58,7 +61,6 @@ void BotSkeleton::processInternals() {
 
     while (cDelta > 0) {
         if (this->isAlive() && this->isMoving()) {
-
             nlohmann::json& entity = this->getRawJson();
             if (entity.find("ref_speed") == entity.end() ||
                 (entity.find("ref_speed") != entity.end() && entity["ref_speed"] != entity["speed"])) {
@@ -76,28 +78,28 @@ void BotSkeleton::processInternals() {
 
         for (auto& [id, entity] : wrapper.getEntities()) {
 
-            if (entity.find("speed") == entity.end() && entity["type"] == "monster") {
-                std::string type = entity["mtype"];
-                entity["speed"] = this->info.G->getData()["monsters"][type]["speed"].get<double>();
-            }
-            if (!getOrElse(entity, "rip", false) && !getOrElse(entity, "dead", false) &&
-                getOrElse(entity, "moving", false)) {
-                if (entity.value("move_num", 0l) != entity.value("engaged_move", 0l) ||
-                    (entity.find("ref_speed") != entity.end() && entity["ref_speed"] != entity["speed"])) {
-                    entity["ref_speed"] = entity["speed"];
-                    entity["from_x"] = entity["x"];
-                    entity["from_y"] = entity["y"];
-                    std::pair<int, int> vxy = MovementMath::calculateVelocity(entity);
-                    entity["vx"] = vxy.first;
-                    entity["vy"] = vxy.second;
+					if (entity.find("speed") == entity.end() && entity["type"] == "monster") {
+						std::string type = entity["mtype"];
+						entity["speed"] = this->info.G->getData()["monsters"][type]["speed"].get<double>();
+					}
+					if (!getOrElse(entity, "rip", false) && !getOrElse(entity, "dead", false) &&
+						getOrElse(entity, "moving", false)) {
+						if (entity.value("move_num", 0l) != entity.value("engaged_move", 0l) ||
+							(entity.find("ref_speed") != entity.end() && entity["ref_speed"] != entity["speed"])) {
+							entity["ref_speed"] = entity["speed"];
+							entity["from_x"] = entity["x"];
+							entity["from_y"] = entity["y"];
+							std::pair<int, int> vxy = MovementMath::calculateVelocity(entity);
+							entity["vx"] = vxy.first;
+							entity["vy"] = vxy.second;
 
-                    entity["engaged_move"] = entity["move_num"];
-                }
+							entity["engaged_move"] = entity["move_num"];
+						}
 
-                MovementMath::moveEntity(entity, cDelta);
-                MovementMath::stopLogic(entity); // Processes whether we're done moving or not.
-            }
-        }
+						MovementMath::moveEntity(entity, cDelta);
+						MovementMath::stopLogic(entity); // Processes whether we're done moving or not.
+					}
+				}
 
         cDelta -= 50;
     }

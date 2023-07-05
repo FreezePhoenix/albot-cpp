@@ -1,13 +1,20 @@
-# CMakeList.txt : CMake project for Assembly, include source and define
-# project specific logic here.
-#
-set(POSITION_INDEPENDENT_CODE ON)
 cmake_minimum_required (VERSION 3.5)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3 -Wall -g")
+project ("albot-cpp")
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -g")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
+
 
 set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
 
+
+set(SPDLOG_FMT_EXTERNAL_HO ON)
 add_subdirectory(lib/libuv EXCLUDE_FROM_ALL)
 add_subdirectory(lib/spdlog lib/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(lib/IXWebSocket lib/IXWebSocket EXCLUDE_FROM_ALL)
@@ -15,7 +22,7 @@ add_library(spdlog_HEADERS ALIAS spdlog_header_only)
 set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(lib/TriangleManipulator lib/TriangleManipulator EXCLUDE_FROM_ALL)
 
-project ("albot-cpp")
+
 # Add source to this project's executable.
 
 add_library(IXWebSocket_HEADERS INTERFACE)
@@ -60,9 +67,9 @@ target_include_directories(Bot PUBLIC "./lib/IXWebSocket")
 
 target_link_libraries(MapProcessing PUBLIC MapProcessing_HEADERS)
 target_link_libraries(HttpWrapper PUBLIC MapProcessing_HEADERS spdlog_HEADERS PocoFoundation PocoNet PocoNetSSL)
-target_link_libraries(albot-cpp PUBLIC ${CMAKE_DL_LIBS} albot_HEADERS HttpWrapper MapProcessing TriangleManipulator ixwebsocket uv spdlog fmt Bot)
+target_link_libraries(albot-cpp PUBLIC ${CMAKE_DL_LIBS} albot_HEADERS HttpWrapper MapProcessing TriangleManipulator uv spdlog fmt Bot)
 target_link_libraries(alclient-cpp PUBLIC ${CMAKE_DL_LIBS} albot_HEADERS HttpWrapper spdlog_HEADERS Bot uvw uv)
-target_link_libraries(Bot PUBLIC albot_HEADERS Bot_HEADERS spdlog_HEADERS)
+target_link_libraries(Bot PUBLIC albot_HEADERS Bot_HEADERS spdlog_HEADERS ixwebsocket)
 set_property(TARGET albot-cpp PROPERTY LINK_OPTIONS "-Wl,--export-dynamic")
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)

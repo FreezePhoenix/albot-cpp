@@ -15,7 +15,7 @@
 
 std::string HttpWrapper::NAME_MACROS = "";
 nlohmann::json* HttpWrapper::config = nullptr;
-std::shared_ptr<spdlog::logger> HttpWrapper::mLogger = spdlog::stdout_color_mt<spdlog::async_factory>("HttpWrapper");
+std::shared_ptr<spdlog::logger> HttpWrapper::mLogger = spdlog::stdout_color_mt("HttpWrapper");
 GameData HttpWrapper::data = GameData();
 int HttpWrapper::online_version = 0;
 std::string HttpWrapper::password = "";
@@ -45,7 +45,7 @@ bool HttpWrapper::get_cached_game_version(int& version) {
 bool HttpWrapper::get_game_version(int &version) {
     std::string raw_data;
     mLogger->info("Fetching current game version...");
-    if(HttpWrapper::do_request("https://adventure.land/", &raw_data)) {
+    if(HttpWrapper::do_request("https://adventure.land/", raw_data)) {
         std::regex version_regex = std::regex("data\\.js\\?v=([0-9]+)\"", std::regex::extended);
         std::smatch sm;
         if(std::regex_search(raw_data, sm, version_regex)) {
@@ -72,7 +72,7 @@ void HttpWrapper::handleGameJson(MutableGameData& data) {
         if (value["x_lines"].is_array()) {
             std::shared_ptr<MapProcessing::MapInfo> info = MapProcessing::parse_map(value);
             info->name = key;
-            nlohmann::json& spawns = data["maps"][key]["spawns"];
+            const nlohmann::json& spawns = data["maps"][key]["spawns"];
             info->spawns = std::vector<std::pair<double, double>>();
             info->spawns.reserve(spawns.size());
             for (const nlohmann::json& entry : spawns) {
@@ -90,7 +90,6 @@ void HttpWrapper::handleGameJson(MutableGameData& data) {
 
 bool HttpWrapper::get_game_data() {
     mLogger->info("Getting game data.");
-    std::string raw_data;
     int current_version = HttpWrapper::online_version;
     int cached_version = 0;
     if (get_cached_game_version(cached_version)) {
@@ -108,10 +107,8 @@ bool HttpWrapper::get_game_data() {
         } else {
             mLogger->info("Cached game version does not match! Need: {} Have: {}. Fetching.", current_version, cached_version);
         }
-        fmt::v8::ostream version_cache = fmt::output_file("GAME_VERSION");
-        version_cache.print("{}", current_version);
-        version_cache.close();
-        if (HttpWrapper::do_request("https://adventure.land/data.js", &raw_data)) {
+        std::string raw_data;
+        if (HttpWrapper::do_request("https://adventure.land/data.js", raw_data)) {
             mLogger->info("Data fetched! Trimming...");
             raw_data = raw_data.substr(6, raw_data.length() - 8);
             mLogger->info("Data trimmed! Parsing...");
@@ -122,6 +119,9 @@ bool HttpWrapper::get_game_data() {
             fmt::v8::ostream cache_file = fmt::output_file("data.json");
             cache_file.print("{}", data.getData().dump());
             cache_file.close();
+            fmt::v8::ostream version_cache = fmt::output_file("GAME_VERSION");
+            version_cache.print("{}", current_version);
+            version_cache.close();
             mLogger->info("Cache written!");
             return true;
         } else {
@@ -158,7 +158,7 @@ bool HttpWrapper::get_config(nlohmann::json& config) {
         return false;
     }
 }
-bool HttpWrapper::do_post(std::string url, std::string args, std::string *str, std::vector<Poco::Net::HTTPCookie> *cookies) {
+bool HttpWrapper::do_post(const std::string& url, const std::string& args, std::optional<std::reference_wrapper<std::string>> out, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies) {
     Poco::URI uri(url);
     std::string path(uri.getPathAndQuery());
     if (path.empty()) {
@@ -179,15 +179,41 @@ bool HttpWrapper::do_post(std::string url, std::string args, std::string *str, s
     std::istream &rs = session.receiveResponse(response);
     
     mLogger->info("POST {} ({} {})", url, response.getStatus(), response.getReason());
-    if (str != nullptr) {
-        mLogger->info("Storing {} bytes from response.", Poco::StreamCopier::copyToString(rs, *str));
+    if (out.has_value()) {
+        mLogger->info("Storing {} bytes from response.", Poco::StreamCopier::copyToString(rs, out.value().get()));
     }
-    if (cookies != nullptr) {
-        response.getCookies(*cookies);
+    if (cookies.has_value()) {
+        response.getCookies(cookies.value().get());
     }
     return response.getStatus() == Poco::Net::HTTPResponse::HTTP_OK;
 }
-bool HttpWrapper::do_request(std::string url, std::string* str) {
+bool HttpWrapper::do_head(const std::string& url, const std::string& args, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies) {
+    Poco::URI uri(url);
+    std::string path(uri.getPathAndQuery());
+    if (path.empty()) {
+        path = "/";
+    }
+    
+    Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
+
+    Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_HEAD, path, Poco::Net::HTTPMessage::HTTP_1_1);
+    Poco::Net::HTTPResponse response;
+
+    request.setContentLength(args.size());
+    if (!session_cookie.empty()) {
+        request.setCookies(HttpWrapper::cookie);
+    }
+    session.sendRequest(request) << args;
+
+    session.receiveResponse(response);
+    
+    mLogger->info("HEAD {} ({} {})", url, response.getStatus(), response.getReason());
+    if (cookies.has_value()) {
+        response.getCookies(cookies.value().get());
+    }
+    return response.getStatus() == Poco::Net::HTTPResponse::HTTP_OK;
+}
+bool HttpWrapper::do_request(const std::string& url, std::optional<std::reference_wrapper<std::string>> out) {
     Poco::URI uri(url);
     std::string path(uri.getPathAndQuery());
     if (path.empty()) {
@@ -203,8 +229,8 @@ bool HttpWrapper::do_request(std::string url, std::string* str) {
     session.sendRequest(request);
     std::istream& rs = session.receiveResponse(response);
     mLogger->info("GET {} ({} {})", url, response.getStatus(), response.getReason());
-    if (str != nullptr) {
-        mLogger->info("Storing {} bytes from response.", Poco::StreamCopier::copyToString(rs, *str));
+    if (out.has_value()) {
+        mLogger->info("Storing {} bytes from response.", Poco::StreamCopier::copyToString(rs, out.value().get()));
     }
     return response.getStatus() == Poco::Net::HTTPResponse::HTTP_OK;
 }
@@ -224,12 +250,12 @@ bool HttpWrapper::login() {
             // We pass a nullptr for the output. TODO: Get support for HTTP HEADERS verb.
             if (HttpWrapper::get_game_version(HttpWrapper::online_version)) {
                 mLogger->info("Successfully connected to server!");
-                std::string args = fmt::format("arguments={{\"email\":\"{}\",\"password\":\"{}\",\"only_login\":true}}&method=signup_or_login", email, password);
+                std::string args = fmt::format("{{\"email\":\"{}\",\"password\":\"{}\",\"only_login\":true}}", email, password);
                 std::vector<Poco::Net::HTTPCookie> cookies;
                 // Again, we don't *really* care about the output the server sends us...
                 // We just want the cookies.
-                if (HttpWrapper::do_post("https://adventure.land/api/signup_or_login", args, nullptr, &cookies)) {
-                    for (unsigned int i = 0; i < cookies.size(); i++) {
+                if (HttpWrapper::api_method("signup_or_login", args, std::nullopt, cookies)) {
+                    for (size_t i = 0; i < cookies.size(); i++) {
                         Poco::Net::HTTPCookie _cookie = cookies[i];
                         if (_cookie.getName() == "auth") {
                             HttpWrapper::session_cookie = _cookie.getValue();
@@ -261,7 +287,7 @@ bool HttpWrapper::login() {
 }
 bool HttpWrapper::get_characters() {
     std::string out;
-    if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
+    if (HttpWrapper::api_method("servers_and_characters", "{}", out)) {
         mLogger->info("Characters fetched! Processing...");
         nlohmann::json characters = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
@@ -280,7 +306,7 @@ bool HttpWrapper::get_characters() {
 }
 bool HttpWrapper::get_characters_and_servers() {
     std::string out;
-    if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
+    if (HttpWrapper::api_method("servers_and_characters", "{}", out)) {
         mLogger->info("Characters fetched!");
         nlohmann::json characters = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
@@ -326,9 +352,12 @@ bool HttpWrapper::process_characters(const nlohmann::json& char_jsons) {
             for (size_t i = 0; i < char_jsons.size(); i++) {
                 Character& character = HttpWrapper::characters.emplace_back(char_jsons[i]);
                 HttpWrapper::NAME_TO_NUMBER.emplace(character.name, i);
-                std::string macro_section = fmt::format("-D{}={} ", character.name, i);
-                std::transform(character.name.begin(), character.name.end(), macro_section.begin() + 2, ::toupper);
+                std::string macro_section = fmt::format("{}={}", character.name, i);
+                std::transform(character.name.begin(), character.name.end(), macro_section.begin(), ::toupper);
                 HttpWrapper::NAME_MACROS += macro_section;
+                if (i < char_jsons.size() - 1) {
+                    HttpWrapper::NAME_MACROS += "\\;";
+                }
             }
         } else {
             mLogger->error("Characters array was not an array! Aborting.");
@@ -343,7 +372,7 @@ bool HttpWrapper::process_characters(const nlohmann::json& char_jsons) {
 }
 bool HttpWrapper::get_servers() {
     std::string out;
-    if (HttpWrapper::api_method("servers_and_characters", "{}", &out)) {
+    if (HttpWrapper::api_method("servers_and_characters", "{}", out)) {
         mLogger->info("Servers fetched! Processing...");
         nlohmann::json servers = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
@@ -389,7 +418,7 @@ void from_json(const nlohmann::json& character_json, Character& character) {
     character.script = character_json.value("script", "Default");
     character.enabled = character_json.value("enabled", false);
     character.server = character_json.value("server", "US I");
-    character.klass = ClassEnum::getClassEnum(character_json.value("type", "unkown"));
+    character.klass = ClassEnum::getClassEnum(character_json.value("type", "unknown"));
 }
 
 void from_json(const nlohmann::json& server_json, Server& server) {
@@ -401,6 +430,6 @@ void from_json(const nlohmann::json& server_json, Server& server) {
     server.fullName = fmt::format("{} {}", server.region, server.identifier);
 }
 
-bool HttpWrapper::api_method(const std::string& method, const std::string& args, std::string* str) {
-    return HttpWrapper::do_post(fmt::format("https://adventure.land/api/{}", method), fmt::format("arguments={}&method={}", args, method), str);
+bool HttpWrapper::api_method(const std::string& method, const std::string& args, std::optional<std::reference_wrapper<std::string>> out, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies) {
+    return HttpWrapper::do_post(fmt::format("https://adventure.land/api/{}", method), fmt::format("arguments={}&method={}", args, method), out, cookies);
 }

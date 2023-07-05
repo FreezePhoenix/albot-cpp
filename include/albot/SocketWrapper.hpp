@@ -5,14 +5,16 @@
 
 #include <ixwebsocket/IXWebSocket.h>
 
-#ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #include <nlohmann/json.hpp>
-#endif
+
 #include <vector>
+
 #include <mutex>
 #include <map>
 #include <chrono>
+
 #include "albot/Bot.hpp"
+
 #include <functional>
 
 
@@ -67,7 +69,7 @@ class SocketWrapper {
 		std::mutex entityGuard;
 
 		std::map<std::string, nlohmann::json> chests;
-
+		void handle_entities(const nlohmann::json&);
 		void triggerInternalEvents(std::string eventName, const nlohmann::json &event);
 		void dispatchEvent(std::string eventName, const nlohmann::json &event);
 		void messageReceiver(const ix::WebSocketMessagePtr &message);
@@ -113,11 +115,12 @@ class SocketWrapper {
 		 */
 		void connect();
 		void reconnect();
+		void reconnect(int seconds);
 
 		void close();
 		void sendPing();
 		void emit(std::string event, const nlohmann::json &json = { });
-
+		void emitRawJsonString(std::string event, std::string json = " ");
 		void onDisappear(const nlohmann::json &event);
 
 		void changeServer(Server *server);

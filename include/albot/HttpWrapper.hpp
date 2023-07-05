@@ -5,15 +5,16 @@
 
 #include <Poco/Net/HTTPCookie.h>
 
-#ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #include <nlohmann/json.hpp>
-#endif
 
 #include <spdlog/async.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include "albot/GameInfo.hpp"
 #include "albot/ServiceInterface.hpp"
+
+#include <optional>
+#include <functional>
 
 class HttpWrapper {
 	private:
@@ -68,26 +69,36 @@ class HttpWrapper {
 		bool static get_config(nlohmann::json& config);
 
 		/**
-		 * @brief Send a POST request.
+		 * @brief Send a HEAD request.
 		 * 
 		 * @param url 
 		 * @param args 
-		 * @param str String to assign a response to, optionally.
 		 * @param cookies Optional cookies.
 		 * @return true 
 		 * @return false 
 		 */
-		bool static do_post(std::string url, std::string args, std::string* str, std::vector<Poco::Net::HTTPCookie>* cookies = nullptr);
-		
+		bool static do_head(const std::string& url, const std::string& args, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies = std::nullopt);
+		/**
+		 * @brief Send a POST request.
+		 * 
+		 * @param url 
+		 * @param args 
+		 * @param out String to assign a response to, optionally.
+		 * @param cookies Optional cookies.
+		 * @return true 
+		 * @return false 
+		 */
+		bool static do_post(const std::string& url, const std::string& args, std::optional<std::reference_wrapper<std::string>> out = std::nullopt, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies = std::nullopt);
+
 		/**
 		 * @brief Send a GET request.
 		 * 
 		 * @param url 
-		 * @param str String to assign a response to, optionally.
+		 * @param out String to assign a response to, optionally.
 		 * @return true 
 		 * @return false 
 		 */
-		bool static do_request(std::string url, std::string* str = nullptr);
+		bool static do_request(const std::string& url, std::optional<std::reference_wrapper<std::string>> out = std::nullopt);
 
 		/**
 		 * @brief Login to the game.
@@ -102,7 +113,7 @@ class HttpWrapper {
 		bool static process_characters(const nlohmann::json& chars);
 		bool static get_servers();
 		bool static process_servers(const nlohmann::json &servers);
-		bool static api_method(const std::string& method, const std::string& args, std::string* str);
+		bool static api_method(const std::string& method, const std::string& args = "{}", std::optional<std::reference_wrapper<std::string>> out = std::nullopt, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies = std::nullopt);
 		void static handleGameJson(MutableGameData& json);
 
 		int static find_server(const std::string &server_name) {

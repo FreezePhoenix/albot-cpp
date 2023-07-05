@@ -19,7 +19,7 @@
 
 namespace ALBot {
 	extern std::vector<void*> DLHANDLES;
-	extern std::map<std::string, ServiceInfo<void, void>> SERVICE_HANDLERS;
+	extern std::map<std::string, ServiceInfo> SERVICE_HANDLERS;
 	extern std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS;
 	extern std::vector<std::thread> CHARACTER_THREADS;
 	extern std::vector<std::thread> SERVICE_THREADS;
@@ -30,23 +30,17 @@ namespace ALBot {
 
 	extern CharacterGameInfo::HANDLER get_character_handler(const std::string& name);
 	extern void ipc_handler(Message* message);
-	
-	template<typename ARGUMENTS, typename RESULT = void>
-	ServiceInfo<ARGUMENTS, RESULT>::HANDLER get_service_handler(const std::string& name) {
-		return (typename ServiceInfo<ARGUMENTS, RESULT>::HANDLER) SERVICE_HANDLERS[name].child_handler;
-	}
 
-
-	template<typename ARGUMENTS, typename RESULT>
-	RESULT invoke_service(const std::string& name, const ARGUMENTS& message) {
-		auto result = std::async<typename ServiceInfo<ARGUMENTS, RESULT>::HANDLER, const ARGUMENTS&>(get_service_handler<ARGUMENTS, RESULT>(name), message);
+	template<typename R = void, typename... Args>
+	R invoke_service(const std::string& name, Args&&... args) {
+		auto result = std::async<std::function<R(Args...)>, Args...>(SERVICE_HANDLERS[name].get_handler<R, Args...>(), std::forward<Args>(args)...);
 		result.wait();
 		return result.get();
 	}
 
 	extern void build_service_code(const std::string& name);
 
-	extern void build_character_code(const std::string& name, const std::string& char_name, ClassEnum::CLASS klass);
+	extern void build_code(const std::string& name, const std::vector<std::string> names, const std::vector<ClassEnum::CLASS>& classes);
 
 	extern void start_service(int index);
 

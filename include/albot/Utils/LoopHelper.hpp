@@ -2,10 +2,8 @@
 #define ALBOT_LOOP_HELPER_HPP_
 
 // Credits to LunarWatcher aka Zoe for this class.
-#include "uvw/async.hpp"
-#include "uvw/loop.hpp"
-#include "uvw/timer.hpp"
-#include "uvw/work.hpp"
+#include "uvw.hpp"
+#include <mutex>
 
 #include <functional>
 #include <memory>
@@ -14,7 +12,8 @@ class LoopHelper {
 	private:
 		std::shared_ptr<uvw::Loop> loop;
 	public:
-		using TimerCallback = std::function<void(const uvw::TimerEvent&, uvw::TimerHandle&)>;
+		using RawTimerCallback = std::function<void(const uvw::TimerEvent&, uvw::TimerHandle&)>;
+		using TimerCallback = std::function<void()>;
 		using Millis = std::chrono::milliseconds;
 
 		LoopHelper() : loop(uvw::Loop::create()){ }
@@ -27,7 +26,7 @@ class LoopHelper {
 		 *
 		 * @returns          A timer pointer you can access. Note that using it isn't required.
 		 */
-		std::shared_ptr<uvw::TimerHandle> setTimeout(TimerCallback callback, int timeout) {
+		std::shared_ptr<uvw::TimerHandle> setRawTimeout(RawTimerCallback callback, int timeout) {
 			auto timer = loop->resource<uvw::TimerHandle>();
 			timer->on<uvw::TimerEvent>([callback](const uvw::TimerEvent& event, auto& handle) {
 				callback(event, handle);
@@ -36,6 +35,16 @@ class LoopHelper {
 			});
 			timer->start(Millis(timeout), Millis(0));
 			return timer;
+		}
+
+		void setTimeout(TimerCallback callback, int timeout) {
+			auto timer = loop->resource<uvw::TimerHandle>();
+			timer->on<uvw::TimerEvent>([callback](const uvw::TimerEvent& event, auto& handle) {
+				callback();
+				handle.close();
+				handle.stop();
+			});
+			timer->start(Millis(timeout), Millis(0));
 		}
 
 		/**
@@ -47,7 +56,7 @@ class LoopHelper {
 		 * @returns           A timer pointer you can access. Note that using it isn't required. The handle is also passed
 		 *                    to the callback as the second parameter
 		 */
-		std::shared_ptr<uvw::TimerHandle> setInterval(TimerCallback callback, int interval, int timeout = -1) {
+		std::shared_ptr<uvw::TimerHandle> setRawInterval(RawTimerCallback callback, int interval, int timeout = -1) {
 			if (timeout < 0) timeout = interval;
 
 			auto timer = loop->resource<uvw::TimerHandle>();
@@ -55,6 +64,13 @@ class LoopHelper {
 			timer->start(Millis(timeout), Millis(interval));
 
 			return timer;
+		}
+		void setInterval(TimerCallback callback, int interval) {
+			auto timer = loop->resource<uvw::TimerHandle>();
+			timer->on<uvw::TimerEvent>([callback](const uvw::TimerEvent& event, auto& handle) {
+				callback();
+			});
+			timer->start(Millis(interval), Millis(interval));
 		}
 
 		/**
@@ -77,7 +93,7 @@ class LoopHelper {
 		 * Failing to use this may lead to various problems and incorrect behavior (not necessarily undefined, but I'm not
 		 * sure). For an instance, you might end up with
 		 */
-		void exec(std::function<void(const uvw::AsyncEvent& event, uvw::AsyncHandle& handle)> callback) {
+		void execRaw(std::function<void(const uvw::AsyncEvent& event, uvw::AsyncHandle& handle)> callback) {
 			auto asyncHandle = loop->resource<uvw::AsyncHandle>();
 			asyncHandle->on<uvw::AsyncEvent>([callback](const auto& evt, auto& handle) {
 				callback(evt, handle);
@@ -85,13 +101,32 @@ class LoopHelper {
 			});
 			asyncHandle->send();
 		}
+		void exec(std::function<void()> callback) {
+			auto asyncHandle = loop->resource<uvw::AsyncHandle>();
+			asyncHandle->on<uvw::AsyncEvent>([callback](const auto& evt, auto& handle) {
+				callback();
+				handle.close();
+			});
+			asyncHandle->send();
+		}
 
-		void run() { loop->run(); }
+		void run() {
+			loop->run<uvw::Loop::Mode::ONCE>();
+		}
 
 		/**
 		 * This method should only be used for extensions on uvw not defined by this class.
 		 */
-		std::shared_ptr<uvw::Loop> getLoop() { return loop; }
+		std::shared_ptr<uvw::Loop> getLoop() {
+			return loop;
+		}
+		void update() {
+			loop->update();
+		}
+		std::chrono::duration<uint64_t, std::milli> now() {
+			return loop->now();
+		}
+		
 	};
 
 #endif /* ALBOT_LOOP_HELPER_HPP_ */

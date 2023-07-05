@@ -5,7 +5,7 @@
 
 #include <string>
 
-#define CLASS_UNKOWN -1
+#define CLASS_UNKNOWN -1
 #define CLASS_WARRIOR 0
 #define CLASS_PRIEST 1
 #define CLASS_MAGE 2
@@ -16,7 +16,7 @@
 
 namespace ClassEnum {
     enum CLASS {
-        UNKOWN      = CLASS_UNKOWN,
+        UNKNOWN     = CLASS_UNKNOWN,
         WARRIOR     = CLASS_WARRIOR,
         PRIEST      = CLASS_PRIEST,
         MAGE        = CLASS_MAGE,
@@ -41,7 +41,7 @@ namespace ClassEnum {
         } else if(className == "merchant") {
             return MERCHANT;
         }
-        return UNKOWN;
+        return UNKNOWN;
     }
     inline std::string getClassString(CLASS classEnum) {
         switch(classEnum) {
@@ -60,7 +60,7 @@ namespace ClassEnum {
             case MERCHANT:
                 return "merchant";
             default:
-                return "unkown";
+                return "unknown";
         }
     }
     inline std::string getClassStringInt(int classEnum) {

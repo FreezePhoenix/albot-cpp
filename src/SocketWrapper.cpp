@@ -3,8 +3,11 @@
 #include <regex>
 #include <algorithm>
 
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/async.h>
+
 template <typename T, typename K>
-inline T getOrElse(const nlohmann::json& n, K key,  T defaultValue) {
+inline T getOrElse(const nlohmann::json& n, K key, T defaultValue) {
     if (!n.is_object()) {
         return defaultValue;
     }
@@ -14,11 +17,11 @@ inline T getOrElse(const nlohmann::json& n, K key,  T defaultValue) {
 }
 
 SocketWrapper::SocketWrapper(std::string characterId, std::string fullUrl, Bot& player)
-        : webSocket(), player(player), characterId(characterId), hasReceivedFirstEntities(false) {
+    : webSocket(), player(player), characterId(characterId), hasReceivedFirstEntities(false) {
     // In order to faciliate for websocket connection, a special URL needs to be used.
     // By adding this, the connection can be established as a websocket connection.
     // A real socket.io client likely uses this or something similar internally
-    this->mLogger = spdlog::stdout_color_mt<spdlog::async_factory>(player.info.character->name + ":SocketWrapper");
+    this->mLogger = spdlog::stdout_color_mt(player.info.character->name + ":SocketWrapper");
     fullUrl += "/socket.io/?EIO=4&transport=websocket";
     if (fullUrl.find("wss://") == std::string::npos) {
         this->webSocket.setUrl("wss://" + fullUrl);
@@ -31,7 +34,9 @@ SocketWrapper::SocketWrapper(std::string characterId, std::string fullUrl, Bot& 
 
     initializeSystem();
 }
-SocketWrapper::~SocketWrapper() { webSocket.close(); }
+SocketWrapper::~SocketWrapper() {
+    webSocket.close();
+}
 
 void SocketWrapper::sanitizeInput(nlohmann::json& entity) {
     if (entity.find("rip") != entity.end()) {
@@ -41,6 +46,60 @@ void SocketWrapper::sanitizeInput(nlohmann::json& entity) {
     }
 }
 
+void SocketWrapper::handle_entities(const nlohmann::json& event) {
+    const std::string MAP = event["map"].get<std::string>();
+    const std::string IN = event["in"].get<std::string>();
+    if (event.find("players") != event.end()) {
+        nlohmann::json players = event["players"];
+        for (auto& player : players) {
+
+            sanitizeInput(player);
+            player["in"] = IN;
+            player["map"] = MAP;
+            player["type"] = "character";
+            player["base"] = { {"h", 8}, {"v", 7}, {"vn", 2} };
+            auto id = player["id"].get<std::string>();
+
+            if (id == this->player.getUsername()) {
+                this->player.updateJson(player);
+            }
+            // Avoid data loss by updating the JSON rather than overwriting
+            if (this->updatedEntities.find(id) == updatedEntities.end())
+                this->updatedEntities[id] = player;
+            else {
+                this->updatedEntities[id].update(player);
+            }
+        }
+    }
+
+    if (event.find("monsters") != event.end()) {
+        nlohmann::json monsters = event["monsters"];
+
+        for (auto& monster : monsters) {
+            auto id = monster["id"].get<std::string>();
+
+            sanitizeInput(monster);
+            monster["in"] = IN;
+            monster["map"] = MAP;
+            monster["mtype"] = monster["type"].get<std::string>();
+            monster["type"] = "monster";
+            
+            if (monster.find("max_hp") == monster.end()) {
+                monster["max_hp"] = this->player.info.G->getData()["monsters"][std::string(monster["mtype"])]["hp"];
+            }
+            
+            if (monster.find("hp") == monster.end()) {
+                monster["hp"] = monster["max_hp"];
+            }
+
+            if (this->updatedEntities.find(id) == updatedEntities.end())
+                this->updatedEntities[id] = monster;
+            else {
+                this->updatedEntities[id].update(monster);
+            }
+        }
+    }
+}
 void SocketWrapper::initializeSystem() {
     this->webSocket.setOnMessageCallback(
         [this](const ix::WebSocketMessagePtr& message) { this->messageReceiver(message); });
@@ -48,78 +107,34 @@ void SocketWrapper::initializeSystem() {
     // Loading
 
     this->registerEventCallback("welcome", [this](const nlohmann::json&) {
-        this->emit("loaded", {{"success", 1}, {"width",1920},{"height",1080},{"scale",2}});
+        this->emit("loaded", { {"success", 1}, {"width",1920},{"height",1080},{"scale",2} });
+        this->login(this->player.info);
     });
 
     this->registerEventCallback("start", [this](const nlohmann::json& event) {
+        nlohmann::json entities = event["entities"];
         // The start event contains necessary data to populate the character
         nlohmann::json mut = event;
+
+        mut.erase("entities");
         // Used for, among other things, canMove. This contains the character bounding box
-        // I have no idea what the letters symbolize.
-        mut["base"] = {{"h", 8}, {"v", 7}, {"vn", 2}};
+        // h = horizontal, v = vertical, vn = vertical negative
+        mut["base"] = { {"h", 8}, {"v", 7}, {"vn", 2} };
+        mLogger->info("Started in map {} ", event["map"].get<std::string>());
+        std::lock_guard<std::mutex> guard(entityGuard);
+        getUpdateEntities().clear();
+        handle_entities(entities);
         this->player.updateJson(mut);
         this->player.onConnect();
     });
-
     // Loading + gameplay
     this->registerEventCallback("entities", [this](const nlohmann::json& event) {
+        std::lock_guard<std::mutex> guard(entityGuard);
         std::string type = event["type"].get<std::string>();
-        if (type == "all" && !hasReceivedFirstEntities) {
-            login(this->player.info);
-            hasReceivedFirstEntities = true;
+        if (type == "all") {
+            getUpdateEntities().clear();
         }
-
-        if (event.find("players") != event.end()) {
-            std::lock_guard<std::mutex> guard(entityGuard);
-            nlohmann::json players = event["players"];
-            for (auto& player : players) {
-
-                sanitizeInput(player);
-                player["type"] = "character";
-                player["base"] = {{"h", 8}, {"v", 7}, {"vn", 2}};
-                auto id = player["id"].get<std::string>();
-                if (id == "") {
-                    this->mLogger->error("Found empty ID? Dumping JSON: {}", event.dump());
-                    return;
-                }
-
-                if (id == this->player.getUsername()) {
-                    this->player.updateJson(player);
-                }
-                // Avoid data loss by updating the JSON rather than overwriting
-                if (this->updatedEntities.find(id) == updatedEntities.end())
-                    this->updatedEntities[id] = player;
-                else {
-                    this->updatedEntities[id].update(player);
-                }
-            }
-        }
-
-        if (event.find("monsters") != event.end()) {
-            std::lock_guard<std::mutex> guard(entityGuard);
-            nlohmann::json monsters = event["monsters"];
-
-            for (auto& monster : monsters) {
-                auto id = monster["id"].get<std::string>();
-
-                sanitizeInput(monster);
-                monster["mtype"] = monster["type"].get<std::string>();
-                monster["type"] = "monster";
-                if (id == "") {
-                    this->mLogger->error("Empty monster ID? Dumping json: {}", event.dump());
-                    return;
-                }
-                if (monster.find("hp") == monster.end()) {
-                	monster["hp"] = this->player.info.G->getData()["monsters"][std::string(monster["mtype"])]["hp"];
-                    if (monster.find("max_hp") == monster.end()) monster["max_hp"] = monster["hp"];
-                }
-                if (this->updatedEntities.find(id) == updatedEntities.end())
-                    this->updatedEntities[id] = monster;
-                else {
-                    this->updatedEntities[id].update(monster);
-                }
-            }
-        }
+        handle_entities(event);
     });
 
     // Gameplay
@@ -131,17 +146,18 @@ void SocketWrapper::initializeSystem() {
         copy["death"] = true;
         onDisappear(copy);
     });
-#define onDisappearConsumer(eventName) \
-    this->registerEventCallback(eventName, [this](const nlohmann::json& event) { onDisappear(event); });
 
-    onDisappearConsumer("disappear");
-    onDisappearConsumer("notthere");
-#undef onDisappearConsumer
+    this->registerEventCallback("disappear", [this](const nlohmann::json& event) {
+        onDisappear(event);
+    });
+    this->registerEventCallback("notthere", [this](const nlohmann::json& event) {
+        onDisappear(event);
+    });
 
     // Chests are recorded with the drop event
     this->registerEventCallback("drop", [this](const nlohmann::json& event) {
         std::lock_guard<std::mutex> guard(chestGuard);
-        chests[event["id"].get<std::string>()] = event;
+        chests.emplace(event["id"].get<std::string>(), event);
     });
     this->registerEventCallback("chest_opened", [this](const nlohmann::json& event) {
         std::lock_guard<std::mutex> guard(chestGuard);
@@ -150,28 +166,32 @@ void SocketWrapper::initializeSystem() {
     // This contains updates to the player entity. Unlike other entities (AFAIK), these aren't
     // sent using the entities event.
     this->registerEventCallback("player", [this](const nlohmann::json& event) {
+        std::lock_guard<std::mutex> guard(entityGuard);
         int cachedSpeed = player.getSpeed();
         player.updateJson(event);
         if (player.getSpeed() != cachedSpeed) {
-        	this->player.log("Should update movement speed... but...");
             if (player.isMoving()) {
-               auto vxy = MovementMath::calculateVelocity(player.getRawJson());
-               player.getRawJson()["vx"] = vxy.first;
-               player.getRawJson()["vy"] = vxy.second;
-           }
+                auto vxy = MovementMath::calculateVelocity(player.getRawJson());
+                player.getRawJson()["vx"] = vxy.first;
+                player.getRawJson()["vy"] = vxy.second;
+            }
         }
     });
     this->registerEventCallback("new_map", [this](const nlohmann::json& event) {
-        player.updateJson({{"map", event["name"].get<std::string>()},
+        std::lock_guard<std::mutex> guard(entityGuard);
+        getUpdateEntities().clear();
+        handle_entities(event["entities"]);
+        player.updateJson({ {"map", event["name"].get<std::string>()},
                 {"x", event["x"].get<int>()},
                 {"y", event["y"].get<int>()},
                 {"m", event["m"].get<int>()},
-                {"moving", false}});
+                {"moving", false} });
+        // this->deleteEntities();
     });
     this->registerEventCallback("cm", [this](const nlohmann::json& event) {
         player.onCm(event["name"].get<std::string>(), event["message"]);
     });
-    this->registerEventCallback("pm", [this](const nlohmann::json& event){
+    this->registerEventCallback("pm", [this](const nlohmann::json& event) {
         std::string owner = event["owner"].get<std::string>();
         player.onPm(owner, event["message"].get<std::string>());
     });
@@ -193,7 +213,7 @@ void SocketWrapper::initializeSystem() {
     });
     this->registerEventCallback("party_update", [this](const nlohmann::json& event) {
         this->player.log("Party updated.");
-    	player.setParty(event["party"]);
+        player.setParty(event["party"]);
     });
 
     this->registerEventCallback("game_error", [this](const nlohmann::json& event) {
@@ -202,18 +222,17 @@ void SocketWrapper::initializeSystem() {
             auto evt = event.get<std::string>();
             std::regex rgx(this->waitRegex);
             std::smatch matches;
-            if(std::regex_search(evt, matches, rgx)) {
-                int secs = std::stoi(matches[1]);
+            if (std::regex_search(evt, matches, rgx)) {
+                int secs = std::stoi(matches[1]) + 1;
                 this->mLogger->info("Reconnecting in {} seconds", secs);
-                this->reconn.create(secs);
-                sleep(secs);
-                this->connect();
-                this->reconn.reconnecting();
+                std::thread([this](int time) {
+                    std::this_thread::sleep_for(std::chrono::seconds(time));
+                    this->close();
+                    this->connect();
+                    this->reconn.reconnecting();
+                }, secs).detach();
             }
-
         }
-
-
     });
 
     this->registerEventCallback("disconnect", [this](const nlohmann::json& event) {
@@ -228,23 +247,30 @@ void SocketWrapper::login(const CharacterGameInfo& info) {
     const std::string& auth = info.auth;
     const std::string& userId = info.userId;
 
-    emit("auth", {{"user", userId},
+    emit("auth", { {"user", userId},
                   {"character", characterId},
                   {"auth", auth},
                   {"width",1920},{"height",1080},{"scale",2},
                   {"no_html", true},
-                  {"no_graphics", true} /*, {"passphrase", ""}*/});
+                  {"no_graphics", true} /*, {"passphrase", ""}*/ });
 }
 
 void SocketWrapper::emit(std::string event, const nlohmann::json& json) {
     if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
-        std::string i = "42[\"" + event + "\"," + json.dump() + "]";
-        // mLogger->info("< {}", i);
-        this->webSocket.send(i);
+        this->webSocket.send(fmt::format("42[\"{}\",{}]", event, json.dump()));
     } else {
         this->mLogger->error("{} attempting to call emit on a socket that hasn't opened yet.", this->characterId);
     }
 }
+
+void SocketWrapper::emitRawJsonString(std::string event, std::string json) {
+    if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
+        this->webSocket.send(fmt::format("42[\"{}\",{}]", event, json));
+    } else {
+        this->mLogger->error("{} attempting to call emit on a socket that hasn't opened yet.", this->characterId);
+    }
+}
+
 
 void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
     // this->mLogger->info("Received: '{}'", message->str);
@@ -309,87 +335,87 @@ void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
         else
             args = messageStr.substr(2, messageStr.length() - 2);
         switch (likelyType) {
-        case 0: {
-            dispatchEvent("connect", {});
-            this->webSocket.send("40");
-            auto data = nlohmann::json::parse(args);
-            pingInterval = data["pingInterval"].get<int>();
-            this->mLogger->info("Received connection data. Pinging required every {} ms", pingInterval);
-        } break;
-        case 1:
-            this->mLogger->info("Disconnected: {}", message->str);
-            dispatchEvent("disconnect", {});
-            break;
-        case 2:
-            dispatchEvent("ping", {});
-            break;
-        case 3:
-            dispatchEvent("pong", {});
-            break;
-        case 4: {
-            if (rawCallbacks.size() > 0) {
-                for (auto& callback : rawCallbacks) {
-                    callback(message);
-                }
-            }
-            int type = -1;
-            if (alternativeType >= 0 && alternativeType <= 9) type = alternativeType;
-            nlohmann::json json = nlohmann::json::parse(args);
-
-            if (type == -1) {
-                // Dispatch message event.
-                // Note about the socket.io standard: sending a plain text message using socket.send
-                // should send an event called message with the message as the data. The fallback
-                // exists mainly because I have no idea what I'm doing. This might never be used.
-                dispatchEvent("message", json);
-            }
-            // type = 0 for the connect packet
-            // type = 1 for the disconnect packet
-            // type = 2 for events
-            else if (type == 2) {
-                if (json.type() == nlohmann::json::value_t::array && json.size() >= 1) {
-                    auto& event = json[0];
-                    if (event.type() == nlohmann::json::value_t::string) {
-                        std::string eventName = event.get<std::string>();
-                        if (json.size() == 1) {
-                            // dispatch eventName, {}
-                            dispatchEvent(eventName, {});
-                        } else {
-                            auto data = json[1];
-                            if (eventName == "error")
-                                this->mLogger->info("Error received as a message! Dumping JSON:\n{}", json.dump(4));
-                            dispatchEvent(eventName, data);
+            case 0: {
+                    dispatchEvent("connect", {});
+                    this->webSocket.send("40");
+                    auto data = nlohmann::json::parse(args);
+                    pingInterval = data["pingInterval"].get<int>();
+                    this->mLogger->info("Received connection data. Pinging required every {} ms", pingInterval);
+                    this->mLogger->info("Ping interval changed from {} to {}", this->webSocket.getPingInterval(), pingInterval);
+                    this->webSocket.setPingInterval(pingInterval);
+                } break;
+            case 1:
+                this->mLogger->info("Disconnected: {}", message->str);
+                dispatchEvent("disconnect", {});
+                break;
+            case 2:
+                dispatchEvent("ping", {});
+                break;
+            case 3:
+                dispatchEvent("pong", {});
+                break;
+            case 4: {
+                    if (rawCallbacks.size() > 0) {
+                        for (auto& callback : rawCallbacks) {
+                            callback(message);
                         }
                     }
-                }
-            }
-            // type = 3 for ack (AFAIK, not used)F
-            // type = 4 for errors (no idea how to handle, gotta revisit that when I have data)
-            else if (type == 4) {
-                this->mLogger->error("Error received from server:\n{}", json.dump(4));
+                    int type = -1;
+                    if (alternativeType >= 0 && alternativeType <= 9) type = alternativeType;
+                    nlohmann::json json = nlohmann::json::parse(args);
 
-            }
-            // type = 5 for binary event (AFAIK, not used)
-            // type = 6 for binary ack (AFAIK, not used)
-            else if (type == 3 || type == 5 || type == 6) {
-                this->mLogger->warn("Received an event of type {}. Please report this issue here: "
-                              "https://github.com/LunarWatcher/AdventureLandCpp/issues/1 - Full websocket message: {}",
-                              type, messageStr);
-            } else {
-                this->mLogger->warn("Unknown event received: {}", messageStr);
-            }
-
-        } break;
-        case 5:
-            dispatchEvent("upgrade", {});
-            this->mLogger->info("Upgrade received: {}", messageStr);
-            // upgrade
-            break;
-        case 6:
-            dispatchEvent("noop", {});
-            this->mLogger->info("noop received: {}", messageStr);
-            // noop
-            break;
+                    if (type == -1) {
+                        // Dispatch message event.
+                        // Note about the socket.io standard: sending a plain text message using socket.send
+                        // should send an event called message with the message as the data. The fallback
+                        // exists mainly because I have no idea what I'm doing. This might never be used.
+                        dispatchEvent("message", json);
+                    }
+                    // type = 0 for the connect packet
+                    // type = 1 for the disconnect packet
+                    // type = 2 for events
+                    else if (type == 2) {
+                        if (json.type() == nlohmann::json::value_t::array && json.size() >= 1) {
+                            auto& event = json[0];
+                            if (event.type() == nlohmann::json::value_t::string) {
+                                std::string eventName = event.get<std::string>();
+                                if (json.size() == 1) {
+                                    // dispatch eventName, {}
+                                    dispatchEvent(eventName, {});
+                                } else {
+                                    auto data = json[1];
+                                    if (eventName == "error")
+                                        this->mLogger->info("Error received as a message! Dumping JSON:\n{}", json.dump(4));
+                                    dispatchEvent(eventName, data);
+                                }
+                            }
+                        }
+                    }
+                    // type = 3 for ack (AFAIK, not used)
+                    // type = 4 for errors (no idea how to handle, gotta revisit that when I have data)
+                    else if (type == 4) {
+                        this->mLogger->error("Error received from server:\n{}", json.dump(4));
+                    }
+                    // type = 5 for binary event (AFAIK, not used)
+                    // type = 6 for binary ack (AFAIK, not used)
+                    else if (type == 3 || type == 5 || type == 6) {
+                        this->mLogger->warn("Received an event of type {}. Please report this issue here: "
+                                      "https://github.com/LunarWatcher/AdventureLandCpp/issues/1 - Full websocket message: {}",
+                                      type, messageStr);
+                    } else {
+                        this->mLogger->warn("Unknown event received: {}", messageStr);
+                    }
+                } break;
+            case 5:
+                dispatchEvent("upgrade", {});
+                this->mLogger->info("Upgrade received: {}", messageStr);
+                // upgrade
+                break;
+            case 6:
+                dispatchEvent("noop", {});
+                this->mLogger->info("noop received: {}", messageStr);
+                // noop
+                break;
         }
 
     } else if (message->type == ix::WebSocketMessageType::Error) {
@@ -409,20 +435,16 @@ void SocketWrapper::receiveLocalCm(std::string from, const nlohmann::json& messa
 }
 
 void SocketWrapper::dispatchEvent(std::string eventName, const nlohmann::json& event) {
-    if (eventCallbacks.find(eventName) != eventCallbacks.end()) {
-        for (auto& callback : eventCallbacks[eventName]) {
+    auto it = eventCallbacks.find(eventName);
+    if (it != eventCallbacks.end()) {
+        for (auto& callback : it->second) {
             callback(event);
         }
     }
 }
 
 void SocketWrapper::deleteEntities() {
-    for (auto it = entities.begin(); it != entities.end();) {
-        if (getOrElse((*it).second, "dead", false) || getOrElse((*it).second, "rip", false) || (*it).second.is_null()) {
-            it = entities.erase(it);
-        } else
-            ++it;
-    }
+    // NO-OP. Unneeded.
 }
 
 void SocketWrapper::registerRawMessageCallback(std::function<void(const ix::WebSocketMessagePtr&)> callback) {
@@ -430,23 +452,13 @@ void SocketWrapper::registerRawMessageCallback(std::function<void(const ix::WebS
 }
 
 void SocketWrapper::registerEventCallback(std::string event, std::function<void(const nlohmann::json&)> callback) {
-    if (eventCallbacks.find(event) == eventCallbacks.end()) {
-        eventCallbacks[event].push_back(callback);
-    }
+    eventCallbacks[event].push_back(callback);
 }
 
 void SocketWrapper::onDisappear(const nlohmann::json& event) {
     if (entities.find(event["id"]) != entities.end()) {
-        auto entity = entities[event["id"].get<std::string>()];
-        entity["dead"] = true;
-        if (getOrElse(event, "teleport", false)) {
-            entity["tpd"] = true;
-        }
-        if (getOrElse(event, "invis", false)) {
-            entity["invis"] = true;
-        }
         std::lock_guard<std::mutex> mtx(this->entityGuard);
-        updatedEntities[event["id"].get<std::string>()].update(entity);
+        updatedEntities[event["id"].get<std::string>()]["dead"] = true;
     }
 }
 
@@ -456,11 +468,15 @@ void SocketWrapper::connect() {
 
 }
 
-void SocketWrapper::reconnect() {
+void SocketWrapper::reconnect(int seconds) {
     // Utilizes the player method to properly stop the process
     this->player.stop();
-    sleep(2);
+    std::this_thread::sleep_for(std::chrono::seconds(seconds));
     this->player.start();
+    this->reconn.reconnecting();
+}
+void SocketWrapper::reconnect() {
+    this->reconnect(2);
 }
 
 void SocketWrapper::close() {
@@ -480,4 +496,6 @@ std::map<std::string, nlohmann::json>& SocketWrapper::getUpdateEntities() {
     return updatedEntities;
 }
 
-std::map<std::string, nlohmann::json>& SocketWrapper::getChests() { return chests; }
+std::map<std::string, nlohmann::json>& SocketWrapper::getChests() {
+    return chests;
+}

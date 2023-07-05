@@ -1,15 +1,13 @@
-#include <pthread.h>
-#include <rapidjson/document.h>
-#include <rapidjson/filewritestream.h>
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/writer.h>
 #include <iostream>
 #include <string>
 #include <mutex>
 #include <condition_variable>
-#include "albot/SocketWrapper.hpp"
-#include "albot/HttpWrapper.hpp"
 #include "albot/Bot.hpp"
+
+
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/async.h>
 
 std::mutex _lock;
 std::condition_variable_any _cond;
@@ -54,7 +52,7 @@ void Bot::onConnect() {
 }
 
 void Bot::updateJson(const nlohmann::json& json) {
-    this->data.update(json);
+    this->updatedData.update(json);
 }
 
 std::string Bot::getUsername() {

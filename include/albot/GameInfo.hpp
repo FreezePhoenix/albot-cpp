@@ -3,11 +3,8 @@
 #ifndef ALBOT_GAMEINFO_HPP_
 #define ALBOT_GAMEINFO_HPP_
 
-#ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #include <nlohmann/json.hpp>
-#endif
 
-#include "albot/HttpWrapper.hpp"
 #include <future>
 #include "albot/ServiceInterface.hpp"
 
@@ -19,6 +16,12 @@ struct Message {
 };
 
 struct CharacterGameInfo {
+	std::mutex m;
+	std::condition_variable cv;
+	enum InitializationStatus {
+		UNINITIALIZED = 0,
+		INITIALIZED = 1
+	} STATUS = UNINITIALIZED;
 	typedef void (*HANDLER)(Message*);
 	HANDLER parent_handler = nullptr;
 	HANDLER child_handler = nullptr;

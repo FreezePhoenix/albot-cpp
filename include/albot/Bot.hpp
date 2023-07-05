@@ -1,6 +1,7 @@
 #ifndef ALBOT_BOT_HPP_
 #define ALBOT_BOT_HPP_
 
+#include <spdlog/logger.h>
 #include "albot/GameInfo.hpp"
 
 #define PROXY_GETTER(capName, type) type get##capName();
@@ -13,6 +14,7 @@ class Bot {
 	public:
 		Bot(const CharacterGameInfo& id);
 		nlohmann::json data;
+		nlohmann::json updatedData;
 		nlohmann::json party;
 		const CharacterGameInfo& info;
 		std::string name;
@@ -30,7 +32,8 @@ class Bot {
 		virtual void onConnect();
 		virtual ~Bot() {};
 		virtual void start() {};
-		virtual void stop() {};
+		virtual void stop() {
+		};
 		void updateJson(const nlohmann::json&);
 		std::string getUsername();
 		nlohmann::json& getRawJson();
