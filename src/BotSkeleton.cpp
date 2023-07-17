@@ -67,7 +67,7 @@ void BotSkeleton::processInternals() {
                 entity["ref_speed"] = entity["speed"];
                 entity["from_x"] = entity["x"];
                 entity["from_y"] = entity["y"];
-                std::pair<int, int> vxy = MovementMath::calculateVelocity(entity);
+                auto vxy = MovementMath::calculateVelocity(entity);
                 entity["vx"] = vxy.first;
                 entity["vy"] = vxy.second;
                 entity["engaged_move"] = entity["move_num"];
@@ -89,7 +89,7 @@ void BotSkeleton::processInternals() {
 							entity["ref_speed"] = entity["speed"];
 							entity["from_x"] = entity["x"];
 							entity["from_y"] = entity["y"];
-							std::pair<int, int> vxy = MovementMath::calculateVelocity(entity);
+							auto vxy = MovementMath::calculateVelocity(entity);
 							entity["vx"] = vxy.first;
 							entity["vy"] = vxy.second;
 

@@ -51,6 +51,10 @@ void Bot::onConnect() {
 	this->stop();
 }
 
+nlohmann::json& Bot::getUpdateJson() {
+	return this->updatedData;
+}
+
 void Bot::updateJson(const nlohmann::json& json) {
     this->updatedData.update(json);
 }

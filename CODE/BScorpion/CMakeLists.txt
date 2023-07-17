@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -g -Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 
 set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
@@ -25,7 +25,7 @@ add_library(spdlog_HEADERS ALIAS spdlog_header_only)
 get_filename_component(prjName "${CMAKE_SOURCE_DIR}" NAME_WLE)
 
 add_library(${prjName}_HEADERS INTERFACE)
-target_include_directories(${prjName}_HEADERS INTERFACE . ../../include ../../ ../../lib/uvw/src ../../lib/libuv/include)
+target_include_directories(${prjName}_HEADERS INTERFACE . ../../include ../../ ../../lib/uvw/src)
 target_link_libraries(${prjName}_HEADERS INTERFACE INTERFACE TriangleManipulator_HEADERS spdlog_HEADERS)
 
 add_library (${prjName}Targeter OBJECT
@@ -54,6 +54,6 @@ foreach(C_NAME_STRING C_NAME C_CLASS IN ZIP_LISTS CHARACTER_NAME_STRING CHARACTE
     "src/BotImpl.cpp"
   )
   target_compile_definitions(${prjName}_${C_NAME_STRING} PUBLIC ${NAME_DEFINITIONS} "CHARACTER_NAME=${C_NAME}" "CHARACTER_CLASS=0${C_CLASS}")
-  target_link_directories(${prjName}_${C_NAME_STRING} PUBLIC ../../ ../../lib/IXWebSocket ../../lib/libuv)
+  target_link_directories(${prjName}_${C_NAME_STRING} PUBLIC ../../)
   target_link_libraries(${prjName}_${C_NAME_STRING} PUBLIC ${prjName}_HEADERS ${prjName}Targeter ${prjName}Functions ${prjName}SkillHelper ${prjName}ArmorManager Bot uv)
 endforeach()

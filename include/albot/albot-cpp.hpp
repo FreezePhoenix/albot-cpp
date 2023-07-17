@@ -29,7 +29,7 @@ namespace ALBot {
 	extern void clean_code();
 
 	extern CharacterGameInfo::HANDLER get_character_handler(const std::string& name);
-	extern void ipc_handler(Message* message);
+	extern void ipc_handler(Message message);
 
 	template<typename R = void, typename... Args>
 	R invoke_service(const std::string& name, Args&&... args) {

@@ -58,10 +58,12 @@ bool SkillHelper::can_use(std::string name) {
 void SkillHelper::set_cooldown(std::string name, size_t millis) {
 	// When this is received, the result we receive is delayed by the ping, so we subtract half of the ping from the cooldown.
 	// Realistically we should be able to subtract the entire ping from the cooldown, but ping is... problematic, because it may decrease.
-	loop.setTimeout([this, name]() {
-		std::lock_guard<std::mutex> guard(skill_guard);
-		can_use_map.insert_or_assign(name, true);
-	}, millis);
+	loop.exec([this, name, millis]() {
+		loop.setTimeout([this, name]() {
+			std::lock_guard<std::mutex> guard(skill_guard);
+			can_use_map.insert_or_assign(name, true);
+		}, millis);
+	});
 }
 
 void SkillHelper::mark_used(std::string name) {

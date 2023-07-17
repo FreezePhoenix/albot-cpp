@@ -34,6 +34,7 @@ class Bot {
 		virtual void start() {};
 		virtual void stop() {
 		};
+		nlohmann::json& getUpdateJson();
 		void updateJson(const nlohmann::json&);
 		std::string getUsername();
 		nlohmann::json& getRawJson();

@@ -31,16 +31,22 @@ public:
     static void moveEntity(nlohmann::json& entity, double cDelta) {
     
         if (entity.value("moving", false) == true) {
-            entity["x"] = double(entity["x"]) + entity.value("vx", 0) * std::min(cDelta, 50.0) / 1000.0;
-            entity["y"] = double(entity["y"]) + entity.value("vy", 0) * std::min(cDelta, 50.0) / 1000.0;
+            assert(entity.contains("vx"));
+            entity["x"] = double(entity["x"]) + double(entity["vx"]) * std::min(cDelta, 50.0) / 1000.0;
+            entity["y"] = double(entity["y"]) + double(entity["vx"]) * std::min(cDelta, 50.0) / 1000.0;
         }
     }
-    static std::pair<int, int> calculateVelocity(const nlohmann::json& entity) { 
-        double ref = std::sqrt(0.0001 + std::pow(entity["going_x"].get<double>() - entity["from_x"].get<double>(), 2) +
-                             std::pow(entity["going_y"].get<double>() - entity["from_y"].get<double>(), 2)); 
-        auto speed = entity["speed"].get<double>();
-        int vx = speed * (entity["going_x"].get<double>() - entity["from_x"].get<double>()) / ref;
-        int vy = speed * (entity["going_y"].get<double>() - entity["from_y"].get<double>()) / ref;
+    static double getDouble(const nlohmann::json& value) {
+        return double(value);
+    }
+    static std::pair<double, double> calculateVelocity(const nlohmann::json& entity) {
+        
+        double ref = std::sqrt(0.0001 +
+                             std::pow(double(entity["going_x"]) - double(entity["from_x"]), 2) +
+                             std::pow(double(entity["going_y"]) - double(entity["from_y"]), 2));
+        auto speed = double(entity["speed"]);
+        double vx = speed * (double(entity["going_x"]) - double(entity["from_x"])) / ref;
+        double vy = speed * (double(entity["going_y"]) - double(entity["from_y"])) / ref;
         
         return std::make_pair(vx, vy);
     }

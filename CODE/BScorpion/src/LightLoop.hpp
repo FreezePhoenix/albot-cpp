@@ -18,7 +18,7 @@ struct LightLoop {
 	void setTimeout(std::function<void()> handler, int timeout) const {
 		wrapped_timeout(handler, timeout);
 	}
-	void exec(std::function<void()> handler) {
+	void exec(std::function<void()> handler) const {
 		wrapped_exec(handler);
 	}
 	std::chrono::duration<uint64_t, std::milli> now() const {

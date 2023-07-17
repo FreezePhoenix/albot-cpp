@@ -83,11 +83,11 @@ void SocketWrapper::handle_entities(const nlohmann::json& event) {
             monster["map"] = MAP;
             monster["mtype"] = monster["type"].get<std::string>();
             monster["type"] = "monster";
-            
+
             if (monster.find("max_hp") == monster.end()) {
                 monster["max_hp"] = this->player.info.G->getData()["monsters"][std::string(monster["mtype"])]["hp"];
             }
-            
+
             if (monster.find("hp") == monster.end()) {
                 monster["hp"] = monster["max_hp"];
             }
@@ -167,15 +167,18 @@ void SocketWrapper::initializeSystem() {
     // sent using the entities event.
     this->registerEventCallback("player", [this](const nlohmann::json& event) {
         std::lock_guard<std::mutex> guard(entityGuard);
-        int cachedSpeed = player.getSpeed();
-        player.updateJson(event);
-        if (player.getSpeed() != cachedSpeed) {
-            if (player.isMoving()) {
-                auto vxy = MovementMath::calculateVelocity(player.getRawJson());
-                player.getRawJson()["vx"] = vxy.first;
-                player.getRawJson()["vy"] = vxy.second;
+        nlohmann::json copy = event;
+        nlohmann::json& playerJson = player.getUpdateJson();
+        if (copy["moving"]) {
+            if (copy.contains("speed") && playerJson.contains("speed") && double(copy["speed"]) != double(playerJson["speed"])) {
+                copy["from_x"] = event["x"];
+                copy["from_y"] = event["y"];
+                std::pair<double, double> vxy = MovementMath::calculateVelocity(copy);
+                copy["vx"] = vxy.first;
+                copy["vy"] = vxy.second;
             }
         }
+        player.updateJson(copy);
     });
     this->registerEventCallback("new_map", [this](const nlohmann::json& event) {
         std::lock_guard<std::mutex> guard(entityGuard);
@@ -208,8 +211,9 @@ void SocketWrapper::initializeSystem() {
      * Position correction.
      */
     this->registerEventCallback("correction", [this](const nlohmann::json& event) {
-        this->mLogger->warn("Location corrected!");
-        this->mLogger->warn("{}", event.dump());
+        std::lock_guard<std::mutex> guard(entityGuard);
+        this->mLogger->warn("Location corrected: Client: ({}, {}), Server: ({}, {})", player.getX(), player.getY(), double(event["x"]), double(event["y"]));
+        player.updateJson(event);
     });
     this->registerEventCallback("party_update", [this](const nlohmann::json& event) {
         this->player.log("Party updated.");
@@ -424,9 +428,6 @@ void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
         this->mLogger->info("Connected");
     } else if (message->type == ix::WebSocketMessageType::Close) {
         this->mLogger->info("Socket disconnected: {}", message->closeInfo.reason);
-        hasReceivedFirstEntities = false;
-        if (message->str != "")
-            this->mLogger->info("Also received a message: {}", message->str);
     }
 }
 

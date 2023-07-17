@@ -18,22 +18,30 @@ namespace ALBot {
 		return CHARACTER_HANDLERS.at(name).child_handler;
 	}
 
-	void ipc_handler(Message* message) {
-		mLogger->info("RECEIVED {} FROM {}", message->command, message->requester);
-		if (message->command == "code_message") {
-			mLogger->info("CODE_MESSAGE TARGET: {}", message->target);
-			if (CHARACTER_HANDLERS.contains(message->target)) {
-				get_character_handler(message->target)(message);
+	void ipc_handler(Message message) {
+		mLogger->info("RECEIVED {} FROM {}", message.command, message.requester);
+		if (message.command == "code_message") {
+			mLogger->info("CODE_MESSAGE TARGET: {}", message.target);
+			if (CHARACTER_HANDLERS.contains(message.target)) {
+				get_character_handler(message.target)(message);
 			} else {
 				mLogger->warn("TARGET NOT FOUND. USING FALLBACK.");
-				get_character_handler(message->requester)(new Message{ "code_message_fail", message->requester, message->target, message->arguments });
+				get_character_handler(message.requester)(Message{ "code_message_fail", message.requester, message.target, message.arguments });
 			}
 		}
 	}
 
 	void build_service_code(const std::string& name) {
 		std::string FOLDER = fmt::format("SERVICES/{}", name);
-		std::string CMAKE = fmt::format("cmake -DSERVICE_NAME_STRING={} -S {}/. -B {}/.", name, FOLDER, FOLDER);
+		std::string build_type = "Release";
+		if (HttpWrapper::config->contains("debug")) {
+			if (HttpWrapper::config->at("debug").get<bool>()) {
+				build_type = "Debug";
+			}
+		} else {
+			mLogger->warn("config file does not contain a debug flag, assuming false");
+		}
+		std::string CMAKE = fmt::format("cmake -DCMAKE_BUILD_TYPE={} -DSERVICE_NAME_STRING={} -S {}/. -B {}/.", build_type, name, FOLDER, FOLDER);
 		std::string MAKE = fmt::format("make --quiet -C {}/. -j8", FOLDER);
 		std::string CP = fmt::format("cp {}/lib{}.so SERVICES/{}.so {}", FOLDER, name, name, NULL_PIPE_OUT);
 		mLogger->info("Running CMake on: SERVICES/{}", name);
@@ -68,7 +76,15 @@ namespace ALBot {
 				char_klasses += "\\;";
 			}
 		}
-		std::string CMAKE = fmt::format("cmake -DCMAKE_BUILD_TYPE=Debug -DNAME_DEFINITIONS=\"{}\" -DCHARACTER_NAME_STRING={} -DCHARACTER_NAME={} -DCHARACTER_CLASS={} -S {}/. -B {}/.", HttpWrapper::NAME_MACROS, char_names, char_name_ints, char_klasses, FOLDER, FOLDER);
+		std::string build_type = "Release";
+		if (HttpWrapper::config->contains("debug")) {
+			if (HttpWrapper::config->at("debug").get<bool>()) {
+				build_type = "Debug";
+			}
+		} else {
+			mLogger->warn("config file does not contain a debug flag, assuming false");
+		}
+		std::string CMAKE = fmt::format("cmake -DCMAKE_BUILD_TYPE={} -DNAME_DEFINITIONS=\"{}\" -DCHARACTER_NAME_STRING={} -DCHARACTER_NAME={} -DCHARACTER_CLASS={} -S {}/. -B {}/.", build_type, HttpWrapper::NAME_MACROS, char_names, char_name_ints, char_klasses, FOLDER, FOLDER);
 		std::string MAKE = fmt::format("make --quiet -C {}/. -j8", FOLDER);
 		mLogger->info("Running CMake on: CODE/{} with character names {}", name, pretty_names);
 		system(CMAKE.c_str());
@@ -126,14 +142,14 @@ namespace ALBot {
 		info.auth = HttpWrapper::auth;
 		info.userId = HttpWrapper::userID;
 		info.G = &HttpWrapper::data;
-		info.parent_handler = &ipc_handler;
+		info.parent_handler = ipc_handler;
 		std::string file = "CODE/" + HttpWrapper::characters[index].name + ".so";
 		void* handle = dlopen(file.c_str(), RTLD_LAZY);
 		if (!handle) {
 			mLogger->error("Cannot open library: {}", dlerror());
 		} else {
 			// load the symbol
-			typedef void (*init_t)(CharacterGameInfo&);
+			typedef std::thread (*init_t)(CharacterGameInfo&);
 			// reset errors
 			dlerror();
 			init_t init = (init_t)dlsym(handle, "init");
@@ -147,14 +163,9 @@ namespace ALBot {
 				dlclose(handle);
 				return;
 			}
-			CHARACTER_THREADS.emplace_back(init, std::ref(info));
 			DLHANDLES.push_back(handle);
-			{
-				std::unique_lock lk(info.m);
-				info.cv.wait(lk, [&]() {
-					return info.STATUS == CharacterGameInfo::INITIALIZED;
-				});
-			}
+			CHARACTER_THREADS.emplace_back(init(info));
+
 			if (info.destructor == nullptr) {
 				mLogger->warn("Character {} did not register a destructor! This will cause a memory leak when it exits!", character.name);
 			}

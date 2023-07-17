@@ -420,7 +420,7 @@ public:
 			std::lock_guard<std::mutex> lock(this->wrapper.getEntityGuard());
 			updateEntities = std::move(wrapper.getUpdateEntities());
 			updatePlayer = std::move(updatedData);
-			// updatedData.clear();
+			updatedData.clear();
 			wrapper.getUpdateEntities().clear();
 		}
 
@@ -452,7 +452,7 @@ public:
 					entity["ref_speed"] = entity["speed"];
 					entity["from_x"] = entity["x"];
 					entity["from_y"] = entity["y"];
-					std::pair<int, int> vxy = MovementMath::calculateVelocity(entity);
+					std::pair<double, double> vxy = MovementMath::calculateVelocity(entity);
 					entity["vx"] = vxy.first;
 					entity["vy"] = vxy.second;
 					entity["engaged_move"] = entity["move_num"];
@@ -504,7 +504,7 @@ public:
 						entity["ref_speed"] = entity["speed"];
 						entity["from_x"] = entity["x"];
 						entity["from_y"] = entity["y"];
-						std::pair<int, int> vxy = MovementMath::calculateVelocity(entity);
+						std::pair<double, double> vxy = MovementMath::calculateVelocity(entity);
 						entity["vx"] = vxy.first;
 						entity["vy"] = vxy.second;
 
@@ -520,30 +520,31 @@ public:
 		}
 	}
 	void startUVThread() {
-		{
-			std::lock_guard lk(m);
-			running = true;
-			uvThread = std::thread([this]() {
-				while (running) {
-					loop.run();
-					std::this_thread::sleep_for(std::chrono::milliseconds(1));
-				}
-				this->stop();
-			});
-		}
-		cv.notify_one();
+		std::lock_guard lk(m);
+		uvThread = std::thread([this]() {
+			{
+				std::lock_guard lk(m);
+				loop.update();
+				running = true;
+			}
+			cv.notify_one();
+			while (running) {
+				loop.run();
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+			this->stop();
+		});
 	}
 	void onCm(const std::string& name, const nlohmann::json& data) {
 		mLogger->info("{} sent {}", name, data.dump());
 	}
 	void onConnect() {
 		this->log("Connected!?!");
-		loop.update();
-		loop.exec([this] {
-			loop.setTimeout([this] {
-				running = false;
-			}, 1000);
-		});
+		// loop.exec([this] {
+		// 	loop.setTimeout([this] {
+		// 		running = false;
+		// 	}, 1000);
+		// });
 		this->startUVThread();
 	}
 	void start() {
@@ -559,6 +560,7 @@ public:
 		}
 	}
 	void await_stop() {
+		std::unique_lock lk(m);
 		uvThread.join();
 	}
 };
@@ -566,10 +568,10 @@ public:
 
 std::unique_ptr<BotImpl> BotInstance;
 
-void ipc_handler(Message* message) {
-	if (message->command == "code_message") {
-		BotInstance->onCm(message->requester, *((nlohmann::json*)message->arguments));
-	} else if (message->command == "code_message_fail") {
+void ipc_handler(Message message) {
+	if (message.command == "code_message") {
+		BotInstance->onCm(message.requester, *((nlohmann::json*)message.arguments));
+	} else if (message.command == "code_message_fail") {
 		BotInstance->mLogger->error("Sad face :c");
 	}
 }
@@ -579,25 +581,19 @@ void cleanup() {
 	BotInstance.reset(nullptr);
 }
 
-extern "C" void init(CharacterGameInfo & info) {
+extern "C" std::thread init(CharacterGameInfo & info) {
+	info.child_handler = ipc_handler;
+	info.destructor = cleanup;
+	
 	BotInstance.reset(new BotImpl(info));
-	{
-		std::unique_lock lock(info.m);
-		info.child_handler = ipc_handler;
-		info.destructor = cleanup;
-
-		info.STATUS = CharacterGameInfo::INITIALIZED;
-		
-		lock.unlock();
-		info.cv.notify_one();
-	}
-
 	BotInstance->log("Class: " + ClassEnum::getClassStringInt(CHARACTER_CLASS));
 	BotInstance->log("Logging in... ");
 	BotInstance->start();
-	BotInstance->await_start();
-	
-	BotInstance->log("Connected");
-	
-	BotInstance->await_stop();
+	return std::thread([] {
+		BotInstance->await_start();
+
+		BotInstance->log("Connected");
+
+		BotInstance->await_stop();
+	});
 }

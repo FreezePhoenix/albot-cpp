@@ -16,18 +16,12 @@ struct Message {
 };
 
 struct CharacterGameInfo {
-	std::mutex m;
-	std::condition_variable cv;
-	enum InitializationStatus {
-		UNINITIALIZED = 0,
-		INITIALIZED = 1
-	} STATUS = UNINITIALIZED;
-	typedef void (*HANDLER)(Message*);
-	HANDLER parent_handler = nullptr;
-	HANDLER child_handler = nullptr;
-	void (*destructor)() = nullptr;
+	using HANDLER = std::function<void(Message)>;
+	HANDLER parent_handler;
+	HANDLER child_handler;
+	std::function<void()> destructor;
 	~CharacterGameInfo() {
-		if (destructor != nullptr) {
+		if (destructor) {
 			destructor();
 		}
 	}
