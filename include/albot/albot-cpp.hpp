@@ -16,12 +16,13 @@
 #include <spdlog/spdlog.h>
 
 #include "albot/GameInfo.hpp"
+#include <functional>
 
 namespace ALBot {
 	extern std::vector<void*> DLHANDLES;
 	extern std::map<std::string, ServiceInfo> SERVICE_HANDLERS;
 	extern std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS;
-	extern std::vector<std::thread> CHARACTER_THREADS;
+	extern std::vector<std::reference_wrapper<std::thread>> CHARACTER_THREADS;
 	extern std::vector<std::thread> SERVICE_THREADS;
 	inline std::string NULL_PIPE_OUT = " > /dev/null";
 	inline std::string NULL_PIPE_ALL = " > /dev/null 2> /dev/null";

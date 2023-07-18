@@ -12,16 +12,12 @@ class Bot {
 	protected:
 		std::shared_ptr<spdlog::logger> mLogger;
 	public:
-		Bot(const CharacterGameInfo& id);
-		nlohmann::json data;
-		nlohmann::json updatedData;
-		nlohmann::json party;
 		const CharacterGameInfo& info;
+		nlohmann::json party;
 		std::string name;
 		size_t id;
-		void log(std::string str);
-		void join_server(std::string str);
-		void login();
+		Bot(const CharacterGameInfo& id);
+
 		bool isMoving();
 		bool isAlive();
 	    virtual void onPartyRequest(std::string /* name */) {};
@@ -29,15 +25,19 @@ class Bot {
 		virtual void onCm(const std::string& /* name */, const nlohmann::json& /* data */) {};
 		virtual void onPm(const std::string& /* name */, const std::string& /* message */) {};
 		virtual void onChat(const std::string& /* name */, const std::string& /* message */) {};
-		virtual void onConnect();
-		virtual ~Bot() {};
-		virtual void start() {};
-		virtual void stop() {
-		};
-		nlohmann::json& getUpdateJson();
-		void updateJson(const nlohmann::json&);
-		std::string getUsername();
-		nlohmann::json& getRawJson();
+
+		virtual void onDisconnect(std::string reason) = 0;
+		virtual void onConnect() = 0;
+		virtual void connect() = 0;
+		virtual void disconnect() = 0;
+		virtual void stop() = 0;
+		
+		void updateCharacter(const nlohmann::json& patch) {
+			getUpdateCharacter().update(patch);
+		}
+
+		virtual nlohmann::json& getUpdateCharacter() = 0;
+		virtual nlohmann::json& getCharacter() = 0;
 		void setParty(const nlohmann::json& j);
 
 		PROXY_GETTER(X, double)

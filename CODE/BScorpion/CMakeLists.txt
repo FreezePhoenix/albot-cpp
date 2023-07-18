@@ -25,7 +25,7 @@ add_library(spdlog_HEADERS ALIAS spdlog_header_only)
 get_filename_component(prjName "${CMAKE_SOURCE_DIR}" NAME_WLE)
 
 add_library(${prjName}_HEADERS INTERFACE)
-target_include_directories(${prjName}_HEADERS INTERFACE . ../../include ../../ ../../lib/uvw/src)
+target_include_directories(${prjName}_HEADERS INTERFACE . ../../include ../../ ../../lib/uvw/src ../../lib/IXWebSocket)
 target_link_libraries(${prjName}_HEADERS INTERFACE INTERFACE TriangleManipulator_HEADERS spdlog_HEADERS)
 
 add_library (${prjName}Targeter OBJECT

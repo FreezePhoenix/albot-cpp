@@ -28,7 +28,7 @@ SocketWrapper::SocketWrapper(std::string characterId, std::string fullUrl, Bot& 
     } else {
         this->webSocket.setUrl(fullUrl);
     }
-    this->mLogger->info("{}", fullUrl);
+    this->webSocket.disableAutomaticReconnection(); // turn off
     this->pingInterval = 4000;
     lastPing = std::chrono::high_resolution_clock::now();
 
@@ -60,8 +60,8 @@ void SocketWrapper::handle_entities(const nlohmann::json& event) {
             player["base"] = { {"h", 8}, {"v", 7}, {"vn", 2} };
             auto id = player["id"].get<std::string>();
 
-            if (id == this->player.getUsername()) {
-                this->player.updateJson(player);
+            if (id == this->player.name) {
+                this->player.updateCharacter(player);
             }
             // Avoid data loss by updating the JSON rather than overwriting
             if (this->updatedEntities.find(id) == updatedEntities.end())
@@ -124,7 +124,7 @@ void SocketWrapper::initializeSystem() {
         std::lock_guard<std::mutex> guard(entityGuard);
         getUpdateEntities().clear();
         handle_entities(entities);
-        this->player.updateJson(mut);
+        this->player.updateCharacter(mut);
         this->player.onConnect();
     });
     // Loading + gameplay
@@ -168,8 +168,8 @@ void SocketWrapper::initializeSystem() {
     this->registerEventCallback("player", [this](const nlohmann::json& event) {
         std::lock_guard<std::mutex> guard(entityGuard);
         nlohmann::json copy = event;
-        nlohmann::json& playerJson = player.getUpdateJson();
-        if (copy["moving"]) {
+        nlohmann::json& playerJson = player.getUpdateCharacter();
+        if (copy.contains("moving") && copy["moving"]) {
             if (copy.contains("speed") && playerJson.contains("speed") && double(copy["speed"]) != double(playerJson["speed"])) {
                 copy["from_x"] = event["x"];
                 copy["from_y"] = event["y"];
@@ -178,13 +178,13 @@ void SocketWrapper::initializeSystem() {
                 copy["vy"] = vxy.second;
             }
         }
-        player.updateJson(copy);
+        player.updateCharacter(copy);
     });
     this->registerEventCallback("new_map", [this](const nlohmann::json& event) {
         std::lock_guard<std::mutex> guard(entityGuard);
         getUpdateEntities().clear();
         handle_entities(event["entities"]);
-        player.updateJson({ {"map", event["name"].get<std::string>()},
+        player.updateCharacter({ {"map", event["name"].get<std::string>()},
                 {"x", event["x"].get<int>()},
                 {"y", event["y"].get<int>()},
                 {"m", event["m"].get<int>()},
@@ -213,10 +213,9 @@ void SocketWrapper::initializeSystem() {
     this->registerEventCallback("correction", [this](const nlohmann::json& event) {
         std::lock_guard<std::mutex> guard(entityGuard);
         this->mLogger->warn("Location corrected: Client: ({}, {}), Server: ({}, {})", player.getX(), player.getY(), double(event["x"]), double(event["y"]));
-        player.updateJson(event);
+        player.updateCharacter(event);
     });
     this->registerEventCallback("party_update", [this](const nlohmann::json& event) {
-        this->player.log("Party updated.");
         player.setParty(event["party"]);
     });
 
@@ -231,9 +230,7 @@ void SocketWrapper::initializeSystem() {
                 this->mLogger->info("Reconnecting in {} seconds", secs);
                 std::thread([this](int time) {
                     std::this_thread::sleep_for(std::chrono::seconds(time));
-                    this->close();
-                    this->connect();
-                    this->reconn.reconnecting();
+                    this->login(this->player.info);
                 }, secs).detach();
             }
         }
@@ -428,6 +425,7 @@ void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
         this->mLogger->info("Connected");
     } else if (message->type == ix::WebSocketMessageType::Close) {
         this->mLogger->info("Socket disconnected: {}", message->closeInfo.reason);
+        this->player.onDisconnect(message->closeInfo.reason);
     }
 }
 
@@ -469,17 +467,6 @@ void SocketWrapper::connect() {
 
 }
 
-void SocketWrapper::reconnect(int seconds) {
-    // Utilizes the player method to properly stop the process
-    this->player.stop();
-    std::this_thread::sleep_for(std::chrono::seconds(seconds));
-    this->player.start();
-    this->reconn.reconnecting();
-}
-void SocketWrapper::reconnect() {
-    this->reconnect(2);
-}
-
 void SocketWrapper::close() {
     if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
         this->webSocket.stop();
@@ -495,6 +482,14 @@ std::map<std::string, nlohmann::json>& SocketWrapper::getEntities() {
 
 std::map<std::string, nlohmann::json>& SocketWrapper::getUpdateEntities() {
     return updatedEntities;
+}
+
+nlohmann::json& SocketWrapper::getCharacter() {
+    return character;
+}
+
+nlohmann::json& SocketWrapper::getUpdateCharacter() {
+    return updatedCharacter;
 }
 
 std::map<std::string, nlohmann::json>& SocketWrapper::getChests() {

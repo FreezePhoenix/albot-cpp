@@ -1,13 +1,37 @@
 #include "SkillHelper.hpp"
 
 SkillHelper::SkillHelper(const LightLoop& lightLoop, const LightSocket& lightSocket) : loop(lightLoop), socket(lightSocket) {
+	socket.on("game_response", [this](const nlohmann::json& event) {
+		if(event.contains("response") && event.contains("failed") && event.contains("skill") && event.contains("ms")) {
+			if(event["response"] == "cooldown" && event["failed"] == true) {
+				std::lock_guard<std::mutex> guard(skill_guard);
+				std::string skill = event["skill"];
+				size_t ms = event["ms"];
+				if(skill == "attack" || skill == "heal") {
+					if(ms <= ping) {
+						can_use_map.insert_or_assign("attack", true);
+					} else {
+						set_cooldown("attack", ms - ping);
+					}
+				}
+				if(skill == "curse") {
+					if(ms <= ping) {
+						can_use_map.insert_or_assign("curse", true);
+					} else {
+						set_cooldown("curse", ms - ping);
+					}
+				}
+			}
+		}
+	});
 	socket.on("disappear", [this](const nlohmann::json& event) {
-		if (event["reason"] == "not_there") {
-			if (event.contains("place")) {
+		if(event.contains("reason") && event.contains("place")) {
+			if (event["reason"] == "not_there") {
 				std::lock_guard<std::mutex> guard(skill_guard);
 				can_use_map.insert_or_assign(event["place"].get<std::string>(), true);
 			}
 		}
+		
 	});
 	socket.on("ping_ack", [this](const nlohmann::json& event) {
 		std::lock_guard<std::mutex> guard(skill_guard);
@@ -21,18 +45,18 @@ SkillHelper::SkillHelper(const LightLoop& lightLoop, const LightSocket& lightSoc
 	});
 	socket.on("skill_timeout", [this](const nlohmann::json& event) {
 		auto name_it = event.find("name");
-		if (name_it == event.end()) {
+		if (name_it == event.end() || !name_it->is_string()) {
 			return;
 		}
 		auto ms_it = event.find("ms");
-		if (ms_it == event.end()) {
+		if (ms_it == event.end() || !ms_it->is_number()) {
 			return;
 		}
-		set_cooldown(name_it->get<std::string>(), ms_it->get<size_t>());
+		set_cooldown(name_it->get<std::string>(), ms_it->get<size_t>() - ping);
 	});
 	socket.on("eval", [this](const nlohmann::json& event) {
 		auto code_it = event.find("code");
-		if (code_it != event.end()) {
+		if (code_it != event.end() && code_it->is_string()) {
 			if (code_it->get<std::string>().starts_with("pot_timeout")) {
 				set_cooldown("potion", 2000);
 			}

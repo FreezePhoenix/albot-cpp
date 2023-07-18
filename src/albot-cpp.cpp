@@ -1,12 +1,13 @@
 ﻿#include "albot/albot-cpp.hpp"
 #include "albot/HttpWrapper.hpp"
+#include <functional>
 
 std::shared_ptr<spdlog::logger> mLogger = spdlog::stdout_color_mt("ALBotC++");
 namespace ALBot {
 	std::vector<void*> DLHANDLES = std::vector<void*>();
 	std::map<std::string, ServiceInfo> SERVICE_HANDLERS = std::map<std::string, ServiceInfo>();
 	std::map<std::string, CharacterGameInfo> CHARACTER_HANDLERS = std::map<std::string, CharacterGameInfo>();
-	std::vector<std::thread> CHARACTER_THREADS = std::vector<std::thread>();
+	std::vector<std::reference_wrapper<std::thread>> CHARACTER_THREADS = std::vector<std::reference_wrapper<std::thread>>();
 	std::vector<std::thread> SERVICE_THREADS = std::vector<std::thread>();
 
 	void clean_code() {
@@ -149,7 +150,7 @@ namespace ALBot {
 			mLogger->error("Cannot open library: {}", dlerror());
 		} else {
 			// load the symbol
-			typedef std::thread (*init_t)(CharacterGameInfo&);
+			typedef std::thread& (*init_t)(CharacterGameInfo&);
 			// reset errors
 			dlerror();
 			init_t init = (init_t)dlsym(handle, "init");
@@ -288,8 +289,8 @@ namespace ALBot {
 		for (size_t character_id : to_run) {
 			start_character(character_id);
 		}
-		for (size_t i = 0; i < CHARACTER_THREADS.size(); i++) {
-			CHARACTER_THREADS[i].join();
+		for(std::thread& character_thread : CHARACTER_THREADS) {
+			character_thread.join();
 		}
 		if (merchants_found == 0 && fighters_found == 0) {
 			mLogger->warn("No characters started.");

@@ -24,25 +24,41 @@ bool Targeter::is_targeting_party(const nlohmann::json& entity) {
 }
 
 bool Targeter::will_entity_die_from_fire(const nlohmann::json& entity) {
-	const auto& status = entity["s"];
-	if (status.contains("burned")) {
-		const auto& burn_status = status["burned"];
-		assert(burn_status.contains("intensity"));
-		assert(burn_status.contains("ms"));
-		const double burn_intensity = burn_status["intensity"].get<double>();
-		const double ms_remaining = burn_status["ms"].get<double>();
-		const double damage_per_tick = burn_intensity / 5;
-		const double ticks_remaining = std::floor(ms_remaining / 240);
-		const double damage_predicted = damage_per_tick * ticks_remaining;
-		return damage_predicted > entity["hp"].get<long>();
+	auto status_it = entity.find("s");
+	if(status_it == entity.end()) {
+		return false;
 	}
-	return false;
+	const auto& status = *status_it;
+	
+	auto burn_status_it = status.find("burned");
+	if(burn_status_it == status.end()) {
+		return false;
+	}
+	const auto& burn_status = *burn_status_it;
+
+	auto intensity_it = burn_status.find("intensity");
+	if(intensity_it == burn_status.end()) {
+		return false;
+	}
+	auto ms_it = burn_status.find("ms");
+	if(ms_it == burn_status.end()) {
+		return false;
+	}
+	
+	double burn_intensity = *intensity_it;
+	double ms_remaining = *ms_it;
+	double damage_per_tick = burn_intensity / 5;
+	double ticks_remaining = std::floor(ms_remaining / 240);
+	double damage_predicted = damage_per_tick * ticks_remaining;
+	return damage_predicted > entity["hp"];
 }
 
 bool Targeter::should_target_entity(const nlohmann::json& entity, bool event) {
-	assert(entity.contains("type"));
+	if(!entity.contains("type")) {
+		return false;
+	}
 	if (entity["type"].get<std::string>() == "monster") {
-		const std::string mtype = entity["mtype"].get<std::string>();
+		const std::string& mtype = entity["mtype"];
 		if (mtype == "grinch") {
 			return false;
 		}
@@ -57,7 +73,6 @@ bool Targeter::should_target_entity(const nlohmann::json& entity, bool event) {
 				return true;
 			}
 			if (tag_targets) {
-				
 				if (!entity.contains("target")) {
 					return true;
 				}
@@ -69,8 +84,8 @@ bool Targeter::should_target_entity(const nlohmann::json& entity, bool event) {
 }
 
 double distance_squared(double x, double y, const nlohmann::json& entity) {
-	double ex = entity["x"].get<double>();
-	double ey = entity["y"].get<double>();
+	double ex = entity["x"];
+	double ey = entity["y"];
 	double dx = ex - x;
 	double dy = ey - y;
 	return dx * dx + dy * dy;

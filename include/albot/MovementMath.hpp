@@ -33,7 +33,7 @@ public:
         if (entity.value("moving", false) == true) {
             assert(entity.contains("vx"));
             entity["x"] = double(entity["x"]) + double(entity["vx"]) * std::min(cDelta, 50.0) / 1000.0;
-            entity["y"] = double(entity["y"]) + double(entity["vx"]) * std::min(cDelta, 50.0) / 1000.0;
+            entity["y"] = double(entity["y"]) + double(entity["vy"]) * std::min(cDelta, 50.0) / 1000.0;
         }
     }
     static double getDouble(const nlohmann::json& value) {

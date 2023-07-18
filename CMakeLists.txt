@@ -14,7 +14,7 @@ set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
 
 
-set(SPDLOG_FMT_EXTERNAL_HO ON)
+set(SPDLOG_FMT_HO ON)
 add_subdirectory(lib/libuv EXCLUDE_FROM_ALL)
 add_subdirectory(lib/spdlog lib/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(lib/IXWebSocket lib/IXWebSocket EXCLUDE_FROM_ALL)
@@ -52,12 +52,12 @@ target_link_libraries(Bot_HEADERS INTERFACE IXWebSocket_HEADERS)
 
 add_library(Bot SHARED 
   "src/Bot.cpp"
+  "src/BotSkeleton.cpp"
   "src/SocketWrapper.cpp"
 )
 
 add_library(alclient-cpp STATIC
   "src/alclient-cpp.cpp"
-  "src/BotSkeleton.cpp"
 )
 
 # TODO: Add tests and install targets if needed.

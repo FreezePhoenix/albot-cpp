@@ -1,23 +1,20 @@
 #include <iostream>
 #include <string>
-#include <mutex>
-#include <condition_variable>
-#include "albot/Bot.hpp"
 
+#include "albot/Bot.hpp"
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/async.h>
 
-std::mutex _lock;
-std::condition_variable_any _cond;
-
-Bot::Bot(const CharacterGameInfo& id): info(id) {
+Bot::Bot(const CharacterGameInfo& info): info(info) {
 	this->mLogger = spdlog::stdout_color_mt(this->info.character->name + ":Bot");
+	this->name = info.character->name;
+	this->id = info.character->id;
 }
 
 #define PROXY_GETTER_IMPL(cls, name, capName, type)                                                                    \
-    type cls::get##capName() { return data[name].get<type>(); }
+    type cls::get##capName() { return (type)getCharacter()[name]; }
 
 PROXY_GETTER_IMPL(Bot, "x", X, double)
 PROXY_GETTER_IMPL(Bot, "y", Y, double)
@@ -33,36 +30,21 @@ PROXY_GETTER_IMPL(Bot, "speed", Speed, int)
 PROXY_GETTER_IMPL(Bot, "gold", Gold, long long)
 PROXY_GETTER_IMPL(Bot, "id", Id, std::string)
 
-nlohmann::json& Bot::getRawJson() {
-	return this->data;
-}
 bool Bot::isMoving() { 
-	return data.value("moving", false);
+	return getCharacter().value("moving", false);
 }
 bool Bot::isAlive() {
-	return data.value("rip", false) == false;
+	return getCharacter().value("rip", false) == false;
 }
 void Bot::setParty(const nlohmann::json& j) {
 	party.update(j);
 }
 
+void Bot::onDisconnect(std::string reason) {
+	this->mLogger->info("Disconnected: {}", reason);
+}
+
 void Bot::onConnect() {
-	this->log("Connected!");
+	this->mLogger->warn("Connected! Default implementation is to disconnect immediately.");
 	this->stop();
-}
-
-nlohmann::json& Bot::getUpdateJson() {
-	return this->updatedData;
-}
-
-void Bot::updateJson(const nlohmann::json& json) {
-    this->updatedData.update(json);
-}
-
-std::string Bot::getUsername() {
-	return this->name;
-}
-
-void Bot::log(std::string str) {
-	mLogger->info(str);
 }

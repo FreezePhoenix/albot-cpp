@@ -2,9 +2,6 @@
 #include <string>
 #include <mutex>
 
-#include "albot/SocketWrapper.hpp"
-#include "albot/Utils/LoopHelper.hpp"
-#include "albot/Utils/Timer.hpp"
 #include "albot/MovementMath.hpp"
 
 #include "albot/albot-cpp.hpp"
@@ -14,10 +11,13 @@
 #include "SkillHelper.hpp"
 #include "LightSocket.hpp"
 #include "LightLoop.hpp"
+
 #include "../../SERVICES/Pathfinding/include/Pathfinding/Service.hpp"
 #include <mutex>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/async.h>
+
+#include "albot/BotSkeleton.hpp"
 
 #ifndef CHARACTER_NAME
 #define CHARACTER_NAME -1
@@ -27,21 +27,18 @@
 #define CHARACTER_CLASS -1
 #endif
 
-
-// extern std::map<std::string, ServiceInfo<void*, void>*> ALBot::SERVICE_HANDLERS;
-const Types::TimePoint epoch;
-
 template<typename RESULT, typename ARGUMENTS>
 RESULT invoke_service(const std::string& name, ARGUMENTS* arguments) {
 	return ALBot::invoke_service<ARGUMENTS, RESULT>(name, arguments);
 }
 
 LightSocket buildLightSocket(SocketWrapper& wrapper) {
-	return LightSocket(
+	return {
 		std::bind_front(&SocketWrapper::registerEventCallback, std::ref(wrapper)),
 		std::bind_front(&SocketWrapper::emit, std::ref(wrapper)),
-		std::bind_front(&SocketWrapper::getEntities, std::ref(wrapper))
-	);
+		std::bind_front(&SocketWrapper::getEntities, std::ref(wrapper)),
+		std::bind_front(&SocketWrapper::getCharacter, std::ref(wrapper))
+	};
 }
 
 LightLoop buildLightLoop(LoopHelper& loop) {
@@ -63,7 +60,7 @@ struct EVENT_ENTRY {
 	std::string MAP;
 };
 
-inline ArmorManager::ArmorSet LUCK_SET = ArmorManager::ArmorSet()
+const ArmorManager::ArmorSet LUCK_SET = ArmorManager::ArmorSet()
 .add_item("helmet", "wcap", 7)
 .add_item("earring2", "dexearringx", 0)
 .add_item("amulet", "spookyamulet")
@@ -76,7 +73,7 @@ inline ArmorManager::ArmorSet LUCK_SET = ArmorManager::ArmorSet()
 .add_item("orb", "rabbitsfoot", 2)
 .add_item("gloves", "wgloves").build();
 
-inline ArmorManager::ArmorSet DPS_SET = ArmorManager::ArmorSet()
+const ArmorManager::ArmorSet DPS_SET = ArmorManager::ArmorSet()
 .add_item("helmet", "gphelmet", 6)
 .add_item("earring2", "cearring", 4)
 .add_item("amulet", "intamulet", 5)
@@ -89,31 +86,22 @@ inline ArmorManager::ArmorSet DPS_SET = ArmorManager::ArmorSet()
 .add_item("orb", "jacko", 4)
 .add_item("gloves", "supermittens", 7).build();
 
-inline ArmorManager::ArmorSet GOLD_SET = ArmorManager::ArmorSet()
+const ArmorManager::ArmorSet GOLD_SET = ArmorManager::ArmorSet()
 .add_item("gloves", "handofmidas")
 .add_item("ring2", "goldring", 0).build();
 
-class BotImpl : public Bot {
-	std::mutex m;
-	std::condition_variable cv;
+class BotImpl : public BotSkeleton {
 public:
-	std::promise<std::thread*> loop_thread = std::promise<std::thread*>();
-	Types::TimePoint last;
-	bool running = false;
-	std::thread uvThread;
 	std::string STATE = "farm";
 	std::optional<EVENT_ENTRY> curEvent = std::nullopt;
-	std::shared_ptr<spdlog::logger> mLogger;
-	LoopHelper loop;
-	SocketWrapper wrapper;
 	LightLoop lightLoop;
 	LightSocket lightSocket;
 	Targeter targeter;
 	SkillHelper skill_helper;
 	void use_hp() {
 		if (skill_helper.can_use("potion")) {
-			const auto& items = data["items"];
-			for (size_t i = 0; i < data["isize"].get<size_t>(); i++) {
+			const auto& items = getCharacter()["items"];
+			for (size_t i = 0; i < getCharacter()["isize"].get<size_t>(); i++) {
 				const auto& item = items[i];
 				if (item.is_object()) {
 					if (item["name"].is_string()) {
@@ -130,8 +118,8 @@ public:
 	}
 	void use_mp() {
 		if (skill_helper.can_use("potion")) {
-			const auto& items = data["items"];
-			for (size_t i = 0; i < data["isize"].get<size_t>(); i++) {
+			const auto& items = getCharacter()["items"];
+			for (size_t i = 0; i < getCharacter()["isize"].get<size_t>(); i++) {
 				const auto& item = items[i];
 				if (item.is_object()) {
 					if (item["name"].is_string()) {
@@ -183,21 +171,22 @@ public:
 
 	auto find_viable_target() {
 		if (curEvent.has_value()) {
-			return targeter.get_priority_target(data["x"].get<double>(), data["y"].get<double>(), wrapper.getEntities(), false, true, true);
+			return targeter.get_priority_target(getX(), getY(), wrapper.getEntities(), false, true, true);
 		} else {
-			return targeter.get_priority_target(data["x"].get<double>(), data["y"].get<double>(), wrapper.getEntities(), true, true, false);
+			return targeter.get_priority_target(getX(), getY(), wrapper.getEntities(), true, true, false);
 		}
 	};
 
 	auto find_viable_target_ignore_fire() {
 		if (curEvent.has_value()) {
-			return targeter.get_priority_target(data["x"].get<double>(), data["y"].get<double>(), wrapper.getEntities(), false, false, true);
+			return targeter.get_priority_target(getX(), getY(), wrapper.getEntities(), false, false, true);
 		} else {
-			return targeter.get_priority_target(data["x"].get<double>(), data["y"].get<double>(), wrapper.getEntities(), true, true, false);
+			return targeter.get_priority_target(getX(), getY(), wrapper.getEntities(), true, true, false);
 		}
 	};
 
 	void move(double x, double y) {
+		auto& data = getCharacter();
 		data["from_x"] = data["x"];
 		data["from_y"] = data["y"];
 		data["going_x"] = x;
@@ -224,13 +213,13 @@ public:
 	}
 	void farm(std::optional<EVENT_ENTRY> event = std::nullopt) {
 		const auto& entities = wrapper.getEntities();
-		if (CHARACTER_CLASS == ClassEnum::PRIEST) {
+		if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
 			if (skill_helper.can_use("attack")) {
 				for (const std::string& party_member : PARTY) {
 					if (party_member == name) {
-						const auto& member = data;
+						const auto& member = getCharacter();
 						if (Functions::needs_hp(member)) {
-							const auto& target = data["target"];
+							const auto& target = member["target"];
 							skill_helper.mark_used("attack");
 							wrapper.emit("heal", { { "id", party_member } });
 							wrapper.emit("target", { {"id", target } });
@@ -240,8 +229,8 @@ public:
 						auto it = entities.find(party_member);
 						if (it != entities.end()) {
 							const auto& member = it->second;
-							if (Functions::needs_hp(member) && distance(data, member) < getRange()) {
-								const auto& target = data["target"];
+							if (Functions::needs_hp(member) && distance(getCharacter(), member) < getRange()) {
+								const auto& target = getCharacter()["target"];
 								skill_helper.mark_used("attack");
 								wrapper.emit("heal", { { "id", party_member } });
 								wrapper.emit("target", { {"id", target } });
@@ -262,13 +251,13 @@ public:
 					skill_helper.attempt_targeted("zapperzap", monster_target_id);
 				}
 				if (monster_target["hp"].get<long>() / (double)monster_target["max_hp"].get<long>() < 0.2 && monster_target["mtype"].get<std::string>() != "bgoo") {
-					LUCK_SET.ensure_equipped(data, lightSocket);
+					LUCK_SET.attempt_equip(lightSocket);
 				}
 			}
 
-			if (distance(data, monster_target) < getRange()) {
+			if (distance(getCharacter(), monster_target) < getRange()) {
 				if (CHARACTER_CLASS == ClassEnum::PRIEST) {
-					if (skill_helper.can_use("darkblessing") && data["s"].contains("warcry")) {
+					if (skill_helper.can_use("darkblessing") && getCharacter()["s"].contains("warcry")) {
 						skill_helper.mark_used("darkblessing");
 						wrapper.emit("skill", { {"name", "darkblessing"} });
 					}
@@ -277,42 +266,45 @@ public:
 						skill_helper.attempt_attack(monster_target_id);
 					}
 				} else if (CHARACTER_CLASS == ClassEnum::WARRIOR) {
-					if (skill_helper.can_use("warcry") && !(data["s"].contains("warcry"))) {
+					if (skill_helper.can_use("warcry") && !(getCharacter()["s"].contains("warcry"))) {
 						skill_helper.mark_used("warcry");
 						wrapper.emit("skill", { {"name", "warcry"} });
 					}
 					skill_helper.attempt_attack(monster_target_id);
 				}
 			}
-			if (CHARACTER_CLASS == ClassEnum::WARRIOR) {
-				if (distance(data, monster_target) > 0.5 * getRange()) {
-					move(monster_target["x"].get<double>(), monster_target["y"].get<double>());
+			if constexpr (CHARACTER_CLASS == ClassEnum::WARRIOR) {
+				if(!isMoving()) {
+					if (distance(getCharacter(), monster_target) > 0.5 * getRange()) {
+						move(monster_target["x"].get<double>(), monster_target["y"].get<double>());
+					}
 				}
 			}
 		} else {
-			if (CHARACTER_CLASS == ClassEnum::PRIEST) {
+			if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
 				auto to_kite = find_viable_target_ignore_fire();
 				if (!to_kite.has_value()) {
-					move(-420, -1100);
+					if(distance(std::pair{getX(), getY()}, {-420, -1100}) > 10 && !isMoving()) {
+						move(-420, -1100);
+					}
 				}
 			}
-			if (CHARACTER_CLASS == ClassEnum::WARRIOR) {
+			if constexpr (CHARACTER_CLASS == ClassEnum::WARRIOR) {
 				if (entities.contains("Geoffriel") && !entities.at("Geoffriel")["rip"].get<bool>()) {
-					move(-398, -1261.5);
+					if(distance(std::pair{getX(), getY()}, {-398, -1261.5}) > 10 && !isMoving()) {
+						move(-398, -1261.5);
+					}
 				} else {
-					move(-420, -1410);
+					if(distance(std::pair{getX(), getY()}, {-420, -1410}) > 10 && !isMoving()) {
+						move(-420, -1410);
+					}
 				}
 			}
 
 		}
 	}
-	BotImpl(const CharacterGameInfo& id) : Bot(id), loop(), wrapper(std::to_string(info.character->id), this->info.server->url, *this), lightLoop(buildLightLoop(loop)), lightSocket(buildLightSocket(wrapper)),  targeter(info.character->name, { "bscorpion" }, PARTY, false, false, CHARACTER_CLASS == ClassEnum::PRIEST), skill_helper(lightLoop, lightSocket) {
-		this->mLogger = spdlog::stdout_color_mt(this->info.character->name + ":BotImpl");
-		this->name = info.character->name;
-		this->id = info.character->id;
-		loop.setInterval([this]() {
-			this->processInternals();
-		}, 1000.0 / 60.0);
+	BotImpl(const CharacterGameInfo& id) : BotSkeleton(id), lightLoop(buildLightLoop(loop)), lightSocket(buildLightSocket(wrapper)),  targeter(info.character->name, { "bscorpion" }, PARTY, false, false, CHARACTER_CLASS == ClassEnum::PRIEST), skill_helper(lightLoop, lightSocket) {
+
 		//===============================
 		// BOT CODE AFTER THIS POINT
 		//===============================
@@ -325,13 +317,13 @@ public:
 			}
 		});
 		wrapper.registerEventCallback("drop", [this](const nlohmann::json& chest) {
-			if (distance(data, chest) < 200.0) {
-				GOLD_SET.ensure_equipped(data, lightSocket);
+			if (distance(getCharacter(), chest) < 200.0) {
+				GOLD_SET.attempt_equip(lightSocket);
 				const std::string id = chest["id"].get<std::string>();
 				wrapper.emit("open_chest", {
 					{"id", id}
 				});
-				DPS_SET.ensure_equipped(data, lightSocket);
+				DPS_SET.attempt_equip(lightSocket);
 			}
 		});
 		wrapper.registerEventCallback("chest_opened", [this](const nlohmann::json& loot_info) {
@@ -349,24 +341,24 @@ public:
 				farm(curEvent);
 				// curEvent = next_event(curEvent);
 			}
-		}, 200.0);
+		}, 1000.0 / 60.0);
 		loop.setInterval([&]() {
-			if (CHARACTER_CLASS == ClassEnum::WARRIOR) {
+			if constexpr (CHARACTER_CLASS == ClassEnum::WARRIOR) {
 				if (skill_helper.can_use("potion")) {
-					if (Functions::needs_hp(data) && !wrapper.getEntities().contains("Geoffriel")) {
+					if (Functions::needs_hp(getCharacter()) && !wrapper.getEntities().contains("Geoffriel")) {
 						use_hp();
-					} else if (Functions::needs_mp(data)) {
+					} else if (Functions::needs_mp(getCharacter())) {
 						use_mp();
 					}
 				}
 			}
-			if (CHARACTER_CLASS == ClassEnum::PRIEST) {
-				if (Functions::needs_mp(data) && skill_helper.can_use("potion")) {
+			if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
+				if (Functions::needs_mp(getCharacter()) && skill_helper.can_use("potion")) {
 					use_mp();
 				}
 			}
 		}, 200.0);
-		if (CHARACTER_CLASS == ClassEnum::PRIEST) {
+		if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
 			loop.setInterval([&]() {
 				const double KITING_ORIGIN_X = -450.0;
 				const double KITING_ORIGIN_Y = -1240.0;
@@ -391,178 +383,6 @@ public:
 			}, 500.0);
 		}
 	};
-	bool within_xy_range(double o_x, double o_y, const nlohmann::json& entity) {
-		double x = entity["x"].get<double>();
-		double y = entity["y"].get<double>();
-		if (o_x - 700 < x && x < o_x + 700 && o_y - 500 < y && y < o_y + 500) {
-			return true;
-		}
-		return false;
-	}
-	void processInternals() {
-		if (last == epoch) last = Types::Clock::now();
-
-		std::map<std::string, nlohmann::json> updateEntities;
-
-   		nlohmann::json updatePlayer;
-		{
-			// The intermediate map is used to reduce the amount of data races.
-			// Now, it's only between the socket, and this function. This specific
-			// tiny code snippet uses a mutex, that interacts with the inserting
-			// and updating function (entities event). This blocks changes. 
-			// Additionally, a copy is stored in this function, which lets the socket
-			// continue processing right after the copy and clearing of the previous
-			// entities have been handled
-			// This function is also run from a loop, which is blocking in terms of 
-			// other loops and timers. This means while this function is processing, 
-			// no loops will be accessing the entities map. 
-			// Thread safety first, kids!
-			std::lock_guard<std::mutex> lock(this->wrapper.getEntityGuard());
-			updateEntities = std::move(wrapper.getUpdateEntities());
-			updatePlayer = std::move(updatedData);
-			updatedData.clear();
-			wrapper.getUpdateEntities().clear();
-		}
-
-		// Shouldn't need to delete entities.
-		// wrapper->deleteEntities();
-
-		auto& entities = wrapper.getEntities();
-		for (auto& [id, data] : updateEntities) {
-			if (entities.find(id) != entities.end()) {
-				entities[id].update(data);
-			} else entities[id] = data;
-		}
-		if (!updatePlayer.is_null()) {
-			data.update(updatePlayer);
-		}
-
-		auto now = Types::Clock::now();
-
-		const double delta = std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count();
-		last = now;
-		double cDelta = delta;
-
-		while (cDelta > 0) {
-			if (this->isAlive() && this->isMoving()) {
-
-				nlohmann::json& entity = this->getRawJson();
-				if (entity.find("ref_speed") == entity.end() ||
-					(entity.find("ref_speed") != entity.end() && entity["ref_speed"] != entity["speed"])) {
-					entity["ref_speed"] = entity["speed"];
-					entity["from_x"] = entity["x"];
-					entity["from_y"] = entity["y"];
-					std::pair<double, double> vxy = MovementMath::calculateVelocity(entity);
-					entity["vx"] = vxy.first;
-					entity["vy"] = vxy.second;
-					entity["engaged_move"] = entity["move_num"];
-				}
-				MovementMath::moveEntity(entity, cDelta);
-				MovementMath::stopLogic(entity);
-			}
-			double o_x = getX();
-			double o_y = getY();
-			auto& entities = wrapper.getEntities();
-			const std::string player_map = getMap();
-			for (auto it = entities.begin(); it != entities.end();) {
-				auto& [id, entity] = *it;
-				if (!within_xy_range(o_x, o_y, entity)) {
-					entity["dead"] = true;
-				}
-				bool REMOVE = false;
-				if (entity.is_null()) {
-					REMOVE = true;
-				} else if (entity.value("dead", false)) {
-					REMOVE = true;
-				} else if (entity.value("rip", false)) {
-					REMOVE = true;
-				} else {
-					auto it = entity.find("map");
-					if (it != entity.end()) {
-						if (it->get<std::string>() != player_map) {
-							REMOVE = true;
-						}
-					} else {
-						REMOVE = true;
-					}
-				}
-				if (REMOVE) {
-					it = entities.erase(it);
-				} else {
-					++it;
-				}
-			}
-			for (auto& [id, entity] : wrapper.getEntities()) {
-
-				if (entity.find("speed") == entity.end() && entity["type"] == "monster") {
-					std::string type = entity["mtype"];
-					entity["speed"] = this->info.G->getData()["monsters"][type]["speed"].get<double>();
-				}
-				if (!entity.value("rip", false) && !entity.value("dead", false) && entity.value("moving", false)) {
-					if (entity.value("move_num", 0l) != entity.value("engaged_move", 0l) ||
-						(entity.find("ref_speed") != entity.end() && entity["ref_speed"] != entity["speed"])) {
-						entity["ref_speed"] = entity["speed"];
-						entity["from_x"] = entity["x"];
-						entity["from_y"] = entity["y"];
-						std::pair<double, double> vxy = MovementMath::calculateVelocity(entity);
-						entity["vx"] = vxy.first;
-						entity["vy"] = vxy.second;
-
-						entity["engaged_move"] = entity["move_num"];
-					}
-
-					MovementMath::moveEntity(entity, cDelta);
-					MovementMath::stopLogic(entity); // Processes whether we're done moving or not.
-				}
-			}
-
-			cDelta -= 50;
-		}
-	}
-	void startUVThread() {
-		std::lock_guard lk(m);
-		uvThread = std::thread([this]() {
-			{
-				std::lock_guard lk(m);
-				loop.update();
-				running = true;
-			}
-			cv.notify_one();
-			while (running) {
-				loop.run();
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}
-			this->stop();
-		});
-	}
-	void onCm(const std::string& name, const nlohmann::json& data) {
-		mLogger->info("{} sent {}", name, data.dump());
-	}
-	void onConnect() {
-		this->log("Connected!?!");
-		// loop.exec([this] {
-		// 	loop.setTimeout([this] {
-		// 		running = false;
-		// 	}, 1000);
-		// });
-		this->startUVThread();
-	}
-	void start() {
-		wrapper.connect();
-	}
-	void stop() {
-		wrapper.close();
-	}
-	void await_start() {
-		{
-			std::unique_lock lk(m);
-			cv.wait(lk, [this]{return running;});
-		}
-	}
-	void await_stop() {
-		std::unique_lock lk(m);
-		uvThread.join();
-	}
 };
 
 
@@ -572,28 +392,20 @@ void ipc_handler(Message message) {
 	if (message.command == "code_message") {
 		BotInstance->onCm(message.requester, *((nlohmann::json*)message.arguments));
 	} else if (message.command == "code_message_fail") {
-		BotInstance->mLogger->error("Sad face :c");
+
 	}
 }
 
 void cleanup() {
-	BotInstance->log("DESTRUCTING");
 	BotInstance.reset(nullptr);
 }
 
-extern "C" std::thread init(CharacterGameInfo & info) {
+extern "C" std::thread& init(CharacterGameInfo & info) {
 	info.child_handler = ipc_handler;
 	info.destructor = cleanup;
 	
 	BotInstance.reset(new BotImpl(info));
-	BotInstance->log("Class: " + ClassEnum::getClassStringInt(CHARACTER_CLASS));
-	BotInstance->log("Logging in... ");
-	BotInstance->start();
-	return std::thread([] {
-		BotInstance->await_start();
 
-		BotInstance->log("Connected");
-
-		BotInstance->await_stop();
-	});
+	BotInstance->connect();
+	return BotInstance->uvThread;
 }

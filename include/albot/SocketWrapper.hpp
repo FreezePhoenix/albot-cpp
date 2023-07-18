@@ -21,27 +21,6 @@
 typedef std::function<void(const ix::WebSocketMessagePtr&)> RawCallback;
 typedef std::function<void(const nlohmann::json&)> EventCallback;
 
-class ReconnectInfo {
-	public:
-		int wait;
-		long spawn;
-
-		ReconnectInfo() : wait(0), spawn(0) {
-		}
-
-		void create(int wait) {
-			spawn = std::chrono::duration_cast < std::chrono::milliseconds > (std::chrono::system_clock::now().time_since_epoch()).count();
-			this->wait = wait * 1000;
-
-		}
-
-		void reconnecting() {
-			this->wait = 0;
-			this->spawn = 0;
-		}
-
-};
-
 class SocketWrapper {
 	private:
 		std::shared_ptr<spdlog::logger> mLogger;
@@ -64,6 +43,10 @@ class SocketWrapper {
 		std::map<std::string, nlohmann::json> entities;
 		std::map<std::string, nlohmann::json> updatedEntities;
 
+		
+		nlohmann::json character;
+		nlohmann::json updatedCharacter;
+
 		std::mutex chestGuard;
 		std::mutex deletionGuard;
 		std::mutex entityGuard;
@@ -85,7 +68,6 @@ class SocketWrapper {
 		 */
 		void sanitizeInput(nlohmann::json &entity);
 	public:
-		ReconnectInfo reconn = { };
 		/**
 		 * Initializes a general, empty SocketWrapper ready to connect.
 		 * When {@link #connect(std::string)} is called, the socket starts up
@@ -114,8 +96,6 @@ class SocketWrapper {
 		 *  Connects a user. this should only be run from the Player class
 		 */
 		void connect();
-		void reconnect();
-		void reconnect(int seconds);
 
 		void close();
 		void sendPing();
@@ -127,6 +107,10 @@ class SocketWrapper {
 
 		std::map<std::string, nlohmann::json>& getEntities();
 		std::map<std::string, nlohmann::json>& getUpdateEntities();
+
+		nlohmann::json& getCharacter();
+		nlohmann::json& getUpdateCharacter();
+		
 		std::map<std::string, nlohmann::json>& getChests();
 
 		bool isOpen() {
