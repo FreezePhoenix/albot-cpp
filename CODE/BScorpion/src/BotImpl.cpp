@@ -82,12 +82,14 @@ const ArmorManager::ArmorSet DPS_SET = ArmorManager::ArmorSet()
 .add_item("offhand", "wbookhs", 2)
 .add_item("cape", "angelwings", 8)
 .add_item("pants", "starkillers", 7)
+.add_item("ring1", "zapper")
 .add_item("ring2", "cring", 4)
 .add_item("orb", "jacko", 4)
 .add_item("gloves", "supermittens", 7).build();
 
 const ArmorManager::ArmorSet GOLD_SET = ArmorManager::ArmorSet()
 .add_item("gloves", "handofmidas")
+.add_item("ring1", "goldring", 0)
 .add_item("ring2", "goldring", 0).build();
 
 class BotImpl : public BotSkeleton {
@@ -98,43 +100,7 @@ public:
 	LightSocket lightSocket;
 	Targeter targeter;
 	SkillHelper skill_helper;
-	void use_hp() {
-		if (skill_helper.can_use("potion")) {
-			const auto& items = getCharacter()["items"];
-			for (size_t i = 0; i < getCharacter()["isize"].get<size_t>(); i++) {
-				const auto& item = items[i];
-				if (item.is_object()) {
-					if (item["name"].is_string()) {
-						std::string name = item["name"].get<std::string>();
-						if (name.starts_with("hpot")) {
-							skill_helper.mark_used("potion");
-							wrapper.emit("equip", { {"num", i} });
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-	void use_mp() {
-		if (skill_helper.can_use("potion")) {
-			const auto& items = getCharacter()["items"];
-			for (size_t i = 0; i < getCharacter()["isize"].get<size_t>(); i++) {
-				const auto& item = items[i];
-				if (item.is_object()) {
-					if (item["name"].is_string()) {
-						std::string name = item["name"].get<std::string>();
-						if (name.starts_with("mpot")) {
-							skill_helper.mark_used("potion");
-							wrapper.emit("equip", { {"num", i} });
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-
+	
 	auto get_kite_point(double origin_x, double origin_y, double target_x, double target_y, double range, bool clockwise) {
 		double mod = 1;
 		if (!clockwise) {
@@ -171,17 +137,17 @@ public:
 
 	auto find_viable_target() {
 		if (curEvent.has_value()) {
-			return targeter.get_priority_target(getX(), getY(), wrapper.getEntities(), false, true, true);
+			return targeter.get_priority_target(false, true, true);
 		} else {
-			return targeter.get_priority_target(getX(), getY(), wrapper.getEntities(), true, true, false);
+			return targeter.get_priority_target(true, true, false);
 		}
 	};
 
 	auto find_viable_target_ignore_fire() {
 		if (curEvent.has_value()) {
-			return targeter.get_priority_target(getX(), getY(), wrapper.getEntities(), false, false, true);
+			return targeter.get_priority_target(false, false, true);
 		} else {
-			return targeter.get_priority_target(getX(), getY(), wrapper.getEntities(), true, true, false);
+			return targeter.get_priority_target(true, true, false);
 		}
 	};
 
@@ -219,21 +185,24 @@ public:
 					if (party_member == name) {
 						const auto& member = getCharacter();
 						if (Functions::needs_hp(member)) {
-							const auto& target = member["target"];
 							skill_helper.mark_used("attack");
 							wrapper.emit("heal", { { "id", party_member } });
-							wrapper.emit("target", { {"id", target } });
 							break;
 						}
 					} else {
 						auto it = entities.find(party_member);
 						if (it != entities.end()) {
 							const auto& member = it->second;
-							if (Functions::needs_hp(member) && distance(getCharacter(), member) < getRange()) {
-								const auto& target = getCharacter()["target"];
-								skill_helper.mark_used("attack");
-								wrapper.emit("heal", { { "id", party_member } });
-								wrapper.emit("target", { {"id", target } });
+							if (Functions::needs_hp(member) && Functions::distance(getCharacter(), member) < getRange()) {
+								if(getCharacter().contains("target")) {
+									const auto& target = getCharacter()["target"];
+									skill_helper.mark_used("attack");
+									wrapper.emit("heal", { { "id", party_member } });
+									wrapper.emit("target", { {"id", target } });
+								} else {
+									skill_helper.mark_used("attack");
+									wrapper.emit("heal", { { "id", party_member } });
+								}
 								break;
 							}
 						}
@@ -244,13 +213,12 @@ public:
 		auto attack_target = find_viable_target();
 		if (attack_target.has_value()) {
 			const nlohmann::json& monster_target = attack_target.value();
-			const std::string& monster_target_id = monster_target["id"].get<std::string>();
 			if (CHARACTER_CLASS == ClassEnum::PRIEST) {
 
 				if (!monster_target.contains("target") || monster_target["target"].is_null()) {
-					skill_helper.attempt_targeted("zapperzap", monster_target_id);
+					skill_helper.attempt_targeted("zapperzap", monster_target);
 				}
-				if (monster_target["hp"].get<long>() / (double)monster_target["max_hp"].get<long>() < 0.2 && monster_target["mtype"].get<std::string>() != "bgoo") {
+				if (double(monster_target["hp"]) / double(monster_target["max_hp"]) < 0.2 && monster_target["mtype"].get<std::string>() != "bgoo") {
 					LUCK_SET.attempt_equip(lightSocket);
 				}
 			}
@@ -261,16 +229,16 @@ public:
 						skill_helper.mark_used("darkblessing");
 						wrapper.emit("skill", { {"name", "darkblessing"} });
 					}
-					skill_helper.attempt_targeted("curse", monster_target_id);
+					skill_helper.attempt_targeted("curse", monster_target);
 					if (monster_target["hp"].get<long>() > 20000) {
-						skill_helper.attempt_attack(monster_target_id);
+						skill_helper.attempt_attack(monster_target);
 					}
 				} else if (CHARACTER_CLASS == ClassEnum::WARRIOR) {
 					if (skill_helper.can_use("warcry") && !(getCharacter()["s"].contains("warcry"))) {
 						skill_helper.mark_used("warcry");
 						wrapper.emit("skill", { {"name", "warcry"} });
 					}
-					skill_helper.attempt_attack(monster_target_id);
+					skill_helper.attempt_attack(monster_target);
 				}
 			}
 			if constexpr (CHARACTER_CLASS == ClassEnum::WARRIOR) {
@@ -303,8 +271,12 @@ public:
 
 		}
 	}
-	BotImpl(const CharacterGameInfo& id) : BotSkeleton(id), lightLoop(buildLightLoop(loop)), lightSocket(buildLightSocket(wrapper)),  targeter(info.character->name, { "bscorpion" }, PARTY, false, false, CHARACTER_CLASS == ClassEnum::PRIEST), skill_helper(lightLoop, lightSocket) {
-
+	BotImpl(const CharacterGameInfo& id) : BotSkeleton(id), lightLoop(buildLightLoop(loop)), lightSocket(buildLightSocket(wrapper)),  targeter(lightSocket, info.character->name, { "bscorpion" }, PARTY, false, false, CHARACTER_CLASS == ClassEnum::PRIEST), skill_helper(lightLoop, lightSocket) {
+		loop.exec([this]() {
+			loop.setTimeout([this]() {
+				this->stop();
+			}, 1000 * 60 * 10);
+		});
 		//===============================
 		// BOT CODE AFTER THIS POINT
 		//===============================
@@ -315,22 +287,6 @@ public:
 					mLogger->info("Defeated by monsty");
 				}
 			}
-		});
-		wrapper.registerEventCallback("drop", [this](const nlohmann::json& chest) {
-			if (distance(getCharacter(), chest) < 200.0) {
-				GOLD_SET.attempt_equip(lightSocket);
-				const std::string id = chest["id"].get<std::string>();
-				wrapper.emit("open_chest", {
-					{"id", id}
-				});
-				DPS_SET.attempt_equip(lightSocket);
-			}
-		});
-		wrapper.registerEventCallback("chest_opened", [this](const nlohmann::json& loot_info) {
-			const double goldm = loot_info["goldm"].get<double>();
-			const long gold = loot_info["gold"].get<long>();
-			const std::string opener = loot_info["opener"].get<std::string>();
-			mLogger->info("{} looted a chest with goldm {} giving me {} gold", opener, goldm, gold);
 		});
 		loop.setInterval([&]() {
 			state_controller();
@@ -346,19 +302,42 @@ public:
 			if constexpr (CHARACTER_CLASS == ClassEnum::WARRIOR) {
 				if (skill_helper.can_use("potion")) {
 					if (Functions::needs_hp(getCharacter()) && !wrapper.getEntities().contains("Geoffriel")) {
-						use_hp();
+						skill_helper.attempt_use_hp_potion();
 					} else if (Functions::needs_mp(getCharacter())) {
-						use_mp();
+						skill_helper.attempt_use_mp_potion();
 					}
 				}
 			}
 			if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
 				if (Functions::needs_mp(getCharacter()) && skill_helper.can_use("potion")) {
-					use_mp();
+					skill_helper.attempt_use_mp_potion();
 				}
 			}
 		}, 200.0);
+		
+		lightSocket.on("chest_opened", [this](const nlohmann::json& loot_info) {
+			double goldm = double(loot_info["goldm"]);
+			double gold = double(loot_info["gold"]);
+			std::string opener = loot_info["opener"];
+			mLogger->info("{} looted a chest with goldm {} giving me {} gold", opener, goldm, gold);	
+			if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
+				lightLoop.exec([this]() {
+					DPS_SET.attempt_equip(lightSocket);
+				});
+			}
+		});
 		if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
+			lightSocket.on("drop", [this](const nlohmann::json& data) {
+            	nlohmann::json chest = data;
+				lightLoop.exec([this, chest]() {
+					if (distance(getCharacter(), chest) < 200.0) {
+						GOLD_SET.attempt_equip(lightSocket);
+						lightSocket.emit("open_chest", {
+							{"id", chest["id"] }
+						});
+					}
+				});
+			});
 			loop.setInterval([&]() {
 				const double KITING_ORIGIN_X = -450.0;
 				const double KITING_ORIGIN_Y = -1240.0;

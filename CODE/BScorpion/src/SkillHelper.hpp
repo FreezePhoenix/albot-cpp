@@ -21,9 +21,11 @@ public:
 	bool can_use(std::string skill);
 	void set_cooldown(std::string skill, size_t millis);
 	void mark_used(std::string skill);
-	void attempt_attack(std::string id);
-	void attempt_heal(std::string id);
-	void attempt_targeted(std::string skill, std::string id);
+	void attempt_attack(const nlohmann::json& entity);
+	void attempt_heal(const nlohmann::json& entity);
+	void attempt_targeted(std::string skill, const nlohmann::json& entity);
+	void attempt_use_hp_potion();
+	void attempt_use_mp_potion();
 };
 
 #endif

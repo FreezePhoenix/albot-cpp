@@ -16,7 +16,7 @@ BotSkeleton::BotSkeleton(const CharacterGameInfo& id): Bot(id), loop(), wrapper(
 				loop.run();
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
-			this->stop();
+			this->disconnect();
 		}) {
     loop.setInterval([this]() {
         this->processInternals();
@@ -100,13 +100,12 @@ void BotSkeleton::processInternals() {
 			const std::string player_map = getMap();
 			for (auto it = entities.begin(); it != entities.end();) {
 				auto& [id, entity] = *it;
-				if (!within_xy_range(o_x, o_y, entity)) {
-					entity["dead"] = true;
-				}
 				bool REMOVE = false;
 				if (entity.is_null()) {
 					REMOVE = true;
 				} else if (entity.value("dead", false)) {
+					REMOVE = true;
+				} else if (!within_xy_range(o_x, o_y, entity)) {
 					REMOVE = true;
 				} else if (entity.value("rip", false)) {
 					REMOVE = true;
@@ -160,14 +159,20 @@ void BotSkeleton::onDisconnect(std::string reason) {
 	if(reason == "Abnormal closure") {
 		mLogger->info("Attempting reconnection.");
 		loop_running = false;
-		this->connect();
+		std::thread([this]() {
+			mLogger->info("{}", this->wrapper.getReadyState());
+			mLogger->info("Disconnecting.");
+			this->disconnect();
+			mLogger->info("Reconnecting.");
+			this->connect();
+			mLogger->info("Connected.");
+		}).detach();
 	} else {
 		mLogger->info("Stopping.");
 		this->stop();
 	}
 }
 void BotSkeleton::onConnect() {
-	mLogger->info("Connected!?!");
 	loop_running = true;
 	loop_running.notify_all();
 }

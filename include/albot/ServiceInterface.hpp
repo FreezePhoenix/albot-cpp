@@ -131,7 +131,10 @@ private:
 	erased_type<std::function> handler;
 	std::function<void()> destructor;
 public:
-	GameData* G;
+	const GameData& G;
+	ServiceInfo(const GameData& data) : G(data) {
+		
+	};
 	void set_destructor(std::function<void()> destructor) {
 		this->destructor = destructor;
 	}

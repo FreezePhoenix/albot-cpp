@@ -1,6 +1,7 @@
 #include "Targeter.hpp"
+#include "Functions.hpp"
 
-Targeter::Targeter(const std::string& character_name, const std::vector<std::string>& monster_targets, std::vector<std::string> safe, bool solo, bool require_los, bool tag_targets): character_name(character_name), safe(safe) {
+Targeter::Targeter(const LightSocket& wrapper, const std::string& character_name, const std::vector<std::string>& monster_targets, std::vector<std::string> safe, bool solo, bool require_los, bool tag_targets): socket(wrapper), character_name(character_name), safe(safe) {
 	for (size_t i = 0; i < monster_targets.size(); i++) {
 		targeting_priorities.emplace(monster_targets[i], i + 2);
 	}
@@ -83,15 +84,9 @@ bool Targeter::should_target_entity(const nlohmann::json& entity, bool event) {
 	return false;
 }
 
-double distance_squared(double x, double y, const nlohmann::json& entity) {
-	double ex = entity["x"];
-	double ey = entity["y"];
-	double dx = ex - x;
-	double dy = ey - y;
-	return dx * dx + dy * dy;
-}
-
-std::optional<std::reference_wrapper<const nlohmann::json>> Targeter::get_priority_target(double x, double y, const std::map<std::string, nlohmann::json>& entities, bool any, bool ignore_fire, bool event) {
+std::optional<std::reference_wrapper<const nlohmann::json>> Targeter::get_priority_target(bool any, bool ignore_fire, bool event) {
+	const auto& entities = socket.entities();
+	const auto& character = socket.character();
 	if (any) {
 		for (const auto& [id, entity] : entities) {
 			if (should_target_entity(entity, event)) {
@@ -115,7 +110,7 @@ std::optional<std::reference_wrapper<const nlohmann::json>> Targeter::get_priori
 							std::make_tuple(
 								targeting_priorities.at(entity["mtype"].get<std::string>()),
 								!is_targeting_party(entity),
-								distance_squared(x, y, entity)
+								Functions::distance_squared(character, entity)
 							),
 							std::cref(entity)
 						);

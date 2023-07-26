@@ -374,8 +374,12 @@ void SocketWrapper::messageReceiver(const ix::WebSocketMessagePtr& message) {
                     }
                     // type = 0 for the connect packet
                     // type = 1 for the disconnect packet
-                    // type = 2 for events
-                    else if (type == 2) {
+                    if(type == 0) {
+                        mLogger->info("Socket connected with SID {}", json["sid"].get<std::string>());
+                    } else if(type == 1) { 
+                        mLogger->info("Disconnected");
+                        this->player.onDisconnect("Unknown closure");
+                    } else if (type == 2) { // type = 2 for events
                         if (json.type() == nlohmann::json::value_t::array && json.size() >= 1) {
                             auto& event = json[0];
                             if (event.type() == nlohmann::json::value_t::string) {
@@ -455,22 +459,17 @@ void SocketWrapper::registerEventCallback(std::string event, std::function<void(
 }
 
 void SocketWrapper::onDisappear(const nlohmann::json& event) {
-    if (entities.find(event["id"]) != entities.end()) {
-        std::lock_guard<std::mutex> mtx(this->entityGuard);
-        updatedEntities[event["id"].get<std::string>()]["dead"] = true;
-    }
+    std::lock_guard<std::mutex> mtx(this->entityGuard);
+    updatedEntities[event["id"].get<std::string>()].update({{"dead", true}});
 }
 
 void SocketWrapper::connect() {
     // Begin the connection process
     this->webSocket.start();
-
 }
 
 void SocketWrapper::close() {
-    if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
-        this->webSocket.stop();
-    }
+    this->webSocket.stop();
 }
 
 void SocketWrapper::sendPing() {

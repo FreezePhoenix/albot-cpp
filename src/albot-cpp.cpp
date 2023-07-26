@@ -102,7 +102,7 @@ namespace ALBot {
 	void start_service(int index) {
 		HttpWrapper::Service& service = HttpWrapper::services[index];
 		
-		ServiceInfo& info = SERVICE_HANDLERS[service.name];
+		ServiceInfo& info = SERVICE_HANDLERS.emplace(std::piecewise_construct, std::forward_as_tuple(service.name), std::forward_as_tuple(HttpWrapper::data)).first->second;
 		build_service_code(service.name);
 		std::string file = fmt::format("SERVICES/{}.so", service.name);
 		void* handle = dlopen(file.c_str(), RTLD_LAZY);
@@ -120,8 +120,6 @@ namespace ALBot {
 				mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
 				dlclose(handle);
 			}
-
-			info.G = &HttpWrapper::data;
 			init(info);
 			if (!info.has_destructor()) {
 				mLogger->warn("Service {} did not register a destructor! This will cause a memory leak when it exits!", service.name);
