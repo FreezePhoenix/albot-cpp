@@ -160,7 +160,7 @@ void BotSkeleton::onDisconnect(std::string reason) {
 		mLogger->info("Attempting reconnection.");
 		loop_running = false;
 		std::thread([this]() {
-			mLogger->info("{}", this->wrapper.getReadyState());
+			mLogger->info("{}", (size_t) this->wrapper.getReadyState());
 			mLogger->info("Disconnecting.");
 			this->disconnect();
 			mLogger->info("Reconnecting.");

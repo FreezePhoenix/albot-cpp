@@ -178,31 +178,24 @@ public:
 		}
 	}
 	void farm(std::optional<EVENT_ENTRY> event = std::nullopt) {
+		auto& character = getCharacter();
 		const auto& entities = wrapper.getEntities();
 		if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
 			if (skill_helper.can_use("attack")) {
 				for (const std::string& party_member : PARTY) {
 					if (party_member == name) {
-						const auto& member = getCharacter();
-						if (Functions::needs_hp(member)) {
+						if (Functions::needs_hp(character)) {
 							skill_helper.mark_used("attack");
-							wrapper.emit("heal", { { "id", party_member } });
+							wrapper.emit("heal", { { "id", name } });
 							break;
 						}
 					} else {
 						auto it = entities.find(party_member);
 						if (it != entities.end()) {
 							const auto& member = it->second;
-							if (Functions::needs_hp(member) && Functions::distance(getCharacter(), member) < getRange()) {
-								if(getCharacter().contains("target")) {
-									const auto& target = getCharacter()["target"];
-									skill_helper.mark_used("attack");
-									wrapper.emit("heal", { { "id", party_member } });
-									wrapper.emit("target", { {"id", target } });
-								} else {
-									skill_helper.mark_used("attack");
-									wrapper.emit("heal", { { "id", party_member } });
-								}
+							if (Functions::needs_hp(member) && Functions::distance(character, member) < getRange()) {
+								skill_helper.mark_used("attack");
+								wrapper.emit("heal", { { "id", party_member } });
 								break;
 							}
 						}
@@ -223,9 +216,9 @@ public:
 				}
 			}
 
-			if (distance(getCharacter(), monster_target) < getRange()) {
+			if (distance(character, monster_target) < getRange()) {
 				if (CHARACTER_CLASS == ClassEnum::PRIEST) {
-					if (skill_helper.can_use("darkblessing") && getCharacter()["s"].contains("warcry")) {
+					if (skill_helper.can_use("darkblessing") && character["s"].contains("warcry")) {
 						skill_helper.mark_used("darkblessing");
 						wrapper.emit("skill", { {"name", "darkblessing"} });
 					}
@@ -234,7 +227,7 @@ public:
 						skill_helper.attempt_attack(monster_target);
 					}
 				} else if (CHARACTER_CLASS == ClassEnum::WARRIOR) {
-					if (skill_helper.can_use("warcry") && !(getCharacter()["s"].contains("warcry"))) {
+					if (skill_helper.can_use("warcry") && !(character["s"].contains("warcry"))) {
 						skill_helper.mark_used("warcry");
 						wrapper.emit("skill", { {"name", "warcry"} });
 					}
@@ -243,7 +236,7 @@ public:
 			}
 			if constexpr (CHARACTER_CLASS == ClassEnum::WARRIOR) {
 				if(!isMoving()) {
-					if (distance(getCharacter(), monster_target) > 0.5 * getRange()) {
+					if (distance(character, monster_target) > 0.5 * getRange()) {
 						move(monster_target["x"].get<double>(), monster_target["y"].get<double>());
 					}
 				}
@@ -277,9 +270,11 @@ public:
 				this->stop();
 			}, 1000 * 60 * 10);
 		});
+
 		//===============================
 		// BOT CODE AFTER THIS POINT
 		//===============================
+
 		wrapper.registerEventCallback("game_response", [this](const nlohmann::json& data) {
 			if(data.contains("response")) {
 				const std::string res = data["response"].get<std::string>();
@@ -288,7 +283,8 @@ public:
 				}
 			}
 		});
-		loop.setInterval([&]() {
+
+		loop.setInterval([this]() {
 			state_controller();
 			if (STATE == "farm") {
 				farm();
@@ -298,7 +294,8 @@ public:
 				// curEvent = next_event(curEvent);
 			}
 		}, 1000.0 / 60.0);
-		loop.setInterval([&]() {
+
+		loop.setInterval([this]() {
 			if constexpr (CHARACTER_CLASS == ClassEnum::WARRIOR) {
 				if (skill_helper.can_use("potion")) {
 					if (Functions::needs_hp(getCharacter()) && !wrapper.getEntities().contains("Geoffriel")) {
@@ -326,6 +323,7 @@ public:
 				});
 			}
 		});
+
 		if constexpr (CHARACTER_CLASS == ClassEnum::PRIEST) {
 			lightSocket.on("drop", [this](const nlohmann::json& data) {
             	nlohmann::json chest = data;
@@ -338,7 +336,7 @@ public:
 					}
 				});
 			});
-			loop.setInterval([&]() {
+			loop.setInterval([this]() {
 				const double KITING_ORIGIN_X = -450.0;
 				const double KITING_ORIGIN_Y = -1240.0;
 				const double KITING_RANGE = 121; // Roughly 2/3rds of the character's range

@@ -3,9 +3,8 @@
 #ifndef ALBOT_MAPPROCESSING_HPP_
 #define ALBOT_MAPPROCESSING_HPP_
 
-#include <vector>
-#include <nlohmann/json.hpp>
 #include "TriangleManipulator/PointLocation.hpp"
+#include <nlohmann/json.hpp>
 
 namespace MapProcessing {
     /**

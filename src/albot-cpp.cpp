@@ -33,7 +33,7 @@ namespace ALBot {
 	}
 
 	void build_service_code(const std::string& name) {
-		std::string FOLDER = fmt::format("SERVICES/{}", name);
+		std::string FOLDER = std::format("SERVICES/{}", name);
 		std::string build_type = "Release";
 		if (HttpWrapper::config->contains("debug")) {
 			if (HttpWrapper::config->at("debug").get<bool>()) {
@@ -42,9 +42,9 @@ namespace ALBot {
 		} else {
 			mLogger->warn("config file does not contain a debug flag, assuming false");
 		}
-		std::string CMAKE = fmt::format("cmake -DCMAKE_BUILD_TYPE={} -DSERVICE_NAME_STRING={} -S {}/. -B {}/.", build_type, name, FOLDER, FOLDER);
-		std::string MAKE = fmt::format("make --quiet -C {}/. -j8", FOLDER);
-		std::string CP = fmt::format("cp {}/lib{}.so SERVICES/{}.so {}", FOLDER, name, name, NULL_PIPE_OUT);
+		std::string CMAKE = std::format("cmake -DCMAKE_BUILD_TYPE={} -DSERVICE_NAME_STRING={} -S {}/. -B {}/.", build_type, name, FOLDER, FOLDER);
+		std::string MAKE = std::format("make --quiet -C {}/. -j8", FOLDER);
+		std::string CP = std::format("cp {}/lib{}.so SERVICES/{}.so {}", FOLDER, name, name, NULL_PIPE_OUT);
 		mLogger->info("Running CMake on: SERVICES/{}", name);
 		system(CMAKE.c_str());
 		mLogger->info("Finished. Compiling...");
@@ -85,15 +85,15 @@ namespace ALBot {
 		} else {
 			mLogger->warn("config file does not contain a debug flag, assuming false");
 		}
-		std::string CMAKE = fmt::format("cmake -DCMAKE_BUILD_TYPE={} -DNAME_DEFINITIONS=\"{}\" -DCHARACTER_NAME_STRING={} -DCHARACTER_NAME={} -DCHARACTER_CLASS={} -S {}/. -B {}/.", build_type, HttpWrapper::NAME_MACROS, char_names, char_name_ints, char_klasses, FOLDER, FOLDER);
-		std::string MAKE = fmt::format("make --quiet -C {}/. -j8", FOLDER);
+		std::string CMAKE = std::format("cmake -DCMAKE_BUILD_TYPE={} -DNAME_DEFINITIONS=\"{}\" -DCHARACTER_NAME_STRING={} -DCHARACTER_NAME={} -DCHARACTER_CLASS={} -S {}/. -B {}/.", build_type, HttpWrapper::NAME_MACROS, char_names, char_name_ints, char_klasses, FOLDER, FOLDER);
+		std::string MAKE = std::format("make --quiet -C {}/. -j8", FOLDER);
 		mLogger->info("Running CMake on: CODE/{} with character names {}", name, pretty_names);
 		system(CMAKE.c_str());
 		mLogger->info("Finished. Compiling...");
 		system(MAKE.c_str());
 		mLogger->info("Finished. Copying...");
 		for (const std::string& char_name : names) {
-			std::string CP = fmt::format("cp {}/lib{}_{}.so CODE/{}.so {}", FOLDER, name, char_name, char_name, NULL_PIPE_OUT);
+			std::string CP = std::format("cp {}/lib{}_{}.so CODE/{}.so {}", FOLDER, name, char_name, char_name, NULL_PIPE_OUT);
 			system(CP.c_str());
 		}
 		mLogger->info("Finished.");
@@ -104,7 +104,7 @@ namespace ALBot {
 		
 		ServiceInfo& info = SERVICE_HANDLERS.emplace(std::piecewise_construct, std::forward_as_tuple(service.name), std::forward_as_tuple(HttpWrapper::data)).first->second;
 		build_service_code(service.name);
-		std::string file = fmt::format("SERVICES/{}.so", service.name);
+		std::string file = std::format("SERVICES/{}.so", service.name);
 		void* handle = dlopen(file.c_str(), RTLD_LAZY);
 		if (!handle) {
 			mLogger->error("Cannot open library: {}", dlerror());
@@ -156,7 +156,6 @@ namespace ALBot {
 			const char* dlsym_error = dlerror();
 
 			if (dlsym_error) {
-				fmt::print("Cannot load symbol 'init': {}\n", dlsym_error);
 				mLogger->error("Cannot load symbol 'init': {}", dlsym_error);
 				mLogger->flush();
 				dlclose(handle);

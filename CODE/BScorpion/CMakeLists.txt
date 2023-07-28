@@ -13,6 +13,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
 
+set(SPDLOG_USE_STD_FORMAT ON)
+
 add_subdirectory(../../lib/TriangleManipulator ./build/TriangleManipulator EXCLUDE_FROM_ALL)
 add_subdirectory(../../lib/spdlog ./build/spdlog EXCLUDE_FROM_ALL)
 

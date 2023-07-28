@@ -88,7 +88,7 @@ class SocketWrapper {
 		/**
 		 * Equivalent of socket.on
 		 */
-		void registerEventCallback(std::string event, std::function<void(const nlohmann::json&)> callback);
+		void registerEventCallback(const std::string& event, std::function<void(const nlohmann::json&)> callback);
 		void deleteEntities();
 
 		void receiveLocalCm(std::string from, const nlohmann::json &message);
@@ -99,7 +99,7 @@ class SocketWrapper {
 
 		void close();
 		void sendPing();
-		void emit(std::string event, const nlohmann::json &json = { });
+		void emit(const std::string& event, const nlohmann::json &json = { });
 		void emitRawJsonString(std::string event, std::string json = " ");
 		void onDisappear(const nlohmann::json &event);
 

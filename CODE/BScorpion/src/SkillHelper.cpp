@@ -1,5 +1,5 @@
 #include "SkillHelper.hpp"
-#include <iostream>
+
 SkillHelper::SkillHelper(const LightLoop& lightLoop, const LightSocket& lightSocket) : loop(lightLoop), socket(lightSocket) {
 	socket.on("game_response", [this](const nlohmann::json& event) {
 		auto response_it = event.find("response");
@@ -23,20 +23,10 @@ SkillHelper::SkillHelper(const LightLoop& lightLoop, const LightSocket& lightSoc
 				std::string skill = skill_it->get<std::string>();
 				size_t ms = ms_it->get<size_t>();
 				if(skill == "attack" || skill == "heal") {
-					if(ms <= ping) {
-						std::lock_guard<std::mutex> guard(skill_guard);
-						can_use_map.insert_or_assign("attack", true);
-					} else {
-						set_cooldown("attack", ms - ping);
-					}
+					set_cooldown("attack", ms);
 				}
 				if(skill == "curse") {
-					if(ms <= ping) {
-						std::lock_guard<std::mutex> guard(skill_guard);
-						can_use_map.insert_or_assign("curse", true);
-					} else {
-						set_cooldown("curse", ms - ping);
-					}
+					set_cooldown("curse", ms);
 				}
 			}
 		}
@@ -52,7 +42,7 @@ SkillHelper::SkillHelper(const LightLoop& lightLoop, const LightSocket& lightSoc
 				return;
 			}
 			std::lock_guard<std::mutex> guard(skill_guard);
-			can_use_map.insert_or_assign(place_it->get<std::string>(), true);
+			clear_cooldown(place_it->get<std::string>());
 		}
 	});
 	socket.on("ping_ack", [this](const nlohmann::json& event) {
@@ -76,12 +66,7 @@ SkillHelper::SkillHelper(const LightLoop& lightLoop, const LightSocket& lightSoc
 		}
 		std::string name = name_it->get<std::string>();
 		size_t ms = ms_it->get<size_t>();
-		if(ms <= ping) {
-			std::lock_guard<std::mutex> guard(skill_guard);
-			can_use_map.insert_or_assign(name, true);
-		} else {
-			set_cooldown(name, ms - ping);
-		}
+		set_cooldown(name, ms);
 	});
 	socket.on("eval", [this](const nlohmann::json& event) {
 		auto code_it = event.find("code");
@@ -93,48 +78,50 @@ SkillHelper::SkillHelper(const LightLoop& lightLoop, const LightSocket& lightSoc
 		}
 	});
 	loop.setInterval([this]() {
+		std::lock_guard<std::mutex> guard(skill_guard);
 		last_ping = loop.now();
 		socket.emit("ping_trig", { "id", "pings" });
 	}, 4000);
 }
 
-bool SkillHelper::can_use(std::string name) {
+bool SkillHelper::can_use(const std::string& name) const {
 	std::lock_guard<std::mutex> guard(skill_guard);
-	auto it = can_use_map.find(name);
-	if (it == can_use_map.end()) {
-		return true;
-	}
-	return it->second;
+	return !unusable.contains(name);
 }
 
-
+void SkillHelper::mark_used(const std::string& name) {
+	std::lock_guard<std::mutex> guard(skill_guard);
+	unusable.emplace(name);
+}
 
 void SkillHelper::set_cooldown(std::string name, size_t millis) {
-	// When this is received, the result we receive is delayed by the ping, so we subtract half of the ping from the cooldown.
-	// Realistically we should be able to subtract the entire ping from the cooldown, but ping is... problematic, because it may decrease.
-	loop.exec([this, name, millis]() {
-		loop.setTimeout([this, name]() {
-			std::lock_guard<std::mutex> guard(skill_guard);
-			can_use_map.insert_or_assign(name, true);
-		}, millis);
+	{
+		std::lock_guard<std::mutex> guard(skill_guard);
+		if(millis <= ping) {
+			clear_cooldown(name);
+			return;
+		} else {
+			millis -= ping;
+		}
+	}
+	loop.exec([this, TIMEOUT = [this, name = std::move(name)]() {
+		std::lock_guard<std::mutex> guard(skill_guard);
+		clear_cooldown(name);
+	}, millis]() mutable {
+		loop.setTimeout(std::move(TIMEOUT), millis);
 	});
 }
 
-void SkillHelper::mark_used(std::string name) {
-	std::lock_guard<std::mutex> guard(skill_guard);
-	can_use_map.insert_or_assign(name, false);
+inline bool SkillHelper::can_use_internal(const std::string& name) const {
+	return !unusable.contains(name);
 }
 
-inline bool SkillHelper::can_use_internal(std::string name) {
-	auto it = can_use_map.find(name);
-	if (it == can_use_map.end()) {
-		return true;
-	}
-	return it->second;
+inline void SkillHelper::mark_used_internal(const std::string& name) {
+	unusable.emplace(name);
 }
 
-inline void SkillHelper::mark_used_internal(std::string name) {
-	can_use_map.insert_or_assign(name, false);
+inline void SkillHelper::clear_cooldown(const std::string& name) {
+	unusable.erase(name);
 }
 
 void SkillHelper::attempt_attack(const nlohmann::json& entity) {
@@ -167,11 +154,9 @@ void SkillHelper::attempt_heal(const nlohmann::json& entity) {
 	}
 }
 
-void SkillHelper::attempt_targeted(std::string skill, const nlohmann::json& entity) {
+void SkillHelper::attempt_targeted(const std::string& skill, const nlohmann::json& entity) {
 	auto id_it = entity.find("id");
-	if(id_it == entity.end()) {
-		return;
-	} else {
+	if(id_it != entity.end()) {
 		std::lock_guard<std::mutex> guard(skill_guard);
 		if (can_use_internal(skill)) {
 			mark_used_internal(skill);
@@ -183,9 +168,19 @@ void SkillHelper::attempt_targeted(std::string skill, const nlohmann::json& enti
 	}
 }
 
-void SkillHelper::attempt_use_mp_potion() {
+void SkillHelper::attempt(const std::string& skill) {
 	std::lock_guard<std::mutex> guard(skill_guard);
+	if (can_use_internal(skill)) {
+		mark_used_internal(skill);
+		socket.emit("skill", {
+			{ "name", skill }
+		});
+	}
+}
+
+void SkillHelper::attempt_use_mp_potion() {
 	const auto& character = socket.character();
+	std::lock_guard<std::mutex> guard(skill_guard);
 	if (can_use_internal("potion")) {
 			const auto& items = character["items"];
 			for (size_t i = 0; i < character["isize"].get<size_t>(); i++) {
@@ -203,8 +198,8 @@ void SkillHelper::attempt_use_mp_potion() {
 }
 
 void SkillHelper::attempt_use_hp_potion() {
-	std::lock_guard<std::mutex> guard(skill_guard);
 	const auto& character = socket.character();
+	std::lock_guard<std::mutex> guard(skill_guard);
 	if (can_use_internal("potion")) {
 			const auto& items = character["items"];
 			for (size_t i = 0; i < character["isize"].get<size_t>(); i++) {

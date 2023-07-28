@@ -121,9 +121,8 @@ std::optional<std::reference_wrapper<const nlohmann::json>> Targeter::get_priori
 		if (potentialTargets.empty()) {
 			return std::nullopt;
 		}
-		const auto comp = [](const SORT_ENTRY& first, const SORT_ENTRY& second) {
+		return std::min_element(potentialTargets.begin(), potentialTargets.end(), [](const SORT_ENTRY& first, const SORT_ENTRY& second) {
 			return first.first < second.first;
-		};
-		return std::min_element(potentialTargets.begin(), potentialTargets.end(), comp)->second;
+		})->second;
 	}
 }

@@ -178,7 +178,7 @@ bool HttpWrapper::do_post(const std::string& url, const std::string& args, std::
 
     std::istream &rs = session.receiveResponse(response);
     
-    mLogger->info("POST {} ({} {})", url, response.getStatus(), response.getReason());
+    mLogger->info("POST {} ({} {})", url, (size_t) response.getStatus(), response.getReason());
     if (out.has_value()) {
         mLogger->info("Storing {} bytes from response.", Poco::StreamCopier::copyToString(rs, out.value().get()));
     }
@@ -207,7 +207,7 @@ bool HttpWrapper::do_head(const std::string& url, const std::string& args, std::
 
     session.receiveResponse(response);
     
-    mLogger->info("HEAD {} ({} {})", url, response.getStatus(), response.getReason());
+    mLogger->info("HEAD {} ({} {})", url, (size_t) response.getStatus(), response.getReason());
     if (cookies.has_value()) {
         response.getCookies(cookies.value().get());
     }
@@ -228,7 +228,7 @@ bool HttpWrapper::do_request(const std::string& url, std::optional<std::referenc
     }
     session.sendRequest(request);
     std::istream& rs = session.receiveResponse(response);
-    mLogger->info("GET {} ({} {})", url, response.getStatus(), response.getReason());
+    mLogger->info("GET {} ({} {})", url, (size_t) response.getStatus(), response.getReason());
     if (out.has_value()) {
         mLogger->info("Storing {} bytes from response.", Poco::StreamCopier::copyToString(rs, out.value().get()));
     }
@@ -250,7 +250,7 @@ bool HttpWrapper::login() {
             // We pass a nullptr for the output. TODO: Get support for HTTP HEADERS verb.
             if (HttpWrapper::get_game_version(HttpWrapper::online_version)) {
                 mLogger->info("Successfully connected to server!");
-                std::string args = fmt::format("{{\"email\":\"{}\",\"password\":\"{}\",\"only_login\":true}}", email, password);
+                std::string args = std::format("{{\"email\":\"{}\",\"password\":\"{}\",\"only_login\":true}}", email, password);
                 std::vector<Poco::Net::HTTPCookie> cookies;
                 // Again, we don't *really* care about the output the server sends us...
                 // We just want the cookies.
@@ -292,7 +292,7 @@ bool HttpWrapper::get_characters() {
         nlohmann::json characters = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
         if (characters.is_array()) {
-            characters = characters[0]["characters"].get<nlohmann::basic_json<>>();
+            characters = characters[0]["characters"];
             return HttpWrapper::process_characters(characters);
 
         } else {
@@ -311,7 +311,7 @@ bool HttpWrapper::get_characters_and_servers() {
         nlohmann::json characters = nlohmann::json::parse(out);
         // For some reason we don't just get an object, the API wraps it in an array.
         if (characters.is_array()) {
-            characters = characters[0]["characters"].get<nlohmann::basic_json<>>();
+            characters = characters[0]["characters"];
             return HttpWrapper::process_characters(characters);
 
         } else {
@@ -352,7 +352,7 @@ bool HttpWrapper::process_characters(const nlohmann::json& char_jsons) {
             for (size_t i = 0; i < char_jsons.size(); i++) {
                 Character& character = HttpWrapper::characters.emplace_back(char_jsons[i]);
                 HttpWrapper::NAME_TO_NUMBER.emplace(character.name, i);
-                std::string macro_section = fmt::format("{}={}", character.name, i);
+                std::string macro_section = std::format("{}={}", character.name, i);
                 std::transform(character.name.begin(), character.name.end(), macro_section.begin(), ::toupper);
                 HttpWrapper::NAME_MACROS += macro_section;
                 if (i < char_jsons.size() - 1) {
@@ -426,10 +426,10 @@ void from_json(const nlohmann::json& server_json, Server& server) {
     server.region = server_json.at("region").get<std::string>();
     server.port = server_json.at("port").get<int>();
     server.ip = server_json.at("addr").get<std::string>();
-    server.url = fmt::format("{}:{}", server.ip, server.port);
-    server.fullName = fmt::format("{} {}", server.region, server.identifier);
+    server.url = std::format("{}:{}", server.ip, server.port);
+    server.fullName = std::format("{} {}", server.region, server.identifier);
 }
 
 bool HttpWrapper::api_method(const std::string& method, const std::string& args, std::optional<std::reference_wrapper<std::string>> out, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies) {
-    return HttpWrapper::do_post(fmt::format("https://adventure.land/api/{}", method), fmt::format("arguments={}&method={}", args, method), out, cookies);
+    return HttpWrapper::do_post(std::format("https://adventure.land/api/{}", method), std::format("arguments={}&method={}", args, method), out, cookies);
 }

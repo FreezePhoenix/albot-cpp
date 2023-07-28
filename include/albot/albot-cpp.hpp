@@ -1,10 +1,5 @@
-﻿//============================================================================
-// Name        : LinuxYay.cpp
-// Author      : 
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
-//============================================================================
+﻿#ifndef ALBOT_CPP_HPP_
+#define ALBOT_CPP_HPP_
 
 #include <dlfcn.h>
 #include <memory>
@@ -49,3 +44,5 @@ namespace ALBot {
 
 	extern void login();
 };
+
+#endif

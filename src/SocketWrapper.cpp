@@ -256,9 +256,9 @@ void SocketWrapper::login(const CharacterGameInfo& info) {
                   {"no_graphics", true} /*, {"passphrase", ""}*/ });
 }
 
-void SocketWrapper::emit(std::string event, const nlohmann::json& json) {
+void SocketWrapper::emit(const std::string& event, const nlohmann::json& json) {
     if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
-        this->webSocket.send(fmt::format("42[\"{}\",{}]", event, json.dump()));
+        this->webSocket.send(std::format("42[\"{}\",{}]", event, json.dump()));
     } else {
         this->mLogger->error("{} attempting to call emit on a socket that hasn't opened yet.", this->characterId);
     }
@@ -266,7 +266,7 @@ void SocketWrapper::emit(std::string event, const nlohmann::json& json) {
 
 void SocketWrapper::emitRawJsonString(std::string event, std::string json) {
     if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
-        this->webSocket.send(fmt::format("42[\"{}\",{}]", event, json));
+        this->webSocket.send(std::format("42[\"{}\",{}]", event, json));
     } else {
         this->mLogger->error("{} attempting to call emit on a socket that hasn't opened yet.", this->characterId);
     }
@@ -454,7 +454,7 @@ void SocketWrapper::registerRawMessageCallback(std::function<void(const ix::WebS
     rawCallbacks.push_back(callback);
 }
 
-void SocketWrapper::registerEventCallback(std::string event, std::function<void(const nlohmann::json&)> callback) {
+void SocketWrapper::registerEventCallback(const std::string& event, std::function<void(const nlohmann::json&)> callback) {
     eventCallbacks[event].push_back(callback);
 }
 
