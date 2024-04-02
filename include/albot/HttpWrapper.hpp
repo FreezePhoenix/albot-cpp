@@ -4,6 +4,7 @@
 #define ALBOT_HTTPWRAPPER_HPP_
 
 #include <Poco/Net/HTTPCookie.h>
+#include <Poco/Net/HTMLForm.h>
 
 #include <nlohmann/json.hpp>
 
@@ -88,7 +89,7 @@ class HttpWrapper {
 		 * @return true 
 		 * @return false 
 		 */
-		bool static do_post(const std::string& url, const std::string& args, std::optional<std::reference_wrapper<std::string>> out = std::nullopt, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies = std::nullopt);
+		bool static do_post(const std::string& url, const std::string& args, const std::string& method, std::optional<std::reference_wrapper<std::string>> out = std::nullopt, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies = std::nullopt);
 
 		/**
 		 * @brief Send a GET request.

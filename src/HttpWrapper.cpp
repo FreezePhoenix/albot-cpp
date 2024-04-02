@@ -158,7 +158,7 @@ bool HttpWrapper::get_config(nlohmann::json& config) {
         return false;
     }
 }
-bool HttpWrapper::do_post(const std::string& url, const std::string& args, std::optional<std::reference_wrapper<std::string>> out, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies) {
+bool HttpWrapper::do_post(const std::string& url, const std::string& args, const std::string& method, std::optional<std::reference_wrapper<std::string>> out, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies) {
     Poco::URI uri(url);
     std::string path(uri.getPathAndQuery());
     if (path.empty()) {
@@ -174,7 +174,11 @@ bool HttpWrapper::do_post(const std::string& url, const std::string& args, std::
     if (!session_cookie.empty()) {
         request.setCookies(HttpWrapper::cookie);
     }
-    session.sendRequest(request) << args;
+    Poco::Net::HTMLForm form;
+    form.add("method", method);
+    form.add("arguments", args);
+    form.prepareSubmit(request);
+    form.write(session.sendRequest(request));
 
     std::istream &rs = session.receiveResponse(response);
     
@@ -249,12 +253,13 @@ bool HttpWrapper::login() {
             // Attempt to connect to the server. Since we don't need to copy the output,
             // We pass a nullptr for the output. TODO: Get support for HTTP HEADERS verb.
             if (HttpWrapper::get_game_version(HttpWrapper::online_version)) {
-                mLogger->info("Successfully connected to server!");
-                std::string args = std::format("{{\"email\":\"{}\",\"password\":\"{}\",\"only_login\":true}}", email, password);
+                mLogger->info("Successfully connected to server! {}", HttpWrapper::online_version);
+                std::string args = fmt::format("{{\"email\":\"{}\",\"password\":\"{}\",\"only_login\":true}}", email, password);
                 std::vector<Poco::Net::HTTPCookie> cookies;
                 // Again, we don't *really* care about the output the server sends us...
                 // We just want the cookies.
-                if (HttpWrapper::api_method("signup_or_login", args, std::nullopt, cookies)) {
+                std::string out;
+                if (HttpWrapper::api_method("signup_or_login", args, out, cookies)) {
                     for (size_t i = 0; i < cookies.size(); i++) {
                         Poco::Net::HTTPCookie _cookie = cookies[i];
                         if (_cookie.getName() == "auth") {
@@ -352,7 +357,7 @@ bool HttpWrapper::process_characters(const nlohmann::json& char_jsons) {
             for (size_t i = 0; i < char_jsons.size(); i++) {
                 Character& character = HttpWrapper::characters.emplace_back(char_jsons[i]);
                 HttpWrapper::NAME_TO_NUMBER.emplace(character.name, i);
-                std::string macro_section = std::format("{}={}", character.name, i);
+                std::string macro_section = fmt::format("{}={}", character.name, i);
                 std::transform(character.name.begin(), character.name.end(), macro_section.begin(), ::toupper);
                 HttpWrapper::NAME_MACROS += macro_section;
                 if (i < char_jsons.size() - 1) {
@@ -426,10 +431,10 @@ void from_json(const nlohmann::json& server_json, Server& server) {
     server.region = server_json.at("region").get<std::string>();
     server.port = server_json.at("port").get<int>();
     server.ip = server_json.at("addr").get<std::string>();
-    server.url = std::format("{}:{}", server.ip, server.port);
-    server.fullName = std::format("{} {}", server.region, server.identifier);
+    server.url = fmt::format("{}:{}", server.ip, server.port);
+    server.fullName = fmt::format("{} {}", server.region, server.identifier);
 }
 
 bool HttpWrapper::api_method(const std::string& method, const std::string& args, std::optional<std::reference_wrapper<std::string>> out, std::optional<std::reference_wrapper<std::vector<Poco::Net::HTTPCookie>>> cookies) {
-    return HttpWrapper::do_post(std::format("https://adventure.land/api/{}", method), std::format("arguments={}&method={}", args, method), out, cookies);
+    return HttpWrapper::do_post(fmt::format("https://adventure.land/api/{}", method), args, method, out, cookies);
 }

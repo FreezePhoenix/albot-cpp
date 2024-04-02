@@ -5,6 +5,7 @@
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/async.h>
+#include <fmt/core.h>
 
 template <typename T, typename K>
 inline T getOrElse(const nlohmann::json& n, K key, T defaultValue) {
@@ -258,7 +259,7 @@ void SocketWrapper::login(const CharacterGameInfo& info) {
 
 void SocketWrapper::emit(const std::string& event, const nlohmann::json& json) {
     if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
-        this->webSocket.send(std::format("42[\"{}\",{}]", event, json.dump()));
+        this->webSocket.send(fmt::format("42[\"{}\",{}]", event, json.dump()));
     } else {
         this->mLogger->error("{} attempting to call emit on a socket that hasn't opened yet.", this->characterId);
     }
@@ -266,7 +267,7 @@ void SocketWrapper::emit(const std::string& event, const nlohmann::json& json) {
 
 void SocketWrapper::emitRawJsonString(std::string event, std::string json) {
     if (this->webSocket.getReadyState() == ix::ReadyState::Open) {
-        this->webSocket.send(std::format("42[\"{}\",{}]", event, json));
+        this->webSocket.send(fmt::format("42[\"{}\",{}]", event, json));
     } else {
         this->mLogger->error("{} attempting to call emit on a socket that hasn't opened yet.", this->characterId);
     }

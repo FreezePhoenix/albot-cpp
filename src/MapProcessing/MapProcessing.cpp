@@ -4,7 +4,7 @@ namespace MapProcessing {
     std::shared_ptr<MapInfo> parse_map(const nlohmann::json& json) {
 
         // Create a new info smart pointer.
-        std::shared_ptr<MapInfo> info = std::shared_ptr<MapInfo>(new MapInfo());
+        std::shared_ptr<MapInfo> info = std::make_shared<MapInfo>();
 
         auto& info_x_lines = info->x_lines;
         auto& info_y_lines = info->y_lines;

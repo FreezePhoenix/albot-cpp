@@ -16,11 +16,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
 
-set(SPDLOG_USE_STD_FORMAT ON)
+set(SPDLOG_USE_STD_FORMAT OFF)
 add_subdirectory(lib/libuv EXCLUDE_FROM_ALL)
-add_subdirectory(lib/spdlog lib/spdlog EXCLUDE_FROM_ALL)
+# add_subdirectory(lib/spdlog lib/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(lib/IXWebSocket lib/IXWebSocket EXCLUDE_FROM_ALL)
-add_library(spdlog_HEADERS ALIAS spdlog_header_only)
+# add_library(spdlog_HEADERS ALIAS spdlog_header_only)
 add_subdirectory(lib/TriangleManipulator lib/TriangleManipulator EXCLUDE_FROM_ALL)
 
 
@@ -73,7 +73,7 @@ target_link_libraries(
 target_link_libraries(
     Bot
   PUBLIC
-    spdlog_header_only
+    spdlog
     ixwebsocket
     uv
 )
