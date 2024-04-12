@@ -29,7 +29,7 @@ namespace ALBot {
 
 	template<typename R = void, typename... Args>
 	R invoke_service(const std::string& name, Args&&... args) {
-		auto result = std::async<std::function<R(Args...)>, Args...>(SERVICE_HANDLERS[name].get_handler<R, Args...>(), std::forward<Args>(args)...);
+		auto result = std::async<std::function<R(Args...)>, Args...>(SERVICE_HANDLERS.at(name).get_handler<R, Args...>(), std::forward<Args>(args)...);
 		result.wait();
 		return result.get();
 	}
